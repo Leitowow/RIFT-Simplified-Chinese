@@ -112,22 +112,22 @@ class AlertsActionController(
         val styleValue = Notification.TextNotification.styleValue
         val message = if (triggeredInactiveChannels.size == 1) {
             buildAnnotatedString {
-                append("Channel ")
+                append("频道 ")
                 withAnnotation(styleTag, styleValue) {
                     append(triggeredInactiveChannels.single())
                 }
-                append(" appears inactive")
+                append(" 似乎处于非活动状态")
             }
         } else {
             buildAnnotatedString {
-                append("Channels ")
+                append("频道 ")
                 withAnnotation(styleTag, styleValue) {
                     append(triggeredInactiveChannels.joinToString())
                 }
-                append(" appear inactive")
+                append(" 似乎处于非活动状态")
             }
         }
-        val title = "Not receiving intel"
+        val title = "未收到情报"
         val notification = Notification.TextNotification(title, message, null, null)
         triggerAlert(alert, notification, title, message.toString())
     }
@@ -137,22 +137,23 @@ class AlertsActionController(
         val duration = Duration.between(Instant.now(), colonyItem.ffwdColony.currentSimTime)
         val isInFuture = duration >= Duration.ofMinutes(5)
         val title = if (isInFuture) {
-            "Your colony will need attention"
+            "你的殖民地将需要关注"
         } else {
-            "Your colony needs attention"
+            "你的殖民地需要关注"
         }
         val styleTag = Notification.TextNotification.styleTag
         val styleValue = Notification.TextNotification.styleValue
         val riftMessage = buildAnnotatedString {
-            append("Planet ")
+            append("行星 ")
             withAnnotation(styleTag, styleValue) {
                 append(colonyItem.colony.planet.name)
             }
             if (isInFuture) {
-                append(" will need attention in ")
+                append(" 将在 ")
                 withAnnotation(styleTag, styleValue) {
                     append(formatDurationLong(duration))
                 }
+                append(" 后需要关注")
             }
         }
         val systemMessage = buildString {
@@ -160,10 +161,10 @@ class AlertsActionController(
                 append(colonyItem.characterName)
                 append(": ")
             }
-            append("Planet ")
+            append("行星 ")
             append(colonyItem.colony.planet.name)
             if (isInFuture) {
-                append(" will need attention in ${formatDurationLong(duration)}")
+                append(" 将在 ${formatDurationLong(duration)} 后需要关注")
             }
         }
         val planetType = typesRepository.getType(colonyItem.colony.planet.type.typeId)
@@ -249,11 +250,11 @@ class AlertsActionController(
 
     private fun getNotificationTitle(action: GameLogAction): String {
         return when (action) {
-            is GameLogAction.UnderAttack -> "Under attack"
-            is GameLogAction.Attacking -> "Attacking"
-            is GameLogAction.BeingWarpScrambled -> "Warp scrambled"
-            is GameLogAction.Decloaked -> "Decloaked"
-            is GameLogAction.CombatStopped -> "Combat stopped"
+            is GameLogAction.UnderAttack -> "你有危险"
+            is GameLogAction.Attacking -> "你开始攻击"
+            is GameLogAction.BeingWarpScrambled -> "你被反跳"
+            is GameLogAction.Decloaked -> "你被破隐"
+            is GameLogAction.CombatStopped -> "你离开了战斗"
             GameLogAction.CloneJumping -> throw IllegalStateException("Not used")
         }
     }
@@ -264,28 +265,29 @@ class AlertsActionController(
         val styleValue = Notification.TextNotification.styleValue
         return when (action) {
             is GameLogAction.UnderAttack -> buildAnnotatedString {
-                append("Attacker is ")
+                append("攻击者是 ")
                 withAnnotation(styleTag, styleValue) {
                     append(action.target)
                 }
             }
             is GameLogAction.Attacking -> buildAnnotatedString {
-                append("Target is ")
+                append("目标是 ")
                 withAnnotation(styleTag, styleValue) {
                     append(action.target)
                 }
             }
             is GameLogAction.BeingWarpScrambled -> buildAnnotatedString {
-                append("Tackled by ")
+                append("被 ")
                 withAnnotation(styleTag, styleValue) {
                     append(action.target)
                 }
+                append(" 扰断")
             }
             is GameLogAction.Decloaked -> buildAnnotatedString {
                 withAnnotation(styleTag, styleValue) {
                     append(action.by)
                 }
-                append(" is too close")
+                append(" 距离过近")
             }
             is GameLogAction.CombatStopped -> buildAnnotatedString {
                 append("Last target was ")

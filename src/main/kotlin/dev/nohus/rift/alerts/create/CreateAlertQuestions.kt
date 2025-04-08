@@ -22,15 +22,15 @@ class CreateAlertQuestions(
     private var id = 0
 
     // Alert trigger
-    val ALERT_TRIGGER_INTEL_REPORTED = FormChoiceItem(id = id++, text = "Intel is reported")
-    val ALERT_TRIGGER_GAME_ACTION = FormChoiceItem(id = id++, text = "Something happens in-game")
-    val ALERT_TRIGGER_PLANETARY_INDUSTRY = FormChoiceItem(id = id++, text = "PI colony needs attention")
-    val ALERT_TRIGGER_CHAT_MESSAGE = FormChoiceItem(id = id++, text = "Chat message is received")
-    val ALERT_TRIGGER_JABBER_PING = FormChoiceItem(id = id++, text = "Jabber ping is received")
-    val ALERT_TRIGGER_JABBER_MESSAGE = FormChoiceItem(id = id++, text = "Jabber message is received")
-    val ALERT_TRIGGER_NO_MESSAGE = FormChoiceItem(id = id++, text = "No reports are being received")
+    val ALERT_TRIGGER_INTEL_REPORTED = FormChoiceItem(id = id++, text = "预警提示")
+    val ALERT_TRIGGER_GAME_ACTION = FormChoiceItem(id = id++, text = "游戏内发生事件")
+    val ALERT_TRIGGER_PLANETARY_INDUSTRY = FormChoiceItem(id = id++, text = "行星工业需要关注")
+    val ALERT_TRIGGER_CHAT_MESSAGE = FormChoiceItem(id = id++, text = "收到聊天消息")
+    val ALERT_TRIGGER_JABBER_PING = FormChoiceItem(id = id++, text = "收到Jabber通知")
+    val ALERT_TRIGGER_JABBER_MESSAGE = FormChoiceItem(id = id++, text = "收到Jabber消息")
+    val ALERT_TRIGGER_NO_MESSAGE = FormChoiceItem(id = id++, text = "未收到相关信息")
     val ALERT_TRIGGER_QUESTION = SingleChoiceQuestion(
-        title = "Trigger the alert when:",
+        title = "在以下情况触发警报:",
         items = buildList {
             add(ALERT_TRIGGER_INTEL_REPORTED)
             add(ALERT_TRIGGER_GAME_ACTION)
@@ -50,7 +50,7 @@ class CreateAlertQuestions(
     val INTEL_REPORT_TYPE_ANY_SHIP = FormChoiceItem(id = id++, text = "舰船")
     val INTEL_REPORT_TYPE_SPECIFIC_SHIP_CLASSES = FormChoiceItem(id = id++, text = "特定舰船类型")
     val INTEL_REPORT_TYPE_WORMHOLE = FormChoiceItem(id = id++, text = "虫洞")
-    val INTEL_REPORT_TYPE_GATE_CAMP = FormChoiceItem(id = id++, text = "门神")
+    val INTEL_REPORT_TYPE_GATE_CAMP = FormChoiceItem(id = id++, text = "堵门")
     val INTEL_REPORT_TYPE_BUBBLES = FormChoiceItem(id = id++, text = "泡泡")
     val INTEL_REPORT_TYPE_QUESTION = MultipleChoiceQuestion(
         title = "如果报告包含以下内容:",
@@ -113,33 +113,33 @@ class CreateAlertQuestions(
     // Game action type
     val GAME_ACTION_TYPE_IN_COMBAT = FormChoiceItem(
         id = id++,
-        text = "You are in combat",
-        description = "Includes both being under attack and attacking",
+        text = "进入战斗",
+        description = "包含你攻击别人和被攻击",
     )
     val GAME_ACTION_TYPE_UNDER_ATTACK = FormChoiceItem(
         id = id++,
-        text = "You are under attack",
-        description = "Includes being warp scrambled or energy neutralized",
+        text = "你有危险",
+        description = "包含被反跳和被毁电",
     )
     val GAME_ACTION_TYPE_ATTACKING = FormChoiceItem(
         id = id++,
-        text = "You are attacking",
+        text = "你正在攻击",
     )
     val GAME_ACTION_TYPE_BEING_WARP_SCRAMBLED = FormChoiceItem(
         id = id++,
-        text = "You are being warp scrambled",
+        text = "你被反跳",
     )
     val GAME_ACTION_TYPE_DECLOAKED = FormChoiceItem(
         id = id++,
-        text = "You have been decloaked by a nearby object",
+        text = "你被破隐",
     )
     val GAME_ACTION_TYPE_COMBAT_STOPPED = FormChoiceItem(
         id = id++,
-        text = "You are no longer in combat",
-        description = "Includes both being under attack and attacking",
+        text = "你离开了战斗",
+        description = "包含你攻击别人和被攻击",
     )
     val GAME_ACTION_TYPE_QUESTION = MultipleChoiceQuestion(
-        title = "If any of the following happens:",
+        title = "当下列任意情况发生:",
         items = listOf(
             GAME_ACTION_TYPE_IN_COMBAT,
             GAME_ACTION_TYPE_UNDER_ATTACK,
@@ -152,7 +152,7 @@ class CreateAlertQuestions(
 
     // Game action type, combat target
     val GAME_ACTION_TYPE_COMBAT_TARGET_QUESTION = CombatTargetQuestion(
-        title = "And the combat target name contains:",
+        title = "目标的名字包含:",
         placeholder = "Dark Blood",
         allowEmpty = true,
     )
@@ -186,26 +186,26 @@ class CreateAlertQuestions(
     // Planetary Industry event type
     val PLANETARY_INDUSTRY_EVENT_TYPE_NOT_SETUP = FormChoiceItem(
         id = id++,
-        text = "Colony is not setup",
-        description = "Routes not created, schematics not selected, etc.",
+        text = "殖民地未设置",
+        description = "未创建路线，未选择蓝图等",
     )
     val PLANETARY_INDUSTRY_EVENT_TYPE_EXTRACTOR_INACTIVE = FormChoiceItem(
         id = id++,
-        text = "Extractor has expired",
-        description = "Extraction program finished",
+        text = "提取器已过期",
+        description = "提取程序已完成",
     )
     val PLANETARY_INDUSTRY_EVENT_TYPE_STORAGE_FULL = FormChoiceItem(
         id = id++,
-        text = "Storage is full",
-        description = "Storage or Launchpad receiving outputs became full",
+        text = "存储已满",
+        description = "存储或发射台接收输出已满",
     )
     val PLANETARY_INDUSTRY_EVENT_TYPE_IDLE = FormChoiceItem(
         id = id++,
-        text = "Colony is idle",
-        description = "Production has stopped (e.g. due lack of materials)",
+        text = "殖民地空闲",
+        description = "生产已停止（例如因材料不足）",
     )
     val PLANETARY_INDUSTRY_EVENT_TYPE_QUESTION = MultipleChoiceQuestion(
-        title = "If any of the following happens:",
+        title = "当下列任意情况发生:",
         items = listOf(
             PLANETARY_INDUSTRY_EVENT_TYPE_EXTRACTOR_INACTIVE,
             PLANETARY_INDUSTRY_EVENT_TYPE_STORAGE_FULL,
@@ -220,18 +220,18 @@ class CreateAlertQuestions(
     )
 
     // Planetary Industry alert before
-    val PLANETARY_INDUSTRY_ALERT_BEFORE_NONE = FormChoiceItem(id = id++, text = "When it happens")
-    val PLANETARY_INDUSTRY_ALERT_BEFORE_5_MINUTES = FormChoiceItem(id = id++, text = "5 minutes before")
-    val PLANETARY_INDUSTRY_ALERT_BEFORE_15_MINUTES = FormChoiceItem(id = id++, text = "15 minutes before")
-    val PLANETARY_INDUSTRY_ALERT_BEFORE_30_MINUTES = FormChoiceItem(id = id++, text = "30 minutes before")
-    val PLANETARY_INDUSTRY_ALERT_BEFORE_1_HOUR = FormChoiceItem(id = id++, text = "1 hour before")
-    val PLANETARY_INDUSTRY_ALERT_BEFORE_2_HOURS = FormChoiceItem(id = id++, text = "2 hours before")
-    val PLANETARY_INDUSTRY_ALERT_BEFORE_4_HOURS = FormChoiceItem(id = id++, text = "4 hours before")
-    val PLANETARY_INDUSTRY_ALERT_BEFORE_8_HOURS = FormChoiceItem(id = id++, text = "8 hours before")
-    val PLANETARY_INDUSTRY_ALERT_BEFORE_12_HOURS = FormChoiceItem(id = id++, text = "12 hours before")
-    val PLANETARY_INDUSTRY_ALERT_BEFORE_24_HOURS = FormChoiceItem(id = id++, text = "24 hours before")
+    val PLANETARY_INDUSTRY_ALERT_BEFORE_NONE = FormChoiceItem(id = id++, text = "发生时")
+    val PLANETARY_INDUSTRY_ALERT_BEFORE_5_MINUTES = FormChoiceItem(id = id++, text = "提前5分钟")
+    val PLANETARY_INDUSTRY_ALERT_BEFORE_15_MINUTES = FormChoiceItem(id = id++, text = "提前15分钟")
+    val PLANETARY_INDUSTRY_ALERT_BEFORE_30_MINUTES = FormChoiceItem(id = id++, text = "提前30分钟")
+    val PLANETARY_INDUSTRY_ALERT_BEFORE_1_HOUR = FormChoiceItem(id = id++, text = "提前1小时")
+    val PLANETARY_INDUSTRY_ALERT_BEFORE_2_HOURS = FormChoiceItem(id = id++, text = "提前2小时")
+    val PLANETARY_INDUSTRY_ALERT_BEFORE_4_HOURS = FormChoiceItem(id = id++, text = "提前4小时")
+    val PLANETARY_INDUSTRY_ALERT_BEFORE_8_HOURS = FormChoiceItem(id = id++, text = "提前8小时")
+    val PLANETARY_INDUSTRY_ALERT_BEFORE_12_HOURS = FormChoiceItem(id = id++, text = "提前12小时")
+    val PLANETARY_INDUSTRY_ALERT_BEFORE_24_HOURS = FormChoiceItem(id = id++, text = "提前24小时")
     val PLANETARY_INDUSTRY_ALERT_BEFORE_QUESTION = SingleChoiceQuestion(
-        title = "Trigger:",
+        title = "触发时间:",
         items = listOf(
             PLANETARY_INDUSTRY_ALERT_BEFORE_NONE,
             PLANETARY_INDUSTRY_ALERT_BEFORE_5_MINUTES,
@@ -350,24 +350,24 @@ class CreateAlertQuestions(
 
     // Jabber message, sender
     val JABBER_MESSAGE_SENDER_QUESTION = FreeformTextQuestion(
-        title = "And the sender is:",
-        placeholder = "User name. Leave empty for any.",
+        title = "发送者是:",
+        placeholder = "用户名。留空表示任意。",
         allowEmpty = true,
     )
 
     // Jabber message, message contains
     val JABBER_MESSAGE_MESSAGE_CONTAINING_QUESTION = FreeformTextQuestion(
-        title = "And the message contains:",
-        placeholder = "Message contents. Leave empty for any.",
+        title = "消息包含:",
+        placeholder = "消息内容。留空表示任意。",
         allowEmpty = true,
     )
 
     // No message channel type
-    val NO_MESSAGE_CHANNEL_ALL = FormChoiceItem(id = id++, text = "All monitored channels")
-    val NO_MESSAGE_CHANNEL_ANY = FormChoiceItem(id = id++, text = "Any monitored channel")
-    val NO_MESSAGE_CHANNEL_SPECIFIC = FormChoiceItem(id = id++, text = "A chosen channel")
+    val NO_MESSAGE_CHANNEL_ALL = FormChoiceItem(id = id++, text = "所有监控频道")
+    val NO_MESSAGE_CHANNEL_ANY = FormChoiceItem(id = id++, text = "任意监控频道")
+    val NO_MESSAGE_CHANNEL_SPECIFIC = FormChoiceItem(id = id++, text = "指定频道")
     val NO_MESSAGE_CHANNEL_TYPE_QUESTION = SingleChoiceQuestion(
-        title = "In:",
+        title = "在:",
         items = listOf(
             NO_MESSAGE_CHANNEL_ALL,
             NO_MESSAGE_CHANNEL_ANY,
@@ -377,17 +377,17 @@ class CreateAlertQuestions(
 
     // No message channel type, specific channel
     val NO_MESSAGE_CHANNEL_SPECIFIC_QUESTION = IntelChannelQuestion(
-        title = "With name:",
+        title = "频道名称:",
     )
 
     // No message duration
-    val NO_MESSAGE_DURATION_2_MINUTES = FormChoiceItem(id = id++, text = "2 minutes")
-    val NO_MESSAGE_DURATION_5_MINUTES = FormChoiceItem(id = id++, text = "5 minutes")
-    val NO_MESSAGE_DURATION_10_MINUTES = FormChoiceItem(id = id++, text = "10 minutes")
-    val NO_MESSAGE_DURATION_20_MINUTES = FormChoiceItem(id = id++, text = "20 minutes")
-    val NO_MESSAGE_DURATION_30_MINUTES = FormChoiceItem(id = id++, text = "30 minutes")
+    val NO_MESSAGE_DURATION_2_MINUTES = FormChoiceItem(id = id++, text = "2分钟")
+    val NO_MESSAGE_DURATION_5_MINUTES = FormChoiceItem(id = id++, text = "5分钟")
+    val NO_MESSAGE_DURATION_10_MINUTES = FormChoiceItem(id = id++, text = "10分钟")
+    val NO_MESSAGE_DURATION_20_MINUTES = FormChoiceItem(id = id++, text = "20分钟")
+    val NO_MESSAGE_DURATION_30_MINUTES = FormChoiceItem(id = id++, text = "30分钟")
     val NO_MESSAGE_DURATION_QUESTION = SingleChoiceQuestion(
-        title = "For at least:",
+        title = "持续时间至少:",
         items = listOf(
             NO_MESSAGE_DURATION_2_MINUTES,
             NO_MESSAGE_DURATION_5_MINUTES,
@@ -398,14 +398,14 @@ class CreateAlertQuestions(
     )
 
     // Alert action
-    val ALERT_ACTION_RIFT_NOTIFICATION = FormChoiceItem(id = id++, text = "Send RIFT notification", description = "Detailed notification popup")
-    val ALERT_ACTION_SYSTEM_NOTIFICATION = FormChoiceItem(id = id++, text = "Send system notification", description = "Simple text notification")
-    val ALERT_ACTION_PUSH_NOTIFICATION = FormChoiceItem(id = id++, text = "Send mobile push notification", description = "Setup in RIFT settings")
-    val ALERT_ACTION_PLAY_SOUND = FormChoiceItem(id = id++, text = "Play sound")
-    val ALERT_ACTION_SHOW_COLONIES = FormChoiceItem(id = id++, text = "Show colonies", description = "Open the Planetary Industry window")
-    val ALERT_ACTION_SHOW_PING = FormChoiceItem(id = id++, text = "Show the ping", description = "Open the Pings window")
+    val ALERT_ACTION_RIFT_NOTIFICATION = FormChoiceItem(id = id++, text = "发送RIFT通知", description = "详细通知弹窗")
+    val ALERT_ACTION_SYSTEM_NOTIFICATION = FormChoiceItem(id = id++, text = "发送系统通知", description = "简单文本通知")
+    val ALERT_ACTION_PUSH_NOTIFICATION = FormChoiceItem(id = id++, text = "发送移动推送通知", description = "在RIFT设置中配置")
+    val ALERT_ACTION_PLAY_SOUND = FormChoiceItem(id = id++, text = "播放声音")
+    val ALERT_ACTION_SHOW_COLONIES = FormChoiceItem(id = id++, text = "显示殖民地", description = "打开行星工业窗口")
+    val ALERT_ACTION_SHOW_PING = FormChoiceItem(id = id++, text = "显示通知", description = "打开通知窗口")
     val ALERT_ACTION_QUESTION = MultipleChoiceQuestion(
-        title = "When this alert is triggered:",
+        title = "当此警报触发时:",
         items = listOf(
             ALERT_ACTION_RIFT_NOTIFICATION,
             ALERT_ACTION_SYSTEM_NOTIFICATION,
@@ -416,7 +416,7 @@ class CreateAlertQuestions(
 
     // Alert action (Planetary Industry ping version)
     val ALERT_ACTION_PLANETARY_INDUSTRY_QUESTION = MultipleChoiceQuestion(
-        title = "When this alert is triggered:",
+        title = "当此警报触发时:",
         items = listOf(
             ALERT_ACTION_SHOW_COLONIES,
             ALERT_ACTION_RIFT_NOTIFICATION,
@@ -428,7 +428,7 @@ class CreateAlertQuestions(
 
     // Alert action (Jabber ping version)
     val ALERT_ACTION_JABBER_PING_QUESTION = MultipleChoiceQuestion(
-        title = "When this alert is triggered:",
+        title = "当此警报触发时:",
         items = listOf(
             ALERT_ACTION_SHOW_PING,
             ALERT_ACTION_PUSH_NOTIFICATION,
@@ -438,18 +438,18 @@ class CreateAlertQuestions(
 
     // Alert action, sound
     val ALERT_ACTION_SOUND_QUESTION = SoundQuestion(
-        title = "Use sound:",
+        title = "使用声音:",
     )
 
     // Alert cooldown
-    val ALERT_COOLDOWN_NONE = FormChoiceItem(id = id++, text = "Trigger every time")
-    val ALERT_COOLDOWN_30_SECONDS = FormChoiceItem(id = id++, text = "30 seconds")
-    val ALERT_COOLDOWN_1_MINUTE = FormChoiceItem(id = id++, text = "1 minute")
-    val ALERT_COOLDOWN_2_MINUTES = FormChoiceItem(id = id++, text = "2 minutes")
-    val ALERT_COOLDOWN_5_MINUTES = FormChoiceItem(id = id++, text = "5 minutes")
-    val ALERT_COOLDOWN_10_MINUTES = FormChoiceItem(id = id++, text = "10 minutes")
+    val ALERT_COOLDOWN_NONE = FormChoiceItem(id = id++, text = "每次触发")
+    val ALERT_COOLDOWN_30_SECONDS = FormChoiceItem(id = id++, text = "30秒")
+    val ALERT_COOLDOWN_1_MINUTE = FormChoiceItem(id = id++, text = "1分钟")
+    val ALERT_COOLDOWN_2_MINUTES = FormChoiceItem(id = id++, text = "2分钟")
+    val ALERT_COOLDOWN_5_MINUTES = FormChoiceItem(id = id++, text = "5分钟")
+    val ALERT_COOLDOWN_10_MINUTES = FormChoiceItem(id = id++, text = "10分钟")
     val ALERT_COOLDOWN_QUESTION = SingleChoiceQuestion(
-        title = "Don't trigger again for:",
+        title = "冷却时间:",
         items = listOf(
             ALERT_COOLDOWN_NONE,
             ALERT_COOLDOWN_30_SECONDS,

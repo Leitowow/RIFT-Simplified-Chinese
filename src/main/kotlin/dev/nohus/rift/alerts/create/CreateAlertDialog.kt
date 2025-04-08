@@ -93,8 +93,8 @@ fun WindowScope.CreateAlertDialog(
     if (state.dismissEvent.get()) onDismiss()
 
     val title = when (inputModel) {
-        CreateAlertInputModel.New -> "New alert"
-        is CreateAlertInputModel.EditAction -> "Edit alert action"
+        CreateAlertInputModel.New -> "新建警报"
+        is CreateAlertInputModel.EditAction -> "编辑警报动作"
     }
     RiftDialog(
         title = title,
@@ -173,13 +173,13 @@ private fun CreateAlertDialogContent(
                 modifier = Modifier.padding(top = Spacing.medium),
             ) {
                 RiftButton(
-                    text = "Back",
+                    text = "返回",
                     cornerCut = ButtonCornerCut.BottomLeft,
                     type = ButtonType.Secondary,
                     onClick = onBackClick,
                     modifier = Modifier.weight(1f),
                 )
-                val label = if (state.formQuestion != null) "Continue" else "Finish"
+                val label = if (state.formQuestion != null) "继续" else "完成"
                 RiftButton(
                     text = label,
                     onClick = onContinueClick,
@@ -296,13 +296,13 @@ private fun FormQuestion(
                     var min: Int by remember { mutableStateOf(0) }
                     var max: Int by remember { mutableStateOf(0) }
 
-                    fun getItemName(jumps: Int) = if (jumps == 0) "Same system" else "$jumps jump${jumps.plural}"
+                    fun getItemName(jumps: Int) = if (jumps == 0) "当前星系" else "${jumps}跳"
 
                     LaunchedEffect(formQuestion) {
                         onFormAnswer(JumpsRangeAnswer(minJumps = min, maxJumps = max))
                     }
                     Text(
-                        text = "From: ",
+                        text = "从: ",
                         style = RiftTheme.typography.titlePrimary,
                     )
                     val maxJumps = 16 // 0 - 15
@@ -318,7 +318,7 @@ private fun FormQuestion(
                         maxItems = 5,
                     )
                     Text(
-                        text = " To: ",
+                        text = " 至: ",
                         style = RiftTheme.typography.titlePrimary,
                     )
                     RiftDropdown(
@@ -388,8 +388,8 @@ private fun FormQuestion(
                 var selectedTabIndex by remember { mutableStateOf(0) }
                 RiftTabBar(
                     tabs = listOf(
-                        Tab(0, "Built-in sounds", isCloseable = false),
-                        Tab(1, "Custom sound", isCloseable = false),
+                        Tab(0, "内置音效", isCloseable = false),
+                        Tab(1, "自定义音效", isCloseable = false),
                     ),
                     selectedTab = selectedTabIndex,
                     onTabSelected = { selectedTabIndex = it },
@@ -421,7 +421,7 @@ private fun FormQuestion(
                         }
                     } else {
                         Text(
-                            text = "Choose a sound file:",
+                            text = "选择一个声音文件:",
                             style = RiftTheme.typography.bodyPrimary,
                             modifier = Modifier.padding(top = Spacing.medium),
                         )
@@ -449,7 +449,8 @@ private fun FormQuestion(
                                 )
                             }
                             RiftFileChooserButton(
-                                typesDescription = "WAV audio files",
+                                text = "浏览",
+                                typesDescription = "WAV音频文件",
                                 extensions = listOf("wav"),
                                 onFileChosen = {
                                     text = it.absolutePathString()
@@ -464,7 +465,7 @@ private fun FormQuestion(
                             )
                         }
                         Text(
-                            text = "You can test your sound with the play button.",
+                            text = "单击播放按钮测试音效",
                             style = RiftTheme.typography.bodyPrimary,
                             modifier = Modifier.padding(vertical = Spacing.medium),
                         )
@@ -549,9 +550,9 @@ private fun FormQuestion(
                         }
                     }
                     val helpText = if (recentTargets.isNotEmpty()) {
-                        "You can choose from your recent targets above."
+                        "你可以从上面的最近目标中选择。"
                     } else {
-                        "Attack some targets in-game to get suggestions to what you can type above."
+                        "攻击一些目标以获取目标选项。"
                     }
                     Text(
                         text = helpText,
