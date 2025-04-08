@@ -423,7 +423,7 @@ private fun getSpecificCharactersDetailText(alert: Alert): AnnotatedString? {
             val characters = (specificCharacters as IntelReportType.SpecificCharacters).characters
             buildAnnotatedString {
                 withStyle(secondary) {
-                    append("Monitored characters: ")
+                    append("监控角色: ")
                     characters.forEach { character ->
                         withStyle(primary) {
                             append(character)
@@ -451,7 +451,7 @@ private fun getSpecificFleetCommandersDetailText(alert: Alert): AnnotatedString?
             val primary = SpanStyle(color = RiftTheme.colors.textPrimary)
             buildAnnotatedString {
                 withStyle(secondary) {
-                    append("Fleet commanders: ")
+                    append("舰队指挥官: ")
                     fleetCommanders.forEach { character ->
                         withStyle(primary) {
                             append(character)
@@ -479,7 +479,7 @@ private fun getDecloakIgnoredKeywordsDetailText(alert: Alert): AnnotatedString? 
         val primary = SpanStyle(color = RiftTheme.colors.textPrimary)
         buildAnnotatedString {
             withStyle(secondary) {
-                append("Ignore decloaking objects containing: ")
+                append("忽略破隐物体包含: ")
                 decloakedTrigger.ignoredKeywords.forEach { keyword ->
                     withStyle(primary) {
                         append(keyword)
@@ -502,7 +502,7 @@ private fun getSpecificColoniesDetailText(alert: Alert, colonies: List<ColonyIte
     val primary = SpanStyle(color = RiftTheme.colors.textPrimary)
     return buildAnnotatedString {
         withStyle(secondary) {
-            append("Target colonies:")
+            append("目标殖民地:")
             colonyIds
                 .mapNotNull { id ->
                     val colony = colonies.find { it.colony.id == id } ?: return@mapNotNull null
@@ -511,7 +511,7 @@ private fun getSpecificColoniesDetailText(alert: Alert, colonies: List<ColonyIte
                     it.first
                 }.forEach { (_, entries) ->
                     val items = entries.map { it.second }
-                    val characterName = items.first().characterName ?: "Loading…"
+                    val characterName = items.first().characterName ?: "加载中…"
                     append("\n")
                     withStyle(primary) {
                         append(characterName)
@@ -539,7 +539,7 @@ private fun getSpecificShipClassesDetailText(alert: Alert): AnnotatedString? {
             val characters = (specificClasses as IntelReportType.SpecificShipClasses).classes
             buildAnnotatedString {
                 withStyle(secondary) {
-                    append("Monitored ship classes: ")
+                    append("监控舰船类型: ")
                     characters.forEach { character ->
                         withStyle(primary) {
                             append(character)
@@ -572,7 +572,7 @@ private fun getAlertText(
             when (val trigger = alert.trigger) {
                 is AlertTrigger.IntelReported -> {
                     if (trigger.reportTypes.size != 1) {
-                        append("any of ")
+                        append("任意一个 ")
                     }
                     val types = trigger.reportTypes.joinToString { type ->
                         when (type) {
@@ -581,20 +581,20 @@ private fun getAlertText(
                                 if (type.characters.size == 1) {
                                     type.characters.single()
                                 } else {
-                                    "${type.characters.size} specific characters"
+                                    "${type.characters.size} 个特定角色"
                                 }
                             }
-                            IntelReportType.AnyShip -> "ships"
+                            IntelReportType.AnyShip -> "舰船"
                             is IntelReportType.SpecificShipClasses -> {
                                 if (type.classes.size == 1) {
-                                    "${type.classes.single()}-class ships"
+                                    "${type.classes.single()}级舰船"
                                 } else {
-                                    "${type.classes.size} ship classes"
+                                    "${type.classes.size} 种舰船类型"
                                 }
                             }
-                            IntelReportType.Bubbles -> "bubbles"
-                            IntelReportType.GateCamp -> "gate camps"
-                            IntelReportType.Wormhole -> "wormholes"
+                            IntelReportType.Bubbles -> "泡泡"
+                            IntelReportType.GateCamp -> "堵门"
+                            IntelReportType.Wormhole -> "虫洞"
                         }
                     }
                     withStyle(primary) {
@@ -606,7 +606,7 @@ private fun getAlertText(
                         is IntelReportLocation.AnyOwnedCharacter -> "${getRangePrefixText(location.jumpsRange)} 任何在线角色的位置"
                         is IntelReportLocation.OwnedCharacter -> {
                             val character = characters.firstOrNull { it.characterId == location.characterId }?.info?.success?.name ?: location.characterId.toString()
-                            "${getRangePrefixText(location.jumpsRange)} $character's location"
+                            "${getRangePrefixText(location.jumpsRange)} $character 的位置"
                         }
                     }
                     withStyle(primary) {
@@ -615,7 +615,7 @@ private fun getAlertText(
                 }
                 is AlertTrigger.GameAction -> {
                     trigger.actionTypes.forEachIndexed { index, type ->
-                        if (index != 0) append(", or ")
+                        if (index != 0) append(" 或 ")
                         when (type) {
                             is GameActionType.InCombat -> {
                                 append(" 你 ")
@@ -675,11 +675,11 @@ private fun getAlertText(
                     }
                 }
                 is AlertTrigger.PlanetaryIndustry -> {
-                    append("on ")
+                    append("在 ")
                     val coloniesFilter = when {
-                        trigger.coloniesFilter == null -> "any colony"
-                        trigger.coloniesFilter.size == 1 -> "a specific colony"
-                        else -> "${trigger.coloniesFilter.size} specific colonies"
+                        trigger.coloniesFilter == null -> "任意殖民地"
+                        trigger.coloniesFilter.size == 1 -> "特定殖民地"
+                        else -> "${trigger.coloniesFilter.size} 个特定殖民地"
                     }
                     withStyle(primary) {
                         append(coloniesFilter)
@@ -688,10 +688,10 @@ private fun getAlertText(
                     trigger.eventTypes.forEachIndexed { index, type ->
                         if (index != 0) append(", or ")
                         val text = when (type) {
-                            PiEventType.ExtractorInactive -> "extractors stop"
-                            PiEventType.Idle -> "production stops"
-                            PiEventType.NotSetup -> "setup is unfinished"
-                            PiEventType.StorageFull -> "storage becomes full"
+                            PiEventType.ExtractorInactive -> "提取器停止"
+                            PiEventType.Idle -> "生产停止"
+                            PiEventType.NotSetup -> "设置未完成"
+                            PiEventType.StorageFull -> "存储已满"
                         }
                         withStyle(primary) {
                             append(text)
@@ -700,8 +700,8 @@ private fun getAlertText(
                     if (trigger.alertBeforeSeconds > 0) {
                         val duration = Duration.ofSeconds(trigger.alertBeforeSeconds.toLong())
                         val text = when {
-                            duration.toHours() >= 1 -> "${duration.toHours()} hour${duration.toHours().plural}"
-                            else -> "${duration.toMinutes()} minutes"
+                            duration.toHours() >= 1 -> "${duration.toHours()} 小时"
+                            else -> "${duration.toMinutes()} 分钟"
                         }
                         append(" 在 ")
                         withStyle(primary) {
@@ -710,23 +710,23 @@ private fun getAlertText(
                     }
                 }
                 is AlertTrigger.ChatMessage -> {
-                    append("a chat message")
+                    append("聊天消息")
                     if (trigger.messageContaining != null) {
-                        append(" containing ")
+                        append(" 包含 ")
                         withStyle(primary) {
                             append(trigger.messageContaining)
                         }
                     }
-                    append(" is sent")
+                    append(" 被发送")
                     if (trigger.sender != null) {
-                        append(" by ")
+                        append(" 由 ")
                         withStyle(primary) {
                             append(trigger.sender)
                         }
                     }
                     append(" 在 ")
                     val channel = when (val channel = trigger.channel) {
-                        ChatMessageChannel.Any -> "any channel"
+                        ChatMessageChannel.Any -> "任意频道"
                         is ChatMessageChannel.Channel -> channel.name
                     }
                     withStyle(primary) {
@@ -737,7 +737,7 @@ private fun getAlertText(
                     when (trigger.pingType) {
                         JabberPingType.Message -> {}
                         is JabberPingType.Message2 -> {
-                            append("a message ping ")
+                            append("消息通知 ")
                             if (trigger.pingType.target != null) {
                                 append(" 目标是 ")
                                 withStyle(primary) {
@@ -748,7 +748,7 @@ private fun getAlertText(
                             append("被收到")
                         }
                         is JabberPingType.Fleet -> {
-                            append("a fleet ping ")
+                            append("舰队通知 ")
                             if (trigger.pingType.target != null) {
                                 append(" 目标是 ")
                                 withStyle(primary) {
@@ -762,85 +762,86 @@ private fun getAlertText(
                                 if (trigger.pingType.fleetCommanders.size == 1) {
                                     withStyle(primary) {
                                         append(trigger.pingType.fleetCommanders.single())
-                                        append(" as FC")
+                                        append(" 作为FC")
                                     }
                                 } else {
                                     withStyle(primary) {
-                                        append("${trigger.pingType.fleetCommanders.size} specific FC's")
+                                        append("${trigger.pingType.fleetCommanders.size} 个特定FC")
                                     }
                                 }
                             }
                             if (trigger.pingType.formupSystem != null) {
-                                append(", forming in ")
+                                append(", 集结在 ")
                                 withStyle(primary) {
                                     append(trigger.pingType.formupSystem)
                                 }
                             }
                             if (trigger.pingType.papType != PapType.Any) {
-                                append(", with ")
+                                append(", 使用 ")
                                 withStyle(primary) {
                                     val type = when (trigger.pingType.papType) {
-                                        PapType.Any -> "any"
-                                        PapType.Peacetime -> "Peacetime"
-                                        PapType.Strategic -> "Strategic"
+                                        PapType.Any -> "任意"
+                                        PapType.Peacetime -> "和平时期"
+                                        PapType.Strategic -> "战略"
                                     }
                                     append(type)
                                 }
                                 append(" PAP")
                             }
                             if (trigger.pingType.doctrineContaining != null) {
-                                append(", with doctrine containing ")
+                                append(", 使用包含 ")
                                 withStyle(primary) {
                                     append(trigger.pingType.doctrineContaining)
                                 }
+                                append(" 的配置")
                             }
                         }
                     }
                 }
                 is AlertTrigger.JabberMessage -> {
-                    append("a Jabber message")
+                    append("Jabber消息")
                     if (trigger.messageContaining != null) {
-                        append(" containing ")
+                        append(" 包含 ")
                         withStyle(primary) {
                             append(trigger.messageContaining)
                         }
                     }
-                    append(" is sent")
+                    append(" 被发送")
                     if (trigger.sender != null) {
-                        append(" by ")
+                        append(" 由 ")
                         withStyle(primary) {
                             append(trigger.sender)
                         }
                     }
-                    append(" 于 ")
+                    append(" 在 ")
                     val channel = when (val channel = trigger.channel) {
-                        JabberMessageChannel.Any -> "any chat"
+                        JabberMessageChannel.Any -> "任意聊天"
                         is JabberMessageChannel.Channel -> channel.name
-                        JabberMessageChannel.DirectMessage -> "a direct message"
+                        JabberMessageChannel.DirectMessage -> "私聊消息"
                     }
                     withStyle(primary) {
                         append(channel)
                     }
                 }
                 is AlertTrigger.NoChannelActivity -> {
-                    append("no message is received in ")
+                    append("在 ")
                     val channel = when (val channel = trigger.channel) {
-                        IntelChannel.All -> "all intel channels"
-                        IntelChannel.Any -> "any intel channel"
+                        IntelChannel.All -> "所有情报频道"
+                        IntelChannel.Any -> "任意情报频道"
                         is IntelChannel.Channel -> channel.name
                     }
                     withStyle(primary) {
                         append(channel)
                     }
-                    append(" for ")
+                    append(" 中未收到消息，持续 ")
                     val minutes = trigger.durationSeconds / 60
                     withStyle(primary) {
                         if (minutes == 1) {
-                            append("$minutes minute")
+                            append("$minutes 分钟")
                         } else if (minutes > 1) {
-                            append("$minutes minutes")
+                            append("$minutes 分钟")
                         } else {
-                            append("${trigger.durationSeconds} seconds")
+                            append("${trigger.durationSeconds} 秒")
                         }
                     }
                 }
@@ -877,14 +878,14 @@ private fun getAlertText(
 
 private fun getRangePrefixText(range: JumpRange): String {
     val (min, max) = range.min to range.max
-    val plural = if (max > 1) "s" else ""
+    val plural = if (max > 1) "跳" else "跳"
     return if (min == 0 && max == 0) {
-        "in"
+        "在"
     } else if (min == 0) {
-        "up to $max jump$plural from"
+        "距离最多 $max $plural"
     } else if (min == max) {
-        "exactly $max jump$plural from"
+        "距离正好 $max $plural"
     } else {
-        "between $min–$max jump$plural from"
+        "距离 $min-$max $plural"
     }
 }
