@@ -62,7 +62,6 @@ import dev.nohus.rift.compose.pointerInteraction
 import dev.nohus.rift.compose.theme.RiftTheme
 import dev.nohus.rift.compose.theme.Spacing
 import dev.nohus.rift.generated.resources.Res
-import dev.nohus.rift.generated.resources.bars_sort_ascending_16px
 import dev.nohus.rift.generated.resources.window_satellite
 import dev.nohus.rift.intel.feed.IntelFeedViewModel.UiState
 import dev.nohus.rift.intel.state.IntelStateController

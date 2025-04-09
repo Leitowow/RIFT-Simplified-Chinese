@@ -229,47 +229,47 @@ private fun ColumnScope.SystemInfoTypes(
                     MapSystemInfoType.IntelHostiles -> {}
                     MapSystemInfoType.Jumps -> {
                         val jumps = systemStatus?.shipJumps?.takeIf { it > 0 }?.toString()
-                        InfoTypeIndicator(jumps, Res.drawable.indicator_jumps, "Jumps: $jumps")
+                        InfoTypeIndicator(jumps, Res.drawable.indicator_jumps, "跳跃: $jumps")
                     }
                     MapSystemInfoType.Kills -> {
                         val podKills = systemStatus?.podKills?.takeIf { it > 0 }?.toString()
-                        InfoTypeIndicator(podKills, Res.drawable.indicator_pod, "Pod kills: $podKills")
+                        InfoTypeIndicator(podKills, Res.drawable.indicator_pod, "逃生舱击杀: $podKills")
                         val shipKills = systemStatus?.shipKills?.takeIf { it > 0 }?.toString()
-                        InfoTypeIndicator(shipKills, Res.drawable.indicator_kills, "Ship kills: $shipKills")
+                        InfoTypeIndicator(shipKills, Res.drawable.indicator_kills, "舰船击杀: $shipKills")
                     }
                     MapSystemInfoType.NpcKills -> {
                         val npcKills = systemStatus?.npcKills?.takeIf { it > 0 }?.toString()
-                        InfoTypeIndicator(npcKills, Res.drawable.indicator_npc_kills, "NPC kills: $npcKills")
+                        InfoTypeIndicator(npcKills, Res.drawable.indicator_npc_kills, "NPC击杀: $npcKills")
                     }
                     MapSystemInfoType.Assets -> {
                         val assets = systemStatus?.assetCount?.takeIf { it > 0 }?.toString()
-                        InfoTypeIndicator(assets, Res.drawable.indicator_assets, "Assets: $assets")
+                        InfoTypeIndicator(assets, Res.drawable.indicator_assets, "资产: $assets")
                     }
                     MapSystemInfoType.Incursions -> {} // In column
                     MapSystemInfoType.Stations -> {
                         val stations = systemStatus?.stations?.size?.takeIf { it > 0 }?.toString()
-                        InfoTypeIndicator(stations, Res.drawable.indicator_stations, "Stations: $stations")
+                        InfoTypeIndicator(stations, Res.drawable.indicator_stations, "空间站: $stations")
                     }
                     MapSystemInfoType.FactionWarfare -> {} // In column
                     MapSystemInfoType.Sovereignty -> {} // In column
                     MapSystemInfoType.MetaliminalStorms -> {} // In column
                     MapSystemInfoType.Planets -> {} // In column
                     MapSystemInfoType.JoveObservatories -> {
-                        InfoTypeIndicator("".takeIf { system.hasJoveObservatory }, Res.drawable.indicator_jove, "Jove Observatory")
+                        InfoTypeIndicator("".takeIf { system.hasJoveObservatory }, Res.drawable.indicator_jove, "朱庇特观测站")
                     }
                     MapSystemInfoType.JumpRange -> {
                         systemStatus?.distance?.let {
                             val lightYears = String.format("%.1fly", it.distanceLy)
                             if (it.isInJumpRange) {
-                                InfoTypeIndicator(lightYears, Res.drawable.indicator_jump_drive, "Jump distance - in range")
+                                InfoTypeIndicator(lightYears, Res.drawable.indicator_jump_drive, "跳跃距离 - 在范围内")
                             } else {
-                                InfoTypeIndicator(lightYears, Res.drawable.indicator_jump_drive_no, "Jump distance - out of range")
+                                InfoTypeIndicator(lightYears, Res.drawable.indicator_jump_drive_no, "跳跃距离 - 超出范围")
                             }
                         }
                     }
                     MapSystemInfoType.Colonies -> {
                         val colonies = systemStatus?.colonies?.takeIf { it > 0 }
-                        InfoTypeIndicator("$colonies".takeIf { colonies != null }, Res.drawable.indicator_colony, "Colonies: $colonies")
+                        InfoTypeIndicator("$colonies".takeIf { colonies != null }, Res.drawable.indicator_colony, "殖民地: $colonies")
                     }
                     MapSystemInfoType.Clones -> {} // In column
                     MapSystemInfoType.Standings -> {} // In system name row
@@ -306,16 +306,16 @@ private fun ColumnScope.SystemInfoTypes(
                 MapSystemInfoType.Stations -> {} // In icon row
                 MapSystemInfoType.FactionWarfare -> {
                     systemStatus?.factionWarfare?.let { factionWarfare ->
-                        val owner = namesRepository.getName(factionWarfare.ownerFactionId) ?: "Unknown"
-                        val occupier = namesRepository.getName(factionWarfare.occupierFactionId) ?: "Unknown"
+                        val owner = namesRepository.getName(factionWarfare.ownerFactionId) ?: "未知"
+                        val occupier = namesRepository.getName(factionWarfare.occupierFactionId) ?: "未知"
                         val text = buildString {
-                            appendLine("Faction warfare: ${factionWarfare.contested.name}")
-                            appendLine("Owner: $owner")
+                            appendLine("势力战争: ${factionWarfare.contested.name}")
+                            appendLine("所有者: $owner")
                             if (occupier != owner) {
-                                appendLine("Occupier: $occupier")
+                                appendLine("占领者: $occupier")
                             }
                             if (factionWarfare.victoryPoints != 0) {
-                                appendLine("Points: ${factionWarfare.victoryPoints}/${factionWarfare.victoryPointsThreshold}")
+                                appendLine("分数: ${factionWarfare.victoryPoints}/${factionWarfare.victoryPointsThreshold}")
                             }
                         }.trim()
                         Text(
@@ -346,7 +346,7 @@ private fun ColumnScope.SystemInfoTypes(
                     systemStatus?.storms?.let {
                         it.forEach { storm ->
                             Text(
-                                text = "Storm: ${storm.strength.name} ${storm.type.name}",
+                                text = "风暴: ${storm.strength.name} ${storm.type.name}",
                                 style = RiftTheme.typography.bodyPrimary,
                             )
                         }
@@ -383,28 +383,28 @@ private fun ColumnScope.SystemInfoTypes(
                 MapSystemInfoType.Standings -> {} // In system name row
                 MapSystemInfoType.RatsType -> {
                     val text = when (systemStatus?.ratType) {
-                        RatType.BloodRaiders -> "Blood Raiders"
-                        RatType.Guristas -> "Guristas"
-                        RatType.SanshasNation -> "Sansha's Nation"
-                        RatType.Serpentis -> "Serpentis"
-                        RatType.AngelCartel -> "Angel Cartel"
-                        RatType.RogueDrones -> "Rogue Drones"
-                        RatType.TriglavianCollective -> "Triglavians"
+                        RatType.BloodRaiders -> "血袭者"
+                        RatType.Guristas -> "古斯塔斯"
+                        RatType.SanshasNation -> "萨沙"
+                        RatType.Serpentis -> "天蛇"
+                        RatType.AngelCartel -> "天使"
+                        RatType.RogueDrones -> "无人机"
+                        RatType.TriglavianCollective -> "三神裔"
                         null -> null
                     }
                     if (text != null) {
                         Text(
-                            text = "Rats: $text",
+                            text = "海盗: $text",
                             style = RiftTheme.typography.bodyPrimary,
                         )
                     }
                 }
-                MapSystemInfoType.IndustryIndexCopying -> IndustryActivityIndex(systemStatus, IndustryActivity.Copying, "Copying")
-                MapSystemInfoType.IndustryIndexInvention -> IndustryActivityIndex(systemStatus, IndustryActivity.Invention, "Invention")
-                MapSystemInfoType.IndustryIndexManufacturing -> IndustryActivityIndex(systemStatus, IndustryActivity.Manufacturing, "Manufacturing")
-                MapSystemInfoType.IndustryIndexReaction -> IndustryActivityIndex(systemStatus, IndustryActivity.Reaction, "Reactions")
-                MapSystemInfoType.IndustryIndexMaterialEfficiency -> IndustryActivityIndex(systemStatus, IndustryActivity.ResearchingMaterialEfficiency, "Material Efficiency")
-                MapSystemInfoType.IndustryIndexTimeEfficiency -> IndustryActivityIndex(systemStatus, IndustryActivity.ResearchingTimeEfficiency, "Time Efficiency")
+                MapSystemInfoType.IndustryIndexCopying -> IndustryActivityIndex(systemStatus, IndustryActivity.Copying, "复制指数")
+                MapSystemInfoType.IndustryIndexInvention -> IndustryActivityIndex(systemStatus, IndustryActivity.Invention, "发明指数")
+                MapSystemInfoType.IndustryIndexManufacturing -> IndustryActivityIndex(systemStatus, IndustryActivity.Manufacturing, "制造指数")
+                MapSystemInfoType.IndustryIndexReaction -> IndustryActivityIndex(systemStatus, IndustryActivity.Reaction, "反应指数")
+                MapSystemInfoType.IndustryIndexMaterialEfficiency -> IndustryActivityIndex(systemStatus, IndustryActivity.ResearchingMaterialEfficiency, "材料效率指数")
+                MapSystemInfoType.IndustryIndexTimeEfficiency -> IndustryActivityIndex(systemStatus, IndustryActivity.ResearchingTimeEfficiency, "时间效率指数")
             }
         }
 }
@@ -512,12 +512,12 @@ private fun SystemInfoTypesIndicators(
                 }
                 MapSystemInfoType.Standings -> {} // In system name row
                 MapSystemInfoType.RatsType -> {}
-                MapSystemInfoType.IndustryIndexCopying -> IndustryActivityIndex(systemStatus, IndustryActivity.Copying, "Copying")
-                MapSystemInfoType.IndustryIndexInvention -> IndustryActivityIndex(systemStatus, IndustryActivity.Invention, "Invention")
-                MapSystemInfoType.IndustryIndexManufacturing -> IndustryActivityIndex(systemStatus, IndustryActivity.Manufacturing, "Manufacturing")
-                MapSystemInfoType.IndustryIndexReaction -> IndustryActivityIndex(systemStatus, IndustryActivity.Reaction, "Reactions")
-                MapSystemInfoType.IndustryIndexMaterialEfficiency -> IndustryActivityIndex(systemStatus, IndustryActivity.ResearchingMaterialEfficiency, "Material Efficiency")
-                MapSystemInfoType.IndustryIndexTimeEfficiency -> IndustryActivityIndex(systemStatus, IndustryActivity.ResearchingTimeEfficiency, "Time Efficiency")
+                MapSystemInfoType.IndustryIndexCopying -> IndustryActivityIndex(systemStatus, IndustryActivity.Copying, "复制指数")
+                MapSystemInfoType.IndustryIndexInvention -> IndustryActivityIndex(systemStatus, IndustryActivity.Invention, "发明指数")
+                MapSystemInfoType.IndustryIndexManufacturing -> IndustryActivityIndex(systemStatus, IndustryActivity.Manufacturing, "制造指数")
+                MapSystemInfoType.IndustryIndexReaction -> IndustryActivityIndex(systemStatus, IndustryActivity.Reaction, "反应指数")
+                MapSystemInfoType.IndustryIndexMaterialEfficiency -> IndustryActivityIndex(systemStatus, IndustryActivity.ResearchingMaterialEfficiency, "材料效率指数")
+                MapSystemInfoType.IndustryIndexTimeEfficiency -> IndustryActivityIndex(systemStatus, IndustryActivity.ResearchingTimeEfficiency, "时间效率指数")
             }
         }
 }
@@ -527,7 +527,7 @@ private fun IndustryActivityIndex(systemStatus: SolarSystemStatus?, activity: In
     val index = systemStatus?.industryIndices?.get(activity)
     if (index != null) {
         Text(
-            text = String.format("$name Index: %.1f%%", index * 100),
+            text = String.format("$name 指数: %.1f%%", index * 100),
             style = RiftTheme.typography.bodyPrimary,
         )
     }
@@ -539,18 +539,18 @@ private fun StandingsIndicator(security: Double, systemStatus: SolarSystemStatus
     val allianceId = systemStatus?.sovereignty?.allianceId
     val standing = standingsRepository.getStandingLevel(allianceId, null, null)
     val (tooltip, color) = if (security >= 0.5) {
-        "High sec" to Color(0xFF71E754)
+        "高安" to Color(0xFF71E754)
     } else if (security > 0.0) {
-        "Low sec" to Color(0xFFF5FF83)
+        "低安" to Color(0xFFF5FF83)
     } else if (allianceId == null) {
-        "No sovereignty" to Color(0xFF7D7E7E)
+        "无主权" to Color(0xFF7D7E7E)
     } else {
         when (standing) {
-            Standing.Terrible -> "Terrible standing" to standing.getSystemColor()
-            Standing.Bad -> "Bad standing" to standing.getSystemColor()
-            Standing.Neutral -> "Neutral standing" to standing.getSystemColor()
-            Standing.Good -> "Good standing" to standing.getSystemColor()
-            Standing.Excellent -> "Excellent standing" to standing.getSystemColor()
+            Standing.Terrible -> "极差声望" to standing.getSystemColor()
+            Standing.Bad -> "差声望" to standing.getSystemColor()
+            Standing.Neutral -> "中立声望" to standing.getSystemColor()
+            Standing.Good -> "良好声望" to standing.getSystemColor()
+            Standing.Excellent -> "优秀声望" to standing.getSystemColor()
         }
     }
 
@@ -578,7 +578,7 @@ private fun ClonesIndicators(clones: Map<Int, Int>, withDetails: Boolean) {
         )
         clones?.forEach { (characterId, count) ->
             RiftTooltipArea(
-                text = "$count clone${count.plural}".takeIf { withDetails },
+                text = "$count 个克隆体".takeIf { withDetails },
             ) {
                 Box(
                     modifier = Modifier
@@ -596,7 +596,7 @@ private fun ClonesIndicators(clones: Map<Int, Int>, withDetails: Boolean) {
         if (withDetails) {
             val totalCount = clones?.entries?.sumOf { it.value } ?: 0
             Text(
-                text = "$totalCount jump clone${totalCount.plural}",
+                text = "$totalCount 个跳跃克隆体",
                 style = RiftTheme.typography.bodyPrimary,
             )
         }

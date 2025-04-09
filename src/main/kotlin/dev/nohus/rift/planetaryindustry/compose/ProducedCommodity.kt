@@ -23,7 +23,6 @@ import dev.nohus.rift.planetaryindustry.models.RoutedState
 import dev.nohus.rift.planetaryindustry.models.isRouted
 import dev.nohus.rift.repositories.TypesRepository.Type
 import dev.nohus.rift.utils.formatDurationCompact
-import dev.nohus.rift.utils.plural
 
 @Composable
 fun ProducedCommodity(

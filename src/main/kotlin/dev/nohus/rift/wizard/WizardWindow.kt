@@ -184,7 +184,7 @@ private fun WelcomeStep(
             }
             append(
                 "\n\n您现在拥有 RIFT，这是一个功能强大的预警系统，\n它将通过额外的情报来帮助您提高态势感知能力。\n\n" +
-                "我将帮助您开始使用。",
+                    "我将帮助您开始使用。",
             )
         }
         TypingText(
@@ -459,8 +459,8 @@ private fun FinishStep(
             }
             append(
                 "\n\nRIFT 现在已准备就绪。\n\n" +
-                "您可以通过系统托盘图标访问 RIFT。\n" +
-                "右键点击图标可以打开设置。",
+                    "您可以通过系统托盘图标访问 RIFT。\n" +
+                    "右键点击图标可以打开设置。",
             )
         }
         TypingText(

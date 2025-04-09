@@ -84,7 +84,7 @@ private fun StartupWarningContent(
                     )
                 }
                 RiftCheckboxWithLabel(
-                    label = "Don't show again",
+                    label = "不再显示",
                     isChecked = warning.id in checkedIds,
                     onCheckedChange = { checkedIds = checkedIds.toggle(warning.id) },
                 )
@@ -95,7 +95,7 @@ private fun StartupWarningContent(
         ) {
             Spacer(Modifier.weight(1f))
             RiftButton(
-                text = "Understood",
+                text = "已了解，继续",
                 onClick = { onDoneClick(checkedIds) },
             )
         }

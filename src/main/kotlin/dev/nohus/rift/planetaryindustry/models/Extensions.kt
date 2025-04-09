@@ -9,7 +9,6 @@ import dev.nohus.rift.generated.resources.pi_processorhightech
 import dev.nohus.rift.generated.resources.pi_spaceport
 import dev.nohus.rift.generated.resources.pi_storage
 import dev.nohus.rift.repositories.PlanetsRepository.Planet
-import dev.nohus.rift.utils.plural
 import org.jetbrains.compose.resources.DrawableResource
 import kotlin.math.ceil
 import kotlin.math.pow

@@ -560,8 +560,8 @@ class MapViewModel(
 
     private fun createTabs(): List<Tab> {
         return listOf(
-            Tab(id = 0, title = "New Eden", isCloseable = false, icon = Res.drawable.sun, payload = ClusterSystemsMap),
-            Tab(id = 1, title = "Regions", isCloseable = false, icon = Res.drawable.region, payload = ClusterRegionsMap),
+            Tab(id = 0, title = "新伊甸", isCloseable = false, icon = Res.drawable.sun, payload = ClusterSystemsMap),
+            Tab(id = 1, title = "星域", isCloseable = false, icon = Res.drawable.region, payload = ClusterRegionsMap),
         ) + openLayouts.mapIndexed { index, layoutId ->
             val layout = layoutRepository.getLayout(layoutId)
             val name = layout?.name ?: "$layoutId"

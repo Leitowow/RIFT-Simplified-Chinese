@@ -80,7 +80,7 @@ fun AssetsWindow(
     val viewModel: AssetsViewModel = viewModel()
     val state by viewModel.state.collectAsState()
     RiftWindow(
-        title = "Assets",
+        title = "资产",
         icon = Res.drawable.window_assets,
         state = windowState,
         onCloseClick = onCloseRequest,
@@ -117,23 +117,23 @@ private fun AssetsWindowContent(
                     if (it != null) {
                         it.info.success?.name ?: "${it.characterId}"
                     } else {
-                        "All characters"
+                        "所有角色"
                     }
                 },
                 modifier = Modifier.widthIn(max = 150.dp),
             )
             Spacer(Modifier.width(Spacing.medium))
             RiftDropdownWithLabel(
-                label = "Sort By",
+                label = "排序方式",
                 items = SortType.entries,
                 selectedItem = state.sort,
                 onItemSelected = onSortSelected,
                 getItemName = {
                     when (it) {
-                        SortType.Distance -> "Distance"
-                        SortType.Name -> "Name"
-                        SortType.Count -> "Asset count"
-                        SortType.Price -> "Total price"
+                        SortType.Distance -> "距离"
+                        SortType.Name -> "名称"
+                        SortType.Count -> "资产数量"
+                        SortType.Price -> "总价值"
                     }
                 },
             )
@@ -185,11 +185,11 @@ private fun AssetsWindowContent(
                                 .padding(top = Spacing.medium),
                         ) {
                             if (state.search.isNotBlank()) {
-                                Text("No matching assets found")
+                                Text("未找到匹配的资产")
                             } else if (state.filterCharacter != null) {
-                                Text("No assets loaded for this character")
+                                Text("此角色未加载资产")
                             } else {
-                                Text("No assets loaded")
+                                Text("未加载资产")
                             }
                         }
                     }
@@ -201,7 +201,7 @@ private fun AssetsWindowContent(
                             .padding(Spacing.medium),
                     ) {
                         if (state.assets.isNotEmpty()) {
-                            Text("Delayed up to 1 hour")
+                            Text("延迟最多1小时")
                         }
                         AnimatedContent(
                             state.isLoading,
@@ -215,7 +215,7 @@ private fun AssetsWindowContent(
                                 )
                             } else {
                                 RiftButton(
-                                    text = "Reload",
+                                    text = "重新加载",
                                     type = ButtonType.Secondary,
                                     onClick = onReloadClick,
                                 )

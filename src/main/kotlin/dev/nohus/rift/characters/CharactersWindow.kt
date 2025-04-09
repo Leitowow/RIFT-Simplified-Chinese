@@ -99,12 +99,12 @@ fun CharactersWindow(
     val viewModel: CharactersViewModel = viewModel()
     val state by viewModel.state.collectAsState()
     RiftWindow(
-        title = "Characters",
+        title = "角色",
         icon = Res.drawable.window_characters,
         state = windowState,
         tuneContextMenuItems = listOf(
             ContextMenuItem.CheckboxItem(
-                text = "Show clones",
+                text = "显示克隆体",
                 isSelected = state.isShowingClones,
                 onClick = { viewModel.onIsShowingCharactersClonesChange(!state.isShowingClones) },
             ),
@@ -156,7 +156,7 @@ private fun CharactersWindowContent(
         }
     } else {
         Text(
-            text = "No characters found.\n\nMake sure the game directory is selected in settings, and that you have logged in to at least one character on this computer before.",
+            text = "未找到角色。\n\n请确保在设置中选择了游戏目录，并且您之前在此计算机上至少登录过一个角色。",
             style = RiftTheme.typography.titlePrimary,
             modifier = Modifier
                 .fillMaxSize()
@@ -190,7 +190,7 @@ private fun ColumnScope.CharactersList(
         item(key = "disabled characters") {
             Box(modifier = Modifier.animateItem()) {
                 RiftTooltipArea(
-                    text = "Disabled characters will not be used in RIFT.",
+                    text = "已禁用的角色将不会在RIFT中使用。",
                     modifier = Modifier.padding(vertical = Spacing.medium),
                 ) {
                     Row(
@@ -198,12 +198,12 @@ private fun ColumnScope.CharactersList(
                     ) {
                         if (state.characters.any { it.isHidden }) {
                             Text(
-                                text = "Disabled characters",
+                                text = "已禁用角色",
                                 style = RiftTheme.typography.titlePrimary,
                             )
                         } else {
                             Text(
-                                text = "No disabled characters",
+                                text = "无已禁用角色",
                                 style = RiftTheme.typography.titlePrimary,
                             )
                         }
@@ -247,22 +247,22 @@ private fun TopRow(
             ) {
                 if (isChoosingDisabledCharacters) {
                     Text(
-                        text = "Enable or disable characters you don't want to use.",
+                        text = "启用或禁用您不想使用的角色。",
                         style = RiftTheme.typography.bodyPrimary,
                         modifier = Modifier.weight(1f),
                     )
                     RiftButton(
-                        text = "Done",
+                        text = "完成",
                         type = ButtonType.Primary,
                         onClick = onChooseDisabledClick,
                     )
                 } else {
                     SsoButton(onClick = onSsoClick)
                     RiftTooltipArea(
-                        text = "Copy Eve settings\n(window positions, overview, etc.)\nbetween selected characters.",
+                        text = "复制EVE设置\n(窗口位置、总览等)\n在选定的角色之间。",
                     ) {
                         RiftButton(
-                            text = "Copy settings",
+                            text = "复制设置",
                             onClick = onCopySettingsClick,
                         )
                     }
@@ -400,7 +400,7 @@ private fun CharacterRow(
 
                 is AsyncResource.Error -> {
                     Text(
-                        text = "Could not load",
+                        text = "无法加载",
                         style = RiftTheme.typography.bodySecondary.copy(color = RiftTheme.colors.borderError),
                         modifier = Modifier
                             .padding(horizontal = Spacing.medium)
@@ -410,7 +410,7 @@ private fun CharacterRow(
 
                 AsyncResource.Loading -> {
                     Text(
-                        text = "Loading…",
+                        text = "加载中…",
                         style = RiftTheme.typography.bodySecondary,
                         modifier = Modifier
                             .padding(horizontal = Spacing.medium)
@@ -478,7 +478,7 @@ private fun Clone(clone: Clone) {
             }
         } else {
             Text(
-                text = "No implants",
+                text = "无脑插",
                 style = RiftTheme.typography.bodySecondary,
                 modifier = Modifier
                     .padding(start = Spacing.medium)
@@ -488,7 +488,7 @@ private fun Clone(clone: Clone) {
 
         if (clone.isActive) {
             Text(
-                text = "Active clone",
+                text = "当前克隆体",
                 style = RiftTheme.typography.bodyPrimary.copy(fontWeight = FontWeight.Bold),
             )
         } else {
@@ -540,7 +540,7 @@ private fun HiddenCharacterRow(
 
             is AsyncResource.Error -> {
                 Text(
-                    text = "Could not load",
+                    text = "无法加载",
                     style = RiftTheme.typography.bodySecondary.copy(color = RiftTheme.colors.borderError),
                     modifier = Modifier.padding(horizontal = Spacing.medium),
                 )
@@ -548,7 +548,7 @@ private fun HiddenCharacterRow(
 
             AsyncResource.Loading -> {
                 Text(
-                    text = "Loading…",
+                    text = "加载中…",
                     style = RiftTheme.typography.bodySecondary,
                     modifier = Modifier.padding(horizontal = Spacing.medium),
                 )
@@ -626,7 +626,7 @@ private fun Location(location: Location?) {
                 ?: repository.getSystemSunTypeId(systemName)
             val tooltip = location.station?.name?.replace(" - ", "\n")
                 ?: location.structure?.name?.replace(" - ", "\n")
-                ?: "In space"
+                ?: "在太空中"
             RiftTooltipArea(
                 text = tooltip,
             ) {

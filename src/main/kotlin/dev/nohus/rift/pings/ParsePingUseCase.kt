@@ -13,6 +13,7 @@ class ParsePingUseCase(
     private val solarSystemsRepository: SolarSystemsRepository,
     private val mapStatusRepository: MapStatusRepository,
     private val standingsRepository: StandingsRepository,
+    private val pingTranslator: PingTranslator,
 ) {
     suspend operator fun invoke(
         timestamp: Instant,
@@ -23,6 +24,7 @@ class ParsePingUseCase(
             .replace("\uFEFF", "")
             .replace("PAP \nType:", "\nPAP Type:")
             .replace("Doctrine:", "\nDoctrine:")
+            .let { pingTranslator.translate(it) }
 
         if (!cleanText.contains("~~~ This was")) return null // Not a ping
 

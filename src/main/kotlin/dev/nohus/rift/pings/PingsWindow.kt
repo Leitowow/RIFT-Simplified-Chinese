@@ -101,9 +101,9 @@ private fun PingsWindowContent(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 val text = if (state.isJabberConnected) {
-                    "No pings received yet.\nClear skies."
+                    "尚未收到任何通知。\n一切正常。"
                 } else {
-                    "You need to be connected to Jabber to receive pings."
+                    "您需要连接到Jabber才能接收通知。"
                 }
                 Text(
                     text = text,
@@ -115,7 +115,7 @@ private fun PingsWindowContent(
                 )
                 if (!state.isJabberConnected) {
                     RiftButton(
-                        text = "Check Jabber",
+                        text = "检查Jabber",
                         onClick = onOpenJabberClick,
                     )
                 }
@@ -131,15 +131,15 @@ private fun PlainTextPing(
 ) {
     val type = buildAnnotatedString {
         if (ping.target == null || ping.target == "all") {
-            append("Announcement")
+            append("公告")
         } else {
             withStyle(SpanStyle(color = RiftTheme.colors.textPrimary)) {
                 append(ping.target.replaceFirstChar { it.uppercase() })
             }
-            append(" message")
+            append("消息")
         }
         if (ping.sender != null) {
-            append(" from ")
+            append("来自")
             withStyle(SpanStyle(color = RiftTheme.colors.textPrimary)) {
                 append(ping.sender)
             }
@@ -148,7 +148,7 @@ private fun PlainTextPing(
     val buttons = mutableListOf<RiftOpportunityBoxButton>()
     buttons += RiftOpportunityBoxButton(
         resource = Res.drawable.copy_16px,
-        tooltip = "Copy ping",
+        tooltip = "复制通知",
         action = { Clipboard.copy(ping.sourceText) },
     )
     RiftOpportunityBox(
@@ -183,12 +183,12 @@ private fun FleetPing(
 ) {
     val type = buildAnnotatedString {
         if (ping.target == null || ping.target == "all") {
-            append("Fleet")
+            append("舰队")
         } else {
             withStyle(SpanStyle(color = RiftTheme.colors.textPrimary)) {
                 append(ping.target.replaceFirstChar { it.uppercase() })
             }
-            append(" fleet")
+            append("舰队")
         }
         if (ping.fleet != null) {
             append(" ")
@@ -196,7 +196,7 @@ private fun FleetPing(
                 append(ping.fleet)
             }
         }
-        append(" under ")
+        append("指挥官")
         withStyle(SpanStyle(color = RiftTheme.colors.textPrimary)) {
             append(ping.fleetCommander.name)
         }
@@ -205,27 +205,27 @@ private fun FleetPing(
     if (ping.doctrine?.link != null) {
         buttons += RiftOpportunityBoxButton(
             resource = Res.drawable.fitting_16px,
-            tooltip = "Doctrine forum thread",
+            tooltip = "制式队配置链接",
             action = { ping.doctrine.link.toURIOrNull()?.openBrowser() },
         )
     }
     buttons += RiftOpportunityBoxButton(
         resource = Res.drawable.copy_16px,
-        tooltip = "Copy ping",
+        tooltip = "复制通知",
         action = { Clipboard.copy(ping.sourceText) },
     )
     if (ping.comms is Comms.Mumble) {
         buttons += RiftOpportunityBoxButton(
             resource = Res.drawable.microphone,
-            tooltip = "Join ${ping.comms.channel} on Mumble",
+            tooltip = "加入 ${ping.comms.channel} 的Mumble",
             action = { onMumbleClick(ping.comms.link) },
         )
     }
     val title = when (ping.papType) {
-        PapType.Peacetime -> "Peacetime PAP"
-        PapType.Strategic -> "Strategic PAP"
+        PapType.Peacetime -> "和平时期PAP"
+        PapType.Strategic -> "战略PAP"
         is PapType.Text -> "${ping.papType.text.replaceFirstChar { it.uppercase() }} PAP"
-        null -> "No PAP"
+        null -> "无PAP"
     }
     RiftOpportunityBox(
         category = ping.opportunityCategory,
@@ -251,7 +251,7 @@ private fun FleetPing(
         )
         if (ping.comms is Comms.Text) {
             Text(
-                text = "Comms:",
+                text = "语言:",
                 style = RiftTheme.typography.bodySecondary,
                 modifier = Modifier.padding(top = Spacing.mediumLarge),
             )
@@ -263,7 +263,7 @@ private fun FleetPing(
         }
         if (ping.doctrine != null) {
             Text(
-                text = "Doctrine:",
+                text = "制式船配置:",
                 style = RiftTheme.typography.bodySecondary,
                 modifier = Modifier.padding(top = Spacing.mediumLarge),
             )

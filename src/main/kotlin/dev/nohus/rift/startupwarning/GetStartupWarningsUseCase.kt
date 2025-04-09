@@ -25,10 +25,10 @@ class GetStartupWarningsUseCase(
                 add(
                     StartupWarning(
                         id = "non-english client",
-                        title = "Non-English EVE Client",
+                        title = "检测到EVE非英文客户端",
                         description = """
-                            Your EVE client is set to a language other than English.
-                            RIFT features based on reading game logs won't work.
+                            您的客户端使用的是非英文语言，RIFT的预警功能将可能无法正常工作。
+                            但是！它一般情况下都正常工作。
                         """.trimIndent(),
                     ),
                 )
@@ -37,9 +37,9 @@ class GetStartupWarningsUseCase(
                 add(
                     StartupWarning(
                         id = "msi afterburner",
-                        title = "MSI Afterburner",
+                        title = "检测到微星小飞机",
                         description = """
-                            You are running MSI Afterburner or RivaTuner, which is known to inject code into RIFT that causes freezes and crashes.
+                            你正在使用微星小飞机等超频软件，这可能会导致RIFT崩溃。
                         """.trimIndent(),
                     ),
                 )
@@ -49,14 +49,14 @@ class GetStartupWarningsUseCase(
                 add(
                     StartupWarning(
                         id = "chat logs disabled v2",
-                        title = "Chat logs are disabled",
+                        title = "聊天记录已关闭",
                         description = buildString {
-                            appendLine("You need to enable the \"Log Chat to File\" option in EVE Settings, in the Gameplay section. RIFT won't be able to read intel messages or trigger alerts otherwise.")
+                            appendLine("您需要启用EVE设置中的“记录聊天到文件”选项，否则RIFT将无法读取情报信息或触发预警。")
                             appendLine()
                             if (accountMessages.size == 1) {
-                                append("You have it disabled on this account:")
+                                append("您在以下账户中关闭了聊天记录：")
                             } else {
-                                append("You have it disabled on these ${accountMessages.size} accounts:")
+                                append("您在以下${accountMessages.size}个账户中关闭了聊天记录：")
                             }
                         },
                         detail = accountMessages.joinToString("\n"),
@@ -67,9 +67,9 @@ class GetStartupWarningsUseCase(
                 add(
                     StartupWarning(
                         id = "missing x11-utils",
-                        title = "Missing dependency",
+                        title = "缺少依赖",
                         description = """
-                            You don't have "xwininfo" or "xprop" installed. Usually they are in a "x11-utils" package or similar. Without them, RIFT won't be able to check the online status of your characters.
+                            您没有安装“xwininfo”或“xprop”。通常它们在“x11-utils”包或类似的包中。没有它们，RIFT将无法检查您的角色的在线状态。
                         """.trimIndent(),
                     ),
                 )

@@ -705,13 +705,13 @@ private fun Pair<FormQuestion, FormAnswer>.toAnswerString(
             val (min, max) = (answer as JumpsRangeAnswer).let { it.minJumps to it.maxJumps }
             val plural = if (max > 1) "s" else ""
             if (min == 0 && max == 0) {
-                "Same system only"
+                "仅本星系"
             } else if (min == 0) {
-                "Up to $max jump$plural away"
+                "至 $max 跳 "
             } else if (min == max) {
-                "Exactly $max jump$plural away"
+                "精确 $max 跳"
             } else {
-                "Between $min–$max jump$plural away"
+                "$min 至 $max 跳"
             }
         }
 

@@ -48,7 +48,7 @@ fun WindowScope.SsoDialog(
     }
 
     val title = when (inputModel) {
-        SsoAuthority.Eve -> "Log in with EVE Online"
+        SsoAuthority.Eve -> "使用EVE Online账户登录获取授权"
     }
     RiftDialog(
         title = title,
@@ -86,13 +86,13 @@ private fun SsoDialogContent(
                 SsoViewModel.SsoStatus.Waiting -> {
                     LoadingSpinner()
                     Text(
-                        text = "Please continue in your browser",
+                        text = "请在浏览器中继续授权步骤",
                         style = RiftTheme.typography.titlePrimary,
                         modifier = Modifier
                             .padding(vertical = Spacing.large),
                     )
                     RiftButton(
-                        text = "Cancel",
+                        text = "取消",
                         cornerCut = ButtonCornerCut.Both,
                         onClick = onButtonClick,
                         modifier = Modifier
@@ -103,7 +103,7 @@ private fun SsoDialogContent(
                 SsoViewModel.SsoStatus.Complete -> {
                     SuccessIcon()
                     Text(
-                        text = "Authentication successful!",
+                        text = "授权成功！",
                         style = RiftTheme.typography.titlePrimary,
                         modifier = Modifier
                             .padding(vertical = Spacing.large),
@@ -120,7 +120,7 @@ private fun SsoDialogContent(
                 is SsoViewModel.SsoStatus.Failed -> {
                     FailIcon()
                     Text(
-                        text = "Authentication failed",
+                        text = "授权失败",
                         style = RiftTheme.typography.titlePrimary,
                         modifier = Modifier
                             .padding(vertical = Spacing.large),
@@ -134,7 +134,7 @@ private fun SsoDialogContent(
                         )
                     }
                     RiftButton(
-                        text = "Cancel",
+                        text = "取消",
                         cornerCut = ButtonCornerCut.Both,
                         onClick = onButtonClick,
                         modifier = Modifier

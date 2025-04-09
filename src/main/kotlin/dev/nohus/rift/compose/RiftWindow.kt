@@ -563,7 +563,7 @@ private fun getTitleBarContextMenuItems(
             if (isAlwaysOnTop) {
                 add(
                     ContextMenuItem.TextItem(
-                        "Disable always above",
+                        "禁用置顶",
                         Res.drawable.window_overlay_fullscreen_on_16px,
                         onClick = onAlwaysOnTopClick,
                     ),
@@ -571,7 +571,7 @@ private fun getTitleBarContextMenuItems(
             } else {
                 add(
                     ContextMenuItem.TextItem(
-                        "Enable always above",
+                        "启用置顶",
                         Res.drawable.window_overlay_fullscreen_off_16px,
                         onClick = onAlwaysOnTopClick,
                     ),
@@ -582,7 +582,7 @@ private fun getTitleBarContextMenuItems(
             if (isLocked) {
                 add(
                     ContextMenuItem.TextItem(
-                        "Unlock window size and position",
+                        "解锁窗口大小和位置",
                         Res.drawable.window_locked_16px,
                         onClick = onLockClick,
                     ),
@@ -590,7 +590,7 @@ private fun getTitleBarContextMenuItems(
             } else {
                 add(
                     ContextMenuItem.TextItem(
-                        "Lock window size and position",
+                        "锁定窗口大小和位置",
                         Res.drawable.window_unlocked_16px,
                         onClick = onLockClick,
                     ),
@@ -604,7 +604,7 @@ private fun getTitleBarContextMenuItems(
             if (isMaximized) {
                 add(
                     ContextMenuItem.TextItem(
-                        "Restore to floating",
+                        "恢复为浮动窗口",
                         Res.drawable.window_titlebar_fullscreen,
                         onClick = onMaximizeClick,
                     ),
@@ -612,15 +612,15 @@ private fun getTitleBarContextMenuItems(
             } else {
                 add(
                     ContextMenuItem.TextItem(
-                        "Maximize",
+                        "最大化",
                         Res.drawable.window_titlebar_float,
                         onClick = onMaximizeClick,
                     ),
                 )
             }
         }
-        add(ContextMenuItem.TextItem("Minimize", onClick = onMinimizeClick))
-        add(ContextMenuItem.TextItem("Close", Res.drawable.menu_close, onClick = onCloseClick))
+        add(ContextMenuItem.TextItem("最小化", onClick = onMinimizeClick))
+        add(ContextMenuItem.TextItem("关闭", Res.drawable.menu_close, onClick = onCloseClick))
     }
 }
 

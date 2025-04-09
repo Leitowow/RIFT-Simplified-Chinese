@@ -67,7 +67,7 @@ fun CharacterSettingsWindow(
     val viewModel: CharacterSettingsViewModel = viewModel()
     val state by viewModel.state.collectAsState()
     RiftWindow(
-        title = "Character Settings Copy",
+        title = "复制角色设置",
         icon = Res.drawable.window_character_settings,
         state = windowState,
         onCloseClick = onCloseRequest,
@@ -113,7 +113,7 @@ private fun CharacterSettingsWindowContent(
                     when (copying) {
                         is CopyingState.SelectingSource -> {
                             Text(
-                                text = "Select the character to copy EVE settings from.",
+                                text = "选择要从中复制EVE设置的角色。",
                                 style = RiftTheme.typography.bodyPrimary,
                                 modifier = Modifier.weight(1f),
                             )
@@ -121,7 +121,7 @@ private fun CharacterSettingsWindowContent(
 
                         is CopyingState.SelectingDestination -> {
                             Text(
-                                text = "Select characters to paste EVE settings to.",
+                                text = "选择要粘贴EVE设置的角色。",
                                 style = RiftTheme.typography.bodyPrimary,
                                 modifier = Modifier.weight(1f),
                             )
@@ -142,30 +142,30 @@ private fun CharacterSettingsWindowContent(
 
                                 Text(
                                     text = buildAnnotatedString {
-                                        append("Copying EVE settings from ")
+                                        append("正在从 ")
                                         withColor(RiftTheme.colors.textHighlighted) {
                                             append(copying.source.name)
                                         }
-                                        append(" to ")
+                                        append(" 复制EVE设置到 ")
                                         copying.destination.forEachIndexed { index, character ->
                                             if (index != 0) append(", ")
                                             withColor(RiftTheme.colors.textHighlighted) {
                                                 append(character.name)
                                             }
                                         }
-                                        append(".")
+                                        append("。")
 
                                         if (unselectedAffectedCharacters.isNotEmpty()) {
                                             appendLine()
                                             appendLine()
-                                            append("Some settings are account-wide, so these will also affect ")
+                                            append("某些设置是账号范围的，因此这些设置也会影响 ")
                                             unselectedAffectedCharacters.map { it.info.success?.name ?: "${it.characterId}" }.forEachIndexed { index, character ->
                                                 if (index != 0) append(", ")
                                                 withColor(RiftTheme.colors.textHighlighted) {
                                                     append(character)
                                                 }
                                             }
-                                            append(".")
+                                            append("。")
                                         }
                                     },
                                     style = RiftTheme.typography.bodyPrimary,
@@ -201,8 +201,8 @@ private fun CharacterSettingsWindowContent(
                         Row(
                             modifier = Modifier.padding(bottom = Spacing.small),
                         ) {
-                            val accountName = account?.let { "Account ${accountOrdinals[it]}" } ?: "Unassigned characters"
-                            val tooltip = account?.let { "Settings file: ${account.path}" } ?: "RIFT doesn't know which account these characters belong to"
+                            val accountName = account?.let { "账号 ${accountOrdinals[it]}" } ?: "未分配的角色"
+                            val tooltip = account?.let { "设置文件: ${account.path}" } ?: "RIFT不知道这些角色属于哪个账号"
                             RiftTooltipArea(tooltip) {
                                 Text(
                                     text = accountName.uppercase(),
@@ -223,14 +223,14 @@ private fun CharacterSettingsWindowContent(
 
                         if (characters.isEmpty()) {
                             Text(
-                                text = "No characters assigned",
+                                text = "未分配角色",
                                 style = RiftTheme.typography.bodySecondary,
                             )
                         }
 
                         if (characters.size > 3) {
                             Text(
-                                text = "Warning: This account has more than 3 characters, which is not possible. Correct the assignment.",
+                                text = "警告：此账号有超过3个角色，这是不可能的。请更正分配。",
                                 style = RiftTheme.typography.bodySecondary,
                                 modifier = Modifier.padding(bottom = Spacing.small),
                             )
@@ -238,8 +238,8 @@ private fun CharacterSettingsWindowContent(
 
                         if (account == null) {
                             val text = when (state.copying) {
-                                CopyingState.SelectingSource -> "Assign these characters to accounts to be able to copy settings from them. Log in to assign automatically."
-                                is CopyingState.SelectingDestination -> "Assign these characters to accounts to be able to copy settings to them. Log in to assign automatically."
+                                CopyingState.SelectingSource -> "分配这些角色到账号以便能够从中复制设置。登录以自动分配。"
+                                is CopyingState.SelectingDestination -> "分配这些角色到账号以便能够复制设置到它们。登录以自动分配。"
                                 is CopyingState.DestinationSelected -> null
                             }
                             AnimatedContent(text) {
@@ -284,7 +284,7 @@ private fun CharacterSettingsWindowContent(
                     when (copying) {
                         CopyingState.SelectingSource -> {
                             RiftButton(
-                                text = "Cancel",
+                                text = "取消",
                                 type = ButtonType.Secondary,
                                 cornerCut = ButtonCornerCut.Both,
                                 onClick = onCancelClick,
@@ -293,7 +293,7 @@ private fun CharacterSettingsWindowContent(
                         }
                         is CopyingState.SelectingDestination -> {
                             RiftButton(
-                                text = "Cancel",
+                                text = "取消",
                                 type = ButtonType.Secondary,
                                 cornerCut = ButtonCornerCut.Both,
                                 onClick = onCancelClick,
@@ -302,14 +302,14 @@ private fun CharacterSettingsWindowContent(
                         }
                         is CopyingState.DestinationSelected -> {
                             RiftButton(
-                                text = "Cancel",
+                                text = "取消",
                                 type = ButtonType.Secondary,
                                 cornerCut = ButtonCornerCut.BottomLeft,
                                 onClick = onCancelClick,
                                 modifier = Modifier.weight(1f),
                             )
                             RiftButton(
-                                text = "Confirm",
+                                text = "确认",
                                 cornerCut = ButtonCornerCut.BottomRight,
                                 onClick = onCopySettingsConfirmClick,
                                 modifier = Modifier.weight(1f),
@@ -321,7 +321,7 @@ private fun CharacterSettingsWindowContent(
         }
     } else {
         Text(
-            text = "No characters found.\n\nMake sure the game directory is selected in settings, and that you have logged in to at least one character on this computer before.",
+            text = "未找到角色。\n\n请确保在设置中选择了游戏目录，并且您之前在此计算机上至少登录过一个角色。",
             style = RiftTheme.typography.titlePrimary,
             modifier = Modifier
                 .fillMaxSize()
@@ -367,7 +367,7 @@ private fun CharacterRow(
 
                 is AsyncResource.Error -> {
                     Text(
-                        text = "Could not load",
+                        text = "无法加载",
                         style = RiftTheme.typography.bodySecondary.copy(color = RiftTheme.colors.borderError),
                         modifier = Modifier.padding(horizontal = Spacing.medium),
                     )
@@ -375,7 +375,7 @@ private fun CharacterRow(
 
                 AsyncResource.Loading -> {
                     Text(
-                        text = "Loading…",
+                        text = "加载中…",
                         style = RiftTheme.typography.bodySecondary,
                         modifier = Modifier.padding(horizontal = Spacing.medium),
                     )
@@ -383,7 +383,7 @@ private fun CharacterRow(
             }
 
             if (account != null && accounts.size > 1) {
-                RiftTooltipArea("Update account") {
+                RiftTooltipArea("更新账号") {
                     RiftImageButton(
                         resource = Res.drawable.editplanicon,
                         size = 20.dp,
@@ -397,7 +397,7 @@ private fun CharacterRow(
                     CopyingState.SelectingSource -> {
                         if (character.settingsFile != null) {
                             RiftButton(
-                                text = "Copy",
+                                text = "复制",
                                 icon = Res.drawable.copy_16px,
                                 onClick = onCopyClick,
                             )
@@ -411,7 +411,7 @@ private fun CharacterRow(
                                 CopyingIcon()
                             } else {
                                 RiftButton(
-                                    text = "Paste",
+                                    text = "粘贴",
                                     icon = Res.drawable.recall_drones_16px,
                                     onClick = onPasteClick,
                                 )
@@ -428,7 +428,7 @@ private fun CharacterRow(
                                 PastingIcon()
                             } else {
                                 RiftButton(
-                                    text = "Paste",
+                                    text = "粘贴",
                                     icon = Res.drawable.recall_drones_16px,
                                     onClick = onPasteClick,
                                 )
@@ -451,7 +451,7 @@ private fun CharacterRow(
                     modifier = Modifier.height(24.dp),
                 ) {
                     Text(
-                        text = "Set account:",
+                        text = "设置账号:",
                         style = RiftTheme.typography.bodyPrimary,
                     )
                 }
@@ -482,7 +482,7 @@ private fun CopyingIcon() {
             modifier = Modifier.size(16.dp),
         )
         Text(
-            text = "Copying",
+            text = "复制中",
             style = RiftTheme.typography.bodyPrimary,
         )
     }
@@ -501,7 +501,7 @@ private fun PastingIcon() {
             modifier = Modifier.size(16.dp),
         )
         Text(
-            text = "Pasting",
+            text = "粘贴中",
             style = RiftTheme.typography.bodyPrimary,
         )
     }
@@ -512,7 +512,7 @@ private fun NoSettingsFileIcon() {
     RequirementIcon(
         isFulfilled = false,
         fulfilledTooltip = "",
-        notFulfilledTooltip = "EVE settings file for this character is missing.\nMake sure you have logged in to the game at least once.",
+        notFulfilledTooltip = "此角色的EVE设置文件缺失。\n请确保您至少登录过一次游戏。",
         modifier = Modifier.padding(start = Spacing.small),
     )
 }

@@ -130,7 +130,7 @@ fun MapWindow(
     val viewModel: MapViewModel = viewModel()
     val state by viewModel.state.collectAsState()
     RiftWindow(
-        title = "Intel Map",
+        title = "预警地图",
         icon = Res.drawable.window_map,
         state = windowState,
         onTuneClick = onTuneClick,

@@ -40,6 +40,7 @@ class PingsRepository(
     private val jabberClient: JabberClient,
     private val parsePingUseCase: ParsePingUseCase,
     private val alertsTriggerController: AlertsTriggerController,
+    private val pingTranslator: PingTranslator,
 ) {
 
     private val pingsFile = appDirectories.getAppDataDirectory().resolve("pings.json")
@@ -52,35 +53,39 @@ class PingsRepository(
 
     init {
         pingsFile.createParentDirectories()
-        val savedPings = load().filter { it.timestamp.isAfter(Instant.now() - Duration.ofHours(48)) }
-        _pings.update { savedPings }
+        val savedPings = load()
+        val recentPings = savedPings.filter { it.timestamp.isAfter(Instant.now() - Duration.ofHours(48)) }
+        _pings.update { recentPings }
+        // Save translated pings back to file
+        save(recentPings)
     }
 
-    suspend fun start() = coroutineScope {
-        launch {
-            jabberClient.state.map {
-                it.userChatMessages.entries.firstOrNull {
-                    it.key.xmppAddressOfChatPartner.localpartOrNull?.toString() in listOf("directorbot")
-                }?.value ?: emptyList()
-            }.collect {
-                val newMessages = it.reversed().takeWhile { it.timestamp > lastReceivedTimestamp }
-                newMessages.maxOfOrNull { it.timestamp }?.let { lastReceivedTimestamp = it }
-                newMessages.forEach { onNewPingMessage(it) }
-            }
+    private fun translatePing(ping: PingModel): PingModel {
+        return when (ping) {
+            is PingModel.PlainText -> ping.copy(
+                sourceText = pingTranslator.translate(ping.sourceText),
+                text = pingTranslator.translate(ping.text)
+            )
+            is PingModel.FleetPing -> ping.copy(
+                sourceText = pingTranslator.translate(ping.sourceText),
+                description = pingTranslator.translate(ping.description),
+                fleet = ping.fleet?.let { pingTranslator.translate(it) },
+                formupLocations = ping.formupLocations.map { location ->
+                    when (location) {
+                        is FormupLocation.Text -> FormupLocation.Text(pingTranslator.translate(location.text))
+                        is FormupLocation.System -> location
+                    }
+                }
+            )
         }
-    }
-
-    private suspend fun onNewPingMessage(message: UserChatController.UserMessage) {
-        val ping = parsePingUseCase(message.timestamp, message.text) ?: return
-        _pings.update { (it + ping).sortedBy { it.timestamp } }
-        alertsTriggerController.onNewJabberPing(ping)
-        save(_pings.value)
     }
 
     private fun load(): List<PingModel> {
         return try {
             val serialized = pingsFile.readText()
-            json.decodeFromString<List<PingModel>>(serialized)
+            val loadedPings = json.decodeFromString<List<PingModel>>(serialized)
+            // 对每个接收的ping进行翻译
+            loadedPings.map { translatePing(it) }
         } catch (e: NoSuchFileException) {
             logger.info { "Pings file not found" }
             emptyList()
@@ -95,6 +100,14 @@ class PingsRepository(
         }
     }
 
+    private suspend fun onNewPingMessage(message: UserChatController.UserMessage) {
+        val ping = parsePingUseCase(message.timestamp, message.text) ?: return
+        val translatedPing = translatePing(ping)
+        _pings.update { (it + translatedPing).sortedBy { it.timestamp } }
+        alertsTriggerController.onNewJabberPing(ping)
+        save(_pings.value)
+    }
+
     private fun save(model: List<PingModel>) = scope.launch(Dispatchers.IO) {
         mutex.withLock {
             try {
@@ -104,6 +117,20 @@ class PingsRepository(
                 logger.error { "Could not write pings: $e" }
             } catch (e: IOException) {
                 logger.error { "Could not write pings: $e" }
+            }
+        }
+    }
+
+    suspend fun start() = coroutineScope {
+        launch {
+            jabberClient.state.map {
+                it.userChatMessages.entries.firstOrNull {
+                    it.key.xmppAddressOfChatPartner.localpartOrNull?.toString() in listOf("directorbot")
+                }?.value ?: emptyList()
+            }.collect {
+                val newMessages = it.reversed().takeWhile { it.timestamp > lastReceivedTimestamp }
+                newMessages.maxOfOrNull { it.timestamp }?.let { lastReceivedTimestamp = it }
+                newMessages.forEach { onNewPingMessage(it) }
             }
         }
     }

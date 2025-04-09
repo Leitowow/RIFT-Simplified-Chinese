@@ -53,7 +53,7 @@ fun MapSettingsWindow(
     val state by viewModel.state.collectAsState()
 
     RiftWindow(
-        title = "Map Settings",
+        title = "地图设置",
         icon = Res.drawable.window_settings,
         state = windowState,
         onCloseClick = onCloseRequest,
@@ -77,7 +77,7 @@ fun MapSettingsWindow(
 
         if (state.isJumpBridgeSearchDialogShown) {
             RiftDialog(
-                title = "Jump Bridge Search",
+                title = "跳桥搜索",
                 icon = Res.drawable.window_warning,
                 parentState = windowState,
                 state = rememberWindowState(width = 350.dp, height = Dp.Unspecified),
@@ -87,12 +87,11 @@ fun MapSettingsWindow(
                     verticalArrangement = Arrangement.spacedBy(Spacing.medium),
                 ) {
                     Text(
-                        text = "This feature is not unique to RIFT, and no problems were reported with it, but some " +
-                            "concerns were raised that it might trip ESI's hidden rate limits and block your IP address.",
+                        text = "此功能并非 RIFT 独有，目前没有人报告问题，但有人担心它可能会触发 ESI 的隐藏速率限制并阻止您的 IP 地址。",
                         style = RiftTheme.typography.bodyPrimary,
                     )
                     Text(
-                        text = "Use at your own risk!",
+                        text = "使用风险自负！",
                         textAlign = TextAlign.Center,
                         style = RiftTheme.typography.titlePrimary,
                         modifier = Modifier.fillMaxWidth(),
@@ -101,14 +100,14 @@ fun MapSettingsWindow(
                         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
                     ) {
                         RiftButton(
-                            text = "Cancel",
+                            text = "取消",
                             cornerCut = ButtonCornerCut.BottomLeft,
                             type = ButtonType.Secondary,
                             onClick = viewModel::onDialogDismissed,
                             modifier = Modifier.weight(1f),
                         )
                         RiftButton(
-                            text = "Confirm",
+                            text = "确认",
                             type = ButtonType.Secondary,
                             onClick = viewModel::onJumpBridgeSearchDialogConfirmClick,
                             modifier = Modifier.weight(1f),
@@ -138,63 +137,62 @@ private fun MapSettingsWindowContent(
 ) {
     val intelMap = state.intelMap
     ScrollbarColumn {
-        SectionTitle("User interface", Modifier.padding(bottom = Spacing.medium))
+        SectionTitle("用户界面", Modifier.padding(bottom = Spacing.medium))
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
             RiftCheckboxWithLabel(
-                label = "Compact mode",
+                label = "紧凑模式",
                 isChecked = intelMap.isUsingCompactMode,
                 onCheckedChange = onIsUsingCompactModeChange,
             )
             RiftCheckboxWithLabel(
-                label = "Move with character",
-                tooltip = "When you jump to another system\nthe map will follow",
+                label = "跟随角色移动",
+                tooltip = "当您跳跃到另一个星系时\n地图将跟随",
                 isChecked = intelMap.isCharacterFollowing,
                 onCheckedChange = { onIsCharacterFollowingChange(it) },
             )
             RiftCheckboxWithLabel(
-                label = "Invert scroll wheel zoom",
-                tooltip = "Zoom direction will be reversed",
+                label = "反转滚轮缩放",
+                tooltip = "缩放方向将被反转",
                 isChecked = intelMap.isInvertZoom,
                 onCheckedChange = { onIsScrollZoomInvertedChange(it) },
             )
             RiftCheckboxWithLabel(
-                label = "Always show system labels",
-                tooltip = "System labels won't hide when zooming out",
+                label = "始终显示星系标签",
+                tooltip = "缩放时星系标签不会隐藏",
                 isChecked = intelMap.isAlwaysShowingSystems,
                 onCheckedChange = { onIsAlwaysShowingSystemsChange(it) },
             )
             Text(
                 text = buildAnnotatedString {
                     withColor(RiftTheme.colors.textPrimary) {
-                        append("Tip:")
+                        append("提示：在地图上按空格键自动调整大小")
                     }
-                    append(" Press Space on the map to automatically resize")
                 },
                 style = RiftTheme.typography.bodySecondary,
             )
         }
 
-        SectionTitle("Autopilot", Modifier.padding(vertical = Spacing.medium))
+        SectionTitle("自动导航", Modifier.padding(vertical = Spacing.medium))
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
             Text(
-                text = "When setting autopilot destination, use:",
+                text = "设置自动导航目的地时，使用：",
                 style = RiftTheme.typography.bodySecondary,
             )
             RiftRadioButtonWithLabel(
-                label = "RIFT calculated route",
-                tooltip = "Shortest route as shown on the RIFT map.\nIgnores your EVE autopilot settings.",
+                label = "RIFT 计算路线",
+                tooltip = "RIFT 地图上显示的最短路线。\n忽略您的 EVE 自动导航设置。",
                 isChecked = state.isUsingRiftAutopilotRoute,
                 onChecked = { onIsUsingRiftAutopilotRouteChange(true) },
             )
             RiftRadioButtonWithLabel(
-                label = "EVE calculated route",
-                tooltip = "Route as set by EVE.\nMay not match the route on the RIFT map.",
+                label = "EVE 计算路线",
+                tooltip = "由 EVE 设置的路线。\n可能与 RIFT 地图上的路线不匹配。",
                 isChecked = !state.isUsingRiftAutopilotRoute,
                 onChecked = { onIsUsingRiftAutopilotRouteChange(false) },
             )
         }
 
-        SectionTitle("Jump bridge network", Modifier.padding(top = Spacing.medium))
+        SectionTitle("跳桥网络", Modifier.padding(top = Spacing.medium))
         Column {
             AnimatedContent(state.jumpBridgeNetworkState) { networkState ->
                 when (networkState) {
@@ -208,12 +206,12 @@ private fun MapSettingsWindowContent(
                             modifier = Modifier.padding(top = Spacing.medium, end = Spacing.medium).fillMaxWidth(),
                         ) {
                             RiftTooltipArea(
-                                text = "Import jump bridges by copying a list to clipboard",
+                                text = "通过复制列表到剪贴板导入跳跃桥",
                             ) {
-                                Text("Network with ${networkState.network.connections.size} connections loaded")
+                                Text("已加载 ${networkState.network.connections.size} 个连接的网络")
                             }
                             RiftButton(
-                                text = "Forget",
+                                text = "重置",
                                 type = ButtonType.Negative,
                                 onClick = onJumpBridgeForgetClick,
                             )
@@ -229,9 +227,9 @@ private fun MapSettingsWindowContent(
                                 verticalArrangement = Arrangement.spacedBy(Spacing.small),
                                 modifier = Modifier.padding(top = Spacing.medium),
                             ) {
-                                Text("Import jump bridges by copying a list to clipboard")
+                                Text("通过复制列表到剪贴板导入跳跃桥")
                                 if (state.jumpBridgeNetworkUrl != null) {
-                                    Text("You can press Ctrl+A, Ctrl+C on this page:")
+                                    Text("您可以在此页面上按 Ctrl+A, Ctrl+C：")
                                     LinkText(
                                         text = "Alliance Jump Bridge List",
                                         onClick = { state.jumpBridgeNetworkUrl.toURIOrNull()?.openBrowser() },
@@ -259,9 +257,9 @@ private fun MapSettingsWindowContent(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 modifier = Modifier.padding(top = Spacing.medium, end = Spacing.medium).fillMaxWidth(),
                             ) {
-                                Text("Copied network with ${copyState.network.connections.size} connections")
+                                Text("已复制 ${copyState.network.connections.size} 个连接的网络")
                                 RiftButton(
-                                    text = "Import",
+                                    text = "导入",
                                     onClick = onJumpBridgeImportClick,
                                 )
                             }
@@ -285,9 +283,9 @@ private fun MapSettingsWindowContent(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     modifier = Modifier.padding(end = Spacing.medium).fillMaxWidth(),
                                 ) {
-                                    Text("Search automatically?")
+                                    Text("自动搜索？")
                                     RiftButton(
-                                        text = "Search",
+                                        text = "搜索",
                                         onClick = onJumpBridgeSearchClick,
                                     )
                                 }
@@ -302,9 +300,9 @@ private fun MapSettingsWindowContent(
                                 color = RiftTheme.colors.divider,
                                 modifier = Modifier.padding(bottom = Spacing.medium),
                             )
-                            Text("Searching – ${String.format("%.1f", searchState.progress * 100)}%")
+                            Text("搜索中 – ${String.format("%.1f", searchState.progress * 100)}%")
                             Text(
-                                text = "Found ${searchState.connectionsCount} jump gate connections",
+                                text = "找到 ${searchState.connectionsCount} 个跳跃门连接",
                                 style = RiftTheme.typography.bodySecondary,
                             )
                         }
@@ -317,7 +315,7 @@ private fun MapSettingsWindowContent(
                                 color = RiftTheme.colors.divider,
                                 modifier = Modifier.padding(bottom = Spacing.medium),
                             )
-                            Text("Unable to search")
+                            Text("无法搜索")
                         }
                     }
                     is MapSettingsViewModel.JumpBridgeSearchState.SearchDone -> {
@@ -333,9 +331,9 @@ private fun MapSettingsWindowContent(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 modifier = Modifier.padding(end = Spacing.medium).fillMaxWidth(),
                             ) {
-                                Text("Found network with ${searchState.network.connections.size} connections")
+                                Text("找到 ${searchState.network.connections.size} 个连接的网络")
                                 RiftButton(
-                                    text = "Import",
+                                    text = "导入",
                                     onClick = onJumpBridgeSearchImportClick,
                                 )
                             }
@@ -349,7 +347,7 @@ private fun MapSettingsWindowContent(
                     modifier = Modifier.padding(top = Spacing.medium),
                 ) {
                     RiftCheckboxWithLabel(
-                        label = "Show network on map",
+                        label = "在地图上显示网络",
                         isChecked = intelMap.isJumpBridgeNetworkShown,
                         onCheckedChange = onIsJumpBridgeNetworkShownChange,
                     )
@@ -361,42 +359,40 @@ private fun MapSettingsWindowContent(
                         "100%" to 100,
                     )
                     RiftDropdownWithLabel(
-                        label = "Connection opacity:",
+                        label = "连接透明度：",
                         items = jumpBridgeOpacityItems.values.toList(),
                         selectedItem = intelMap.jumpBridgeNetworkOpacity,
                         onItemSelected = onJumpBridgeNetworkOpacityChange,
                         getItemName = { item -> jumpBridgeOpacityItems.entries.firstOrNull { it.value == item }?.key ?: "$item" },
                         tooltip = """
-                    Visibility of the jump bridge
-                    connection lines.
+                    跳桥连接线的可见度。
                         """.trimIndent(),
                     )
                 }
             }
         }
 
-        SectionTitle("Intel visibility", Modifier.padding(vertical = Spacing.medium))
+        SectionTitle("预警可见度", Modifier.padding(vertical = Spacing.medium))
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
             val timeoutItems = mapOf(
-                "Don't show" to 0,
-                "10 seconds" to 10,
-                "30 seconds" to 30,
-                "1 minute" to 60,
-                "2 minutes" to 60 * 2,
-                "5 minutes" to 60 * 5,
-                "15 minutes" to 60 * 15,
-                "No limit" to Int.MAX_VALUE,
+                "不显示" to 0,
+                "10 秒" to 10,
+                "30 秒" to 30,
+                "1 分钟" to 60,
+                "2 分钟" to 60 * 2,
+                "5 分钟" to 60 * 5,
+                "15 分钟" to 60 * 15,
+                "无限制" to Int.MAX_VALUE,
             )
             RiftDropdownWithLabel(
-                label = "Automatically show popups for:",
+                label = "自动显示弹出窗口：",
                 items = timeoutItems.values.toList(),
                 selectedItem = intelMap.intelPopupTimeoutSeconds,
                 onItemSelected = onIntelPopupTimeoutSecondsChange,
                 getItemName = { item -> timeoutItems.entries.firstOrNull { it.value == item }?.key ?: "$item" },
                 tooltip = """
-                    For how long will intel popups be visible
-                    when new information is available.
-                    They are visible on hover even after this time.
+                    当有新信息时，预警弹出窗口将显示多长时间。
+                    即使超过此时间，悬停时仍然可见。
                 """.trimIndent(),
             )
         }

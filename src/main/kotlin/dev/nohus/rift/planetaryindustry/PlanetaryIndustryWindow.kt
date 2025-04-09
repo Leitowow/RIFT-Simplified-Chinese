@@ -82,8 +82,6 @@ import dev.nohus.rift.planetaryindustry.models.ColonyStatus.NeedsAttention
 import dev.nohus.rift.planetaryindustry.models.ColonyStatus.NotSetup
 import dev.nohus.rift.settings.persistence.ColonySortingFilter
 import dev.nohus.rift.settings.persistence.ColonyView
-import dev.nohus.rift.utils.invertedPlural
-import dev.nohus.rift.utils.plural
 import dev.nohus.rift.utils.viewModel
 import dev.nohus.rift.windowing.WindowManager.RiftWindowState
 import org.jetbrains.compose.resources.painterResource
