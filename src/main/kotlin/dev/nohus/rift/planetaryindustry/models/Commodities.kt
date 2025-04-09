@@ -39,12 +39,12 @@ object Commodities {
 
     fun getTierName(commodity: String): String {
         return when (commodity) {
-            in p0Names -> "Raw Resource"
-            in p1Names -> "Tier 1"
-            in p2Names -> "Tier 2"
-            in p3Names -> "Tier 3"
-            in p4Names -> "Tier 4"
-            else -> "Unknown"
+            in p0Names -> "原材料"
+            in p1Names -> "一级"
+            in p2Names -> "二级"
+            in p3Names -> "三级"
+            in p4Names -> "四级"
+            else -> "未知"
         }
     }
 }

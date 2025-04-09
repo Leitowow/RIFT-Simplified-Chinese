@@ -386,7 +386,7 @@ class PlanetaryIndustryRepository(
                 status = PinStatus.Static,
             )
         } else {
-            logger.error { "Unknown pin: $name" }
+            logger.error { "未知的设施: $name" }
             return null
         }.run {
             copy(status = getStatus(lastUpdate, routes))

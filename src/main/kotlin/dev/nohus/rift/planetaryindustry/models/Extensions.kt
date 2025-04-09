@@ -38,9 +38,9 @@ fun Pin.getName(): String {
     return when (this) {
         is Pin.Extractor -> {
             val heads = heads?.size ?: 0
-            "$nameWithDesignator with $heads head${heads.plural}"
+            "$nameWithDesignator (带有 $heads 个采集头)"
         }
-        is Pin.CommandCenter -> "$nameWithDesignator Level $level"
+        is Pin.CommandCenter -> "$nameWithDesignator (等级 $level)"
         else -> nameWithDesignator
     }
 }
@@ -78,9 +78,9 @@ fun Pin.getCpuPowerUsage(): Pair<Int, Int> {
             cpu to power
         }
         is Pin.Factory -> {
-            if ("Advanced" in name) {
+            if ("高级" in name) {
                 500 to 700
-            } else if ("High-Tech" in name) {
+            } else if ("高科技" in name) {
                 1100 to 400
             } else {
                 200 to 800

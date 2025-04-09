@@ -31,7 +31,7 @@ fun ProducedCommodity(
     routes: List<Route>,
     type: Type?,
 ) {
-    val verb = if (pin is Pin.Extractor) "Extracting" else "Producing"
+    val verb = if (pin is Pin.Extractor) "开采中" else "生产中"
     if (type != null) {
         val tooltip = buildAnnotatedString {
             withStyle(SpanStyle(color = RiftTheme.colors.textPrimary)) {
@@ -47,7 +47,7 @@ fun ProducedCommodity(
                 withStyle(SpanStyle(color = RiftTheme.colors.textPrimary)) {
                     val quantity = pin.schematic.outputQuantity
                     val duration = formatDurationCompact(pin.schematic.cycleTime)
-                    append("$quantity unit${quantity.plural} every $duration")
+                    append("每 $duration 生产 $quantity 单位")
                 }
             }
         }
@@ -76,13 +76,13 @@ fun ProducedCommodity(
                         RoutedState.Routed -> {}
                         RoutedState.InputNotRouted -> {
                             Text(
-                                text = "No input routes",
+                                text = "无输入路线",
                                 style = RiftTheme.typography.bodyPrimary.copy(color = RiftTheme.colors.textRed, fontWeight = FontWeight.Bold),
                             )
                         }
                         RoutedState.OutputNotRouted -> {
                             Text(
-                                text = "Not routed",
+                                text = "未设置路线",
                                 style = RiftTheme.typography.bodyPrimary.copy(color = RiftTheme.colors.textRed, fontWeight = FontWeight.Bold),
                             )
                         }
@@ -100,7 +100,7 @@ fun ProducedCommodity(
                     style = RiftTheme.typography.bodyHighlighted,
                 )
                 Text(
-                    text = "Not selected",
+                    text = "未选择",
                     style = RiftTheme.typography.bodyPrimary.copy(color = RiftTheme.colors.textRed, fontWeight = FontWeight.Bold),
                 )
             }
