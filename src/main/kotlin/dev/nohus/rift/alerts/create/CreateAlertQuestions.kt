@@ -324,7 +324,7 @@ class CreateAlertQuestions(
     // Jabber ping, target
     val JABBER_PING_TARGET_QUESTION = FreeformTextQuestion(
         title = "且目标是:",
-        placeholder = "例如 \"蜂巢\"。留空表示任意。",
+        placeholder = "例如 \"蜜蜂\"。留空表示任意。",
         allowEmpty = true,
     )
 

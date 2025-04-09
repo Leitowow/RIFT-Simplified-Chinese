@@ -3,7 +3,7 @@ package dev.nohus.rift.configurationpack
 import dev.nohus.rift.settings.persistence.ConfigurationPack
 
 val ConfigurationPack?.displayName: String get() = when (this) {
-    ConfigurationPack.Imperium -> "The Imperium"
+    ConfigurationPack.Imperium -> "帝国系通用"
     ConfigurationPack.TheInitiative -> "The Initiative."
-    null -> "Default"
+    null -> "默认"
 }

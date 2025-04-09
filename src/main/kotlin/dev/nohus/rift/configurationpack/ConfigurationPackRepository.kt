@@ -61,8 +61,8 @@ class ConfigurationPackRepository(
     fun getSuggestedIntelChannels(): SuggestedIntelChannels? {
         return when (settings.configurationPack) {
             Imperium -> SuggestedIntelChannels(
-                promptTitleText = "Would you like intel channels of The Imperium to be configured automatically?",
-                promptButtonText = "Add Imperium channels",
+                promptTitleText = "您想要自动配置帝国系通用的预警频道吗？",
+                promptButtonText = "添加帝国系频道",
                 channels = listOf(
                     IntelChannel("aridia.imperium", "Aridia"),
                     IntelChannel("curse.imperium", "Curse"),
@@ -82,8 +82,8 @@ class ConfigurationPackRepository(
                 ),
             )
             TheInitiative -> SuggestedIntelChannels(
-                promptTitleText = "Would you like intel channels of The Initiative. to be configured automatically?",
-                promptButtonText = "Add Init channels",
+                promptTitleText = "您想要自动配置 The Initiative. 的预警频道吗？",
+                promptButtonText = "添加 Init 频道",
                 channels = listOf(
                     IntelChannel("I. Ftn Intel", "Fountain"),
                     IntelChannel("I. OR Intel", "Outer Ring"),

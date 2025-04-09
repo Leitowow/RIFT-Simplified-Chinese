@@ -71,7 +71,7 @@ fun SettingsWindow(
     val state by viewModel.state.collectAsState()
 
     RiftWindow(
-        title = "RIFT Settings",
+        title = "RIFT 设置",
         icon = Res.drawable.window_settings,
         state = windowState,
         onCloseClick = onCloseRequest,
@@ -192,7 +192,7 @@ private fun SettingsWindowContent(
 
             Spacer(Modifier.weight(1f))
             RiftButton(
-                text = "Done",
+                text = "完成",
                 onClick = onDoneClick,
                 modifier = Modifier
                     .align(Alignment.End)
@@ -243,36 +243,36 @@ private fun UserInterfaceSection(
     uiScale: Float,
     onUiScaleChanged: (Float) -> Unit,
 ) {
-    SectionTitle("User Interface", Modifier.padding(bottom = Spacing.medium))
+    SectionTitle("用户界面", Modifier.padding(bottom = Spacing.medium))
     RiftCheckboxWithLabel(
-        label = "Remember open windows",
-        tooltip = "Enable to remember open windows\nacross app restarts",
+        label = "记住打开的窗口",
+        tooltip = "启用后将在应用重启时\n记住打开的窗口",
         isChecked = isRememberOpenWindowsEnabled,
         onCheckedChange = onRememberOpenWindowsChanged,
         modifier = Modifier.padding(bottom = Spacing.small),
     )
     RiftCheckboxWithLabel(
-        label = "Remember window placement",
-        tooltip = "Enable to remember window positions and\nsizes across app restarts",
+        label = "记住窗口位置",
+        tooltip = "启用后将在应用重启时\n记住窗口位置和大小",
         isChecked = isRememberWindowPlacementEnabled,
         onCheckedChange = onRememberWindowPlacementChanged,
         modifier = Modifier.padding(bottom = Spacing.small),
     )
     RiftCheckboxWithLabel(
-        label = "Display times in EVE time",
-        tooltip = "Enable to show times in EVE time,\ninstead of your own time zone.",
+        label = "使用 EVE 时间显示",
+        tooltip = "启用后将以 EVE 时间显示,\n而不是您自己的时区。",
         isChecked = isDisplayEveTime,
         onCheckedChange = onIsDisplayEveTimeChanged,
         modifier = Modifier.padding(bottom = Spacing.small),
     )
     RiftCheckboxWithLabel(
-        label = "Use dark tray icon",
-        tooltip = "Enable to use a dark tray icon,\nif you prefer it.",
+        label = "使用深色托盘图标",
+        tooltip = "如果您喜欢，可以启用使用深色托盘图标",
         isChecked = isUsingDarkTrayIcon,
         onCheckedChange = onIsUsingDarkTrayIconChanged,
     )
     RiftDropdownWithLabel(
-        label = "UI scale:",
+        label = "界面缩放:",
         items = listOf(0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f),
         selectedItem = uiScale,
         onItemSelected = onUiScaleChanged,
@@ -287,22 +287,22 @@ private fun AlertsSection(
     onEditNotificationClick: () -> Unit,
     onConfigurePushoverClick: () -> Unit,
 ) {
-    SectionTitle("Alerts", Modifier.padding(bottom = Spacing.medium))
+    SectionTitle("预警", Modifier.padding(bottom = Spacing.medium))
     Row(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "Choose notification position:",
+            text = "选择通知位置:",
             style = RiftTheme.typography.bodyPrimary,
             modifier = Modifier.weight(1f),
         )
         RiftButton(
-            text = "Edit position",
+            text = "编辑位置",
             onClick = onEditNotificationClick,
         )
     }
     RiftDropdownWithLabel(
-        label = "Alert volume:",
+        label = "预警音量:",
         items = (0..100 step 10).reversed().toList(),
         selectedItem = soundsVolume,
         onItemSelected = onSoundsVolumeChange,
@@ -312,12 +312,12 @@ private fun AlertsSection(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "Mobile push notifications:",
+            text = "移动推送通知:",
             style = RiftTheme.typography.bodyPrimary,
             modifier = Modifier.weight(1f),
         )
         RiftButton(
-            text = "Configure",
+            text = "配置",
             onClick = onConfigurePushoverClick,
         )
     }
@@ -332,30 +332,31 @@ private fun OtherSettingsSection(
     isShowSetupWizardOnNextStartEnabled: Boolean,
     onShowSetupWizardOnNextStartChanged: (Boolean) -> Unit,
 ) {
-    SectionTitle("Advanced Settings", Modifier.padding(bottom = Spacing.medium))
+    SectionTitle("高级设置", Modifier.padding(bottom = Spacing.medium))
     RiftDropdownWithLabel(
-        label = "Configuration pack:",
+        label = "配置包:",
         items = listOf(null) + ConfigurationPack.entries,
         selectedItem = configurationPack,
         onItemSelected = onConfigurationPackChange,
-        getItemName = { it?.displayName ?: "Default" },
+        getItemName = { it?.displayName ?: "默认" },
         tooltip = """
-            Enables settings specific to a player group,
-            like intel channel suggestions.
-            Contact me on Discord if you'd like to add yours.
+            启用特定玩家团体的设置，
+            如预警频道建议。
+            如果您想添加自己的配置包，
+            请在 Discord 上联系我。
         """.trimIndent(),
         modifier = Modifier.padding(bottom = Spacing.small),
     )
     RiftCheckboxWithLabel(
-        label = "Load old chat messages",
-        tooltip = "Enable to read old chat logs,\ninstead of only new messages.\nNot recommended.",
+        label = "加载历史聊天记录",
+        tooltip = "启用后可以读取历史聊天记录，\n而不仅仅是新消息。\n不推荐使用。",
         isChecked = isLoadOldMessagesEnabled,
         onCheckedChange = onLoadOldMessagesChanged,
         modifier = Modifier.padding(bottom = Spacing.small),
     )
     RiftCheckboxWithLabel(
-        label = "Show setup wizard on next start",
-        tooltip = "Did you know that Aura is a wizard?",
+        label = "下次启动时显示设置向导",
+        tooltip = "您知道 Aura 是个向导吗？",
         isChecked = isShowSetupWizardOnNextStartEnabled,
         onCheckedChange = onShowSetupWizardOnNextStartChanged,
     )
@@ -372,18 +373,18 @@ private fun EveInstallationSection(
     onSettingsDirectoryChanged: (String) -> Unit,
     onDetectSettingsDirectoryClick: () -> Unit,
 ) {
-    SectionTitle("EVE Installation")
+    SectionTitle("EVE 安装")
     Row(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "EVE Online logs directory",
+            text = "EVE Online 日志目录",
             style = RiftTheme.typography.bodyPrimary,
         )
         RequirementIcon(
             isFulfilled = isLogsDirectoryValid,
-            fulfilledTooltip = "Logs directory valid",
-            notFulfilledTooltip = if (logsDirectory.isBlank()) "No logs directory" else "Invalid logs directory",
+            fulfilledTooltip = "日志目录有效",
+            notFulfilledTooltip = if (logsDirectory.isBlank()) "无日志目录" else "无效的日志目录",
         )
     }
     Row(
@@ -400,6 +401,7 @@ private fun EveInstallationSection(
             modifier = Modifier.weight(1f),
         )
         RiftFileChooserButton(
+            text = "浏览",
             fileSelectionMode = JFileChooser.DIRECTORIES_ONLY,
             typesDescription = "Chat logs directory",
             currentPath = text,
@@ -411,7 +413,7 @@ private fun EveInstallationSection(
             },
         )
         RiftButton(
-            text = "Detect",
+            text = "自动检测",
             type = if (isLogsDirectoryValid) ButtonType.Secondary else ButtonType.Primary,
             onClick = onDetectLogsDirectoryClick,
         )
@@ -421,13 +423,13 @@ private fun EveInstallationSection(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "EVE Online character settings directory",
+            text = "EVE Online 角色设置目录",
             style = RiftTheme.typography.bodyPrimary,
         )
         RequirementIcon(
             isFulfilled = isSettingsDirectoryValid,
-            fulfilledTooltip = "Settings directory valid",
-            notFulfilledTooltip = if (settingsDirectory.isBlank()) "No settings directory" else "Invalid settings directory",
+            fulfilledTooltip = "设置目录有效",
+            notFulfilledTooltip = if (settingsDirectory.isBlank()) "无设置目录" else "无效的设置目录",
         )
     }
     Row(
@@ -444,6 +446,7 @@ private fun EveInstallationSection(
             modifier = Modifier.weight(1f),
         )
         RiftFileChooserButton(
+            text = "浏览",
             fileSelectionMode = JFileChooser.DIRECTORIES_ONLY,
             typesDescription = "Game logs directory",
             currentPath = text,
@@ -455,7 +458,7 @@ private fun EveInstallationSection(
             },
         )
         RiftButton(
-            text = "Detect",
+            text = "自动检测",
             type = if (isSettingsDirectoryValid) ButtonType.Secondary else ButtonType.Primary,
             onClick = onDetectSettingsDirectoryClick,
         )
@@ -471,9 +474,9 @@ private fun IntelChannelsSection(
     onSuggestedIntelChannelsClick: () -> Unit,
     onIntelChannelAdded: (name: String, region: String) -> Unit,
 ) {
-    SectionTitle("Intel Channels")
+    SectionTitle("预警频道")
     Text(
-        text = "Intel reports will be read from these channels:",
+        text = "将从以下频道读取预警报告:",
         style = RiftTheme.typography.bodyPrimary,
         modifier = Modifier.padding(vertical = Spacing.medium),
     )
@@ -514,7 +517,7 @@ private fun IntelChannelsSection(
         }
         if (intelChannels.isEmpty()) {
             Text(
-                text = "No intel channels configured",
+                text = "未配置预警频道",
                 style = RiftTheme.typography.titlePrimary,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
@@ -552,13 +555,13 @@ private fun IntelChannelsSection(
         var addChannelText by remember { mutableStateOf("") }
         RiftTextField(
             text = addChannelText,
-            placeholder = "Channel name",
+            placeholder = "频道名称",
             onTextChanged = {
                 addChannelText = it
             },
             modifier = Modifier.weight(1f),
         )
-        val regionPlaceholder = "Choose region"
+        val regionPlaceholder = "选择区域"
         var selectedRegion by remember { mutableStateOf(regionPlaceholder) }
         RiftDropdown(
             items = regions,
@@ -567,7 +570,7 @@ private fun IntelChannelsSection(
             getItemName = { it },
             maxItems = 5,
         )
-        RiftButton("Add channel", onClick = {
+        RiftButton("添加频道", onClick = {
             if (addChannelText.isNotEmpty() && selectedRegion != regionPlaceholder) {
                 onIntelChannelAdded(addChannelText, selectedRegion)
                 addChannelText = ""
@@ -586,39 +589,39 @@ private fun IntelSection(
     intelExpireSeconds: Int,
     onIntelExpireSecondsChange: (Int) -> Unit,
 ) {
-    SectionTitle("Intel", Modifier.padding(bottom = Spacing.medium))
+    SectionTitle("预警", Modifier.padding(bottom = Spacing.medium))
     RiftCheckboxWithLabel(
-        label = "Show distance on systems",
-        tooltip = "Enable to show the number of jumps to\nthe closest character next to system names.\nOnly shows for up to 9 jumps away.",
+        label = "显示星系距离",
+        tooltip = "启用后将在星系名称旁显示\n到最近角色的跳跃数。\n仅显示最多9跳的距离。",
         isChecked = isShowingSystemDistance,
         onCheckedChange = onIsShowingSystemDistanceChange,
         modifier = Modifier.padding(bottom = Spacing.small),
     )
     RiftCheckboxWithLabel(
-        label = "Use jump bridges for distance",
-        tooltip = "Enable to include jump bridges in system distances",
+        label = "使用跳跃桥计算距离",
+        tooltip = "启用后将在星系距离计算中包含跳跃桥",
         isChecked = isUsingJumpBridgesForDistance,
         onCheckedChange = onIsUsingJumpBridgesForDistance,
         modifier = Modifier.padding(bottom = Spacing.small),
     )
     val expiryItems = mapOf(
-        "1 minute" to 60,
-        "2 minutes" to 60 * 2,
-        "5 minutes" to 60 * 5,
-        "15 minutes" to 60 * 15,
-        "30 minutes" to 60 * 30,
-        "1 hour" to 60 * 60,
-        "Don't expire" to Int.MAX_VALUE,
+        "1分钟" to 60,
+        "2分钟" to 60 * 2,
+        "5分钟" to 60 * 5,
+        "15分钟" to 60 * 15,
+        "30分钟" to 60 * 30,
+        "1小时" to 60 * 60,
+        "永不过期" to Int.MAX_VALUE,
     )
     RiftDropdownWithLabel(
-        label = "Expire intel after:",
+        label = "预警过期时间:",
         items = expiryItems.values.toList(),
         selectedItem = intelExpireSeconds,
         onItemSelected = onIntelExpireSecondsChange,
         getItemName = { item -> expiryItems.entries.firstOrNull { it.value == item }?.key ?: "$item" },
         tooltip = """
-                    Time after a piece of intel will no longer
-                    be shown on the feed or map.
+                    预警信息将在指定时间后
+                    不再显示在信息流或地图上。
         """.trimIndent(),
     )
 }

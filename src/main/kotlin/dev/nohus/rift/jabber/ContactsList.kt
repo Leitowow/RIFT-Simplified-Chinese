@@ -79,7 +79,7 @@ private fun ContactsListChats(
 ) {
     if (chats.isNotEmpty()) {
         Text(
-            text = "Chat rooms",
+            text = "聊天室",
             style = RiftTheme.typography.titleHighlighted,
             modifier = Modifier.padding(Spacing.medium),
         )
@@ -102,7 +102,7 @@ private fun Chat(
 ) {
     RiftContextMenuArea(
         items = listOf(
-            ContextMenuItem.TextItem("Remove", onClick = onRemoveClick),
+            ContextMenuItem.TextItem("移除", onClick = onRemoveClick),
         ),
     ) {
         Row(
@@ -211,7 +211,7 @@ private fun Contact(
 ) {
     RiftContextMenuArea(
         items = listOf(
-            ContextMenuItem.TextItem("Remove", onClick = onRemoveClick),
+            ContextMenuItem.TextItem("移除", onClick = onRemoveClick),
         ),
     ) {
         Row(
@@ -268,7 +268,7 @@ private fun Contact(
                 }
                 if (user.isSubscriptionPending) {
                     Text(
-                        text = "Unknown status",
+                        text = "未知状态",
                         style = RiftTheme.typography.bodySecondary,
                     )
                 }
