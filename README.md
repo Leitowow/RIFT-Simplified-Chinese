@@ -1,4 +1,4 @@
-#  这个汉化项目的来源是https://riftforeve.online/
+##  这个汉化项目的来源是https://riftforeve.online/
 
 ## 目前汉化的进度：  
 
