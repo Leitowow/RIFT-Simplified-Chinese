@@ -1,5 +1,6 @@
 pluginManagement {
     repositories {
+        maven("https://mirrors.cloud.tencent.com/nexus/repository/maven-public/")
         gradlePluginPortal()
         mavenCentral()
         maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")

@@ -29,6 +29,7 @@ buildConfig {
 }
 
 repositories {
+    maven("https://mirrors.cloud.tencent.com/nexus/repository/maven-public/")
     mavenCentral()
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
     maven("https://oss.sonatype.org/content/repositories/snapshots")
@@ -132,9 +133,35 @@ dependencies {
 compose.desktop {
     application {
         mainClass = "dev.nohus.rift.MainKt"
-
+        
         nativeDistributions {
             modules("java.sql", "java.naming", "jdk.naming.dns")
+            
+            targetFormats(org.jetbrains.compose.desktop.application.dsl.TargetFormat.Dmg,
+                        org.jetbrains.compose.desktop.application.dsl.TargetFormat.Msi,
+                        org.jetbrains.compose.desktop.application.dsl.TargetFormat.Deb)
+            
+            packageName = "RIFT"
+            packageVersion = riftVersion
+            
+            // Windows 配置
+            windows {
+                iconFile.set(project.file("installer/icon.ico"))
+                menuGroup = "RIFT"
+                upgradeUuid = "2A06E644-858A-4963-B334-0F51AE2F0A0D"
+            }
+            
+            // macOS 配置
+            macOS {
+                iconFile.set(project.file("installer/icon.icns"))
+                bundleID = "dev.nohus.rift"
+            }
+            
+            // Linux 配置
+            linux {
+                iconFile.set(project.file("installer/icon.png"))
+                menuGroup = "RIFT"
+            }
         }
     }
 }
@@ -151,8 +178,6 @@ tasks.withType<KotlinCompile>().configureEach {
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
-        vendor = JvmVendorSpec.JETBRAINS
-        implementation = JvmImplementation.VENDOR_SPECIFIC
     }
 }
 
