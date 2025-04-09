@@ -71,7 +71,7 @@ class ParsePingUseCase(
         return if (fleetCommander != null) {
             PingModel.FleetPing(
                 timestamp = timestamp,
-                sourceText = text,
+                sourceText = cleanText,
                 description = description,
                 fleetCommander = fleetCommander,
                 fleet = fleet,
@@ -89,7 +89,7 @@ class ParsePingUseCase(
                 .trim()
             PingModel.PlainText(
                 timestamp = timestamp,
-                sourceText = text,
+                sourceText = cleanText,
                 text = plainText,
                 sender = sender,
                 target = target,

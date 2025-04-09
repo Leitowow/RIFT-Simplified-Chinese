@@ -23,12 +23,16 @@ class ParsePingUseCaseTest : FreeSpec({
     val mockSolarSystemsRepository: SolarSystemsRepository = mockk()
     val mockMapStatusRepository: MapStatusRepository = mockk()
     val mockStandingsRepository: StandingsRepository = mockk()
+    val mockPingTranslator: PingTranslator = mockk()
     val target = ParsePingUseCase(
         charactersRepository = mockCharactersRepository,
         solarSystemsRepository = mockSolarSystemsRepository,
         mapStatusRepository = mockMapStatusRepository,
         standingsRepository = mockStandingsRepository,
+        pingTranslator = mockPingTranslator,
     )
+
+    every { mockPingTranslator.translate(any()) } answers { firstArg() }
 
     coEvery { mockCharactersRepository.getCharacterId("Havish Montak") } returns 1
     coEvery { mockCharactersRepository.getCharacterId("Mrbluff343") } returns 2
@@ -217,7 +221,7 @@ class ParsePingUseCaseTest : FreeSpec({
         """
             WTF 0 - Imperium Basics
 
-            Not sure what SIGs are? Still trying to get mumble to work? Lost your blingy ship in a strat op and now you’re spacebroke? Then join this fleet to find out all the essentials to function in the Imperium.
+            Not sure what SIGs are? Still trying to get mumble to work? Lost your blingy ship in a strat op and now you're spacebroke? Then join this fleet to find out all the essentials to function in the Imperium.
 
             FC: Lodena Minax
             Fleet: WTF 0
@@ -230,7 +234,7 @@ class ParsePingUseCaseTest : FreeSpec({
         """.trimIndent() to PingModel.FleetPing(
             timestamp = timestamp,
             sourceText = "",
-            description = "WTF 0 - Imperium Basics\n\nNot sure what SIGs are? Still trying to get mumble to work? Lost your blingy ship in a strat op and now you’re spacebroke? Then join this fleet to find out all the essentials to function in the Imperium.",
+            description = "WTF 0 - Imperium Basics\n\nNot sure what SIGs are? Still trying to get mumble to work? Lost your blingy ship in a strat op and now you're spacebroke? Then join this fleet to find out all the essentials to function in the Imperium.",
             fleetCommander = FleetCommander("Lodena Minax", 5),
             fleet = "WTF 0",
             formupLocations = listOf(FormupLocation.Text("Theory only, join from anywhere.")),

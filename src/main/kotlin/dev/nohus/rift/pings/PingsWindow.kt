@@ -251,7 +251,7 @@ private fun FleetPing(
         )
         if (ping.comms is Comms.Text) {
             Text(
-                text = "语言:",
+                text = "语音:",
                 style = RiftTheme.typography.bodySecondary,
                 modifier = Modifier.padding(top = Spacing.mediumLarge),
             )

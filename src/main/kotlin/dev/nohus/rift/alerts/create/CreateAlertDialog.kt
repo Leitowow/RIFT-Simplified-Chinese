@@ -72,7 +72,6 @@ import dev.nohus.rift.generated.resources.play
 import dev.nohus.rift.generated.resources.window_loudspeaker_icon
 import dev.nohus.rift.get
 import dev.nohus.rift.planetaryindustry.PlanetaryIndustryRepository.ColonyItem
-import dev.nohus.rift.utils.plural
 import dev.nohus.rift.utils.sound.Sound
 import dev.nohus.rift.utils.sound.SoundPlayer
 import dev.nohus.rift.utils.viewModel

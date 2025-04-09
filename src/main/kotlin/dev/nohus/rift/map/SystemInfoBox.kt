@@ -78,7 +78,6 @@ import dev.nohus.rift.settings.persistence.MapSystemInfoType
 import dev.nohus.rift.standings.Standing
 import dev.nohus.rift.standings.StandingsRepository
 import dev.nohus.rift.standings.getSystemColor
-import dev.nohus.rift.utils.plural
 import dev.nohus.rift.utils.roundSecurity
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource

@@ -56,15 +56,13 @@ class PingsRepository(
         val savedPings = load()
         val recentPings = savedPings.filter { it.timestamp.isAfter(Instant.now() - Duration.ofHours(48)) }
         _pings.update { recentPings }
-        // Save translated pings back to file
-        save(recentPings)
     }
 
     private fun translatePing(ping: PingModel): PingModel {
         return when (ping) {
             is PingModel.PlainText -> ping.copy(
                 sourceText = pingTranslator.translate(ping.sourceText),
-                text = pingTranslator.translate(ping.text)
+                text = pingTranslator.translate(ping.text),
             )
             is PingModel.FleetPing -> ping.copy(
                 sourceText = pingTranslator.translate(ping.sourceText),
@@ -75,7 +73,7 @@ class PingsRepository(
                         is FormupLocation.Text -> FormupLocation.Text(pingTranslator.translate(location.text))
                         is FormupLocation.System -> location
                     }
-                }
+                },
             )
         }
     }
@@ -84,7 +82,7 @@ class PingsRepository(
         return try {
             val serialized = pingsFile.readText()
             val loadedPings = json.decodeFromString<List<PingModel>>(serialized)
-            // 对每个接收的ping进行翻译
+            // Translate the source text of each ping
             loadedPings.map { translatePing(it) }
         } catch (e: NoSuchFileException) {
             logger.info { "Pings file not found" }
