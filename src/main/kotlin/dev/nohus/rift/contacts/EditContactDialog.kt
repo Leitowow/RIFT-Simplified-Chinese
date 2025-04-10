@@ -69,7 +69,7 @@ fun WindowScope.EditContactDialog(
 ) {
     var isExisting by remember { mutableStateOf(false) }
     RiftDialog(
-        title = if (isExisting) "Edit Contact" else "Add Contact",
+        title = if (isExisting) "编辑联系人" else "添加联系人",
         icon = Res.drawable.window_editcontact,
         parentState = parentWindowState,
         state = rememberWindowState(width = 300.dp, height = Dp.Unspecified),
@@ -148,7 +148,7 @@ private fun EditContactDialogContent(
                 val selectedWatchedCopy = selectedWatched
                 if (selectedWatchedCopy != null) {
                     RiftCheckboxWithLabel(
-                        label = "Add contact to buddy list",
+                        label = "添加联系人至好友列表",
                         isChecked = selectedWatchedCopy,
                         onCheckedChange = { selectedWatched = it },
                         modifier = Modifier.padding(top = Spacing.mediumLarge),
@@ -156,7 +156,7 @@ private fun EditContactDialogContent(
                 }
 
                 Text(
-                    text = "Choose character",
+                    text = "选择角色",
                     style = RiftTheme.typography.titlePrimary,
                     modifier = Modifier.padding(top = Spacing.mediumLarge),
                 )
@@ -174,9 +174,9 @@ private fun EditContactDialogContent(
                     modifier = Modifier.padding(top = Spacing.mediumLarge),
                 ) { labels ->
                     Column {
-                        RiftTooltipArea("Labels can only be created in-game") {
+                        RiftTooltipArea("标签只能在游戏中编辑添加") {
                             Text(
-                                text = if (labels.isNotEmpty()) "Assign labels" else "No labels available",
+                                text = if (labels.isNotEmpty()) "分配标签" else "没有标签可用",
                                 style = RiftTheme.typography.titlePrimary,
                             )
                         }
@@ -202,7 +202,7 @@ private fun EditContactDialogContent(
         ) {
             if (isExisting) {
                 RiftButton(
-                    text = "Delete",
+                    text = "删除",
                     cornerCut = ButtonCornerCut.None,
                     type = ButtonType.Negative,
                     onClick = {
@@ -217,7 +217,7 @@ private fun EditContactDialogContent(
                 )
             }
             RiftButton(
-                text = if (isExisting) "Edit" else "Add",
+                text = if (isExisting) "编辑" else "添加",
                 cornerCut = ButtonCornerCut.None,
                 onClick = {
                     onConfirmClick(
@@ -233,7 +233,7 @@ private fun EditContactDialogContent(
                 modifier = Modifier.weight(1f),
             )
             RiftButton(
-                text = "Cancel",
+                text = "取消",
                 cornerCut = ButtonCornerCut.BottomRight,
                 onClick = onCancelClick,
                 modifier = Modifier.weight(1f),
@@ -272,11 +272,11 @@ private fun StandingLevelSelector(
 
 private fun Standing.getName(): String {
     return when (this) {
-        Standing.Terrible -> "Terrible Standing"
-        Standing.Bad -> "Bad Standing"
-        Standing.Neutral -> "Neutral Standing"
-        Standing.Good -> "Good Standing"
-        Standing.Excellent -> "Excellent Standing"
+        Standing.Terrible -> "恶劣声望"
+        Standing.Bad -> "不良声望"
+        Standing.Neutral -> "中立声望"
+        Standing.Good -> "良好声望"
+        Standing.Excellent -> "优秀声望"
     }
 }
 

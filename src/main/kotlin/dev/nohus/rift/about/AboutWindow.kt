@@ -213,7 +213,7 @@ private fun AboutWindowContent(
                                 when (isUpdateAvailable.value) {
                                     NOT_PACKAGED -> {
                                         val text = if (state.version.endsWith("dev")) {
-                                            "Development version"
+                                            "汉化开发版"
                                         } else {
                                             "Portable version"
                                         }
@@ -249,23 +249,32 @@ private fun AboutWindowContent(
                     }
 
                     Text(
-                        text = "Developed by Nohus",
+                        text = "原版作者：Nohus",
                         style = RiftTheme.typography.titlePrimary,
                         modifier = Modifier.padding(top = Spacing.medium),
-                    )
-                    LinkText(
-                        text = "https://riftforeve.online/",
-                        onClick = { "https://riftforeve.online/".toURIOrNull()?.openBrowser() },
                     )
 
+                    LinkText(
+                        text = "riftforeve.online",
+                        onClick = { "https://riftforeve.online/".toURIOrNull()?.openBrowser() },
+                    )
                     Text(
-                        text = "Join the Discord!",
+                        text = "汉化版作者：Leito 元元 暗枪 路飞",
                         style = RiftTheme.typography.titlePrimary,
                         modifier = Modifier.padding(top = Spacing.medium),
                     )
                     LinkText(
-                        text = "Invite link",
-                        onClick = { "https://discord.gg/FQPVs5hnaZ".toURIOrNull()?.openBrowser() },
+                        text = "下载地址",
+                        onClick = { "https://github.com/Leitowow/RIFT-Simplified-Chinese".toURIOrNull()?.openBrowser() },
+                    )
+                    Text(
+                        text = "加入RIFT汉化版Q群",
+                        style = RiftTheme.typography.titlePrimary,
+                        modifier = Modifier.padding(top = Spacing.medium),
+                    )
+                    LinkText(
+                        text = "1037664416",
+                        onClick = { "http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=4UnAEl8FxsYnSpH_mIju6QeVipLDVR1f&authKey=NgBxKAeRnM29Og%2BNWrDF3VXMqUh08mAwdE7MeMeosJw%2Bna%2FbdMEgqXfT1kPADrIs&noverify=0&group_code=1037664416".toURIOrNull()?.openBrowser() },
                     )
 
                     Text(

@@ -25,7 +25,7 @@ fun IntelFeedSettingsWindow(
     val state by viewModel.state.collectAsState()
 
     RiftWindow(
-        title = "Intel Feed Settings",
+        title = "预警总览设置",
         icon = Res.drawable.window_settings,
         state = windowState,
         onCloseClick = onCloseRequest,
@@ -44,10 +44,10 @@ private fun IntelFeedSettingsWindowContent(
     onIsUsingCompactModeChange: (Boolean) -> Unit,
 ) {
     Column {
-        SectionTitle("User interface", Modifier.padding(bottom = Spacing.medium))
+        SectionTitle("用户界面", Modifier.padding(bottom = Spacing.medium))
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
             RiftCheckboxWithLabel(
-                label = "Compact mode",
+                label = "紧凑模式",
                 isChecked = isUsingCompactMode,
                 onCheckedChange = onIsUsingCompactModeChange,
             )

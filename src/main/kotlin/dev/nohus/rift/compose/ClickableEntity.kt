@@ -122,7 +122,7 @@ fun GetSystemContextMenuItems(
     return buildList {
         add(
             ContextMenuItem.TextItem(
-                text = "Set Destination",
+                text = "设为终点",
                 iconResource = Res.drawable.menu_set_destination,
                 onClick = {
                     autopilotController.setDestination(locationId ?: systemId.toLong(), systemId)
@@ -131,7 +131,7 @@ fun GetSystemContextMenuItems(
         )
         add(
             ContextMenuItem.TextItem(
-                text = "Add Waypoint",
+                text = "添加路径点",
                 onClick = {
                     autopilotController.addWaypoint(locationId ?: systemId.toLong(), systemId)
                 },
@@ -139,7 +139,7 @@ fun GetSystemContextMenuItems(
         )
         add(
             ContextMenuItem.TextItem(
-                text = "Clear Autopilot",
+                text = "取消自动导航",
                 onClick = {
                     autopilotController.clearRoute()
                 },
@@ -147,7 +147,7 @@ fun GetSystemContextMenuItems(
         )
         add(
             ContextMenuItem.CheckboxItem(
-                text = "All Characters",
+                text = "应用至所有角色",
                 isSelected = isSettingAutopilotToAll,
                 onClick = {
                     isSettingAutopilotToAll = !isSettingAutopilotToAll
@@ -158,7 +158,7 @@ fun GetSystemContextMenuItems(
         add(ContextMenuItem.DividerItem)
         add(
             ContextMenuItem.TextItem(
-                text = "Copy Name",
+                text = "复制名字",
                 onClick = {
                     Clipboard.copy(system)
                 },
@@ -167,7 +167,7 @@ fun GetSystemContextMenuItems(
         if (mapType !is MapType.ClusterSystemsMap && isKnownSpace) {
             add(
                 ContextMenuItem.TextItem(
-                    text = if (mapType == null) "Show on Map" else "Show in New Eden",
+                    text = if (mapType == null) "在星图上显示" else "在星图上显示",
                     onClick = {
                         mapExternalControl.showSystem(systemId, fromMap = mapType != null)
                     },
@@ -306,9 +306,9 @@ private fun getContactMenuItem(id: Int, type: EntityType): ContextMenuItem {
         contactsExternalControl.editContact(id, type)
     }
     return if (contactsRepository.isCharacterContact(id)) {
-        ContextMenuItem.TextItem("Edit Contact", null, onClick = onEditContact)
+        ContextMenuItem.TextItem("编辑联系人", null, onClick = onEditContact)
     } else {
-        ContextMenuItem.TextItem("Add Contact", Res.drawable.menu_add, onClick = onEditContact)
+        ContextMenuItem.TextItem("添加联系人", Res.drawable.menu_add, onClick = onEditContact)
     }
 }
 

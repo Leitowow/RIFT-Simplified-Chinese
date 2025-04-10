@@ -207,7 +207,7 @@ class AlertsActionController(
     private fun getNotificationTitle(matchingEntities: List<Pair<IntelReportType, List<SystemEntity>>>): String {
         return matchingEntities.map { it.first }.let {
             if (IntelReportType.GateCamp in it) {
-                "报告了门神"
+                "报告了堵门"
             } else if (IntelReportType.AnyCharacter in it) {
                 "报告了敌对"
             } else if (IntelReportType.AnyShip in it) {

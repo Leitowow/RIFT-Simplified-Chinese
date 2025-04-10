@@ -44,7 +44,6 @@ class PingTranslator {
         "Sleipnir" to "Sleipnir(斯雷普尼级)",
         "Drake" to "Drake(幼龙级)",
 
-
     )
 
     fun translate(text: String): String {

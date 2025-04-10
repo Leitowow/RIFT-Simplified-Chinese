@@ -309,12 +309,12 @@ fun NotificationContent(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             val systemSubtext = when (val distance = notification.locationMatch.distance) {
-                                0 -> "In the system"
-                                1 -> "1 jump away"
-                                else -> "$distance jumps away"
+                                0 -> "在本地"
+                                1 -> "1 跳外"
+                                else -> "$distance 跳外"
                             }
                             SolarSystem(notification.solarSystem, systemSubtext)
-                            SolarSystem(notification.locationMatch.systemId, "Reference system")
+                            SolarSystem(notification.locationMatch.systemId, "参考星系")
                         }
                     }
 
@@ -324,12 +324,12 @@ fun NotificationContent(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             val systemSubtext = when (val distance = notification.locationMatch.distance) {
-                                0 -> "In your system"
-                                1 -> "1 jump away"
-                                else -> "$distance jumps away"
+                                0 -> "在你本地"
+                                1 -> "1 跳外"
+                                else -> "$distance 跳外"
                             }
                             SolarSystem(notification.solarSystem, systemSubtext)
-                            Character(notification.locationMatch.characterId, "Your character")
+                            Character(notification.locationMatch.characterId, "你的角色")
                         }
                     }
                 }

@@ -46,7 +46,7 @@ private fun SingleInstanceContent(
         verticalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
         Text(
-            text = "RIFT is already running. Starting multiple instances is not recommended.",
+            text = "RIFT 已经在运行。启动多个应用可能会导致不确定性问题。",
             style = RiftTheme.typography.bodyPrimary,
         )
         Row(
@@ -54,13 +54,13 @@ private fun SingleInstanceContent(
         ) {
             Spacer(Modifier.weight(1f))
             RiftButton(
-                text = "Run anyway",
+                text = "执意启动",
                 type = ButtonType.Negative,
                 cornerCut = ButtonCornerCut.None,
                 onClick = onRunAnywayClick,
             )
             RiftButton(
-                text = "Close",
+                text = "关闭",
                 onClick = onCloseClick,
             )
         }

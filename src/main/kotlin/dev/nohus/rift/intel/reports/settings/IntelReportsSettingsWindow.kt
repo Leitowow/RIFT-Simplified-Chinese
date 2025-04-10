@@ -25,7 +25,7 @@ fun IntelReportsSettingsWindow(
     val state by viewModel.state.collectAsState()
 
     RiftWindow(
-        title = "Intel Reports Settings",
+        title = "预警提示设置",
         icon = Res.drawable.window_settings,
         state = windowState,
         onCloseClick = onCloseRequest,
@@ -56,28 +56,28 @@ private fun IntelReportsSettingsWindowContent(
     onIsShowingRegionChange: (Boolean) -> Unit,
 ) {
     Column {
-        SectionTitle("User interface", Modifier.padding(bottom = Spacing.medium))
+        SectionTitle("用户界面", Modifier.padding(bottom = Spacing.medium))
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
             RiftCheckboxWithLabel(
-                label = "Compact mode",
+                label = "紧凑模式",
                 isChecked = isUsingCompactMode,
                 onCheckedChange = onIsUsingCompactModeChange,
             )
         }
-        SectionTitle("Shown information", Modifier.padding(vertical = Spacing.medium))
+        SectionTitle("显示信息", Modifier.padding(vertical = Spacing.medium))
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
             RiftCheckboxWithLabel(
-                label = "Show reporter name",
+                label = "显示提交预警的角色名",
                 isChecked = isShowingReporter,
                 onCheckedChange = onIsShowingReporterChange,
             )
             RiftCheckboxWithLabel(
-                label = "Show channel name",
+                label = "显示频道名称",
                 isChecked = isShowingChannel,
                 onCheckedChange = onIsShowingChannelChange,
             )
             RiftCheckboxWithLabel(
-                label = "Show channel region",
+                label = "显示预警频道所在星域",
                 isChecked = isShowingRegion,
                 onCheckedChange = onIsShowingRegionChange,
             )

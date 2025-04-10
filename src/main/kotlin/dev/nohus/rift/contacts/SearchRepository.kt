@@ -29,17 +29,17 @@ class SearchRepository(
 ) {
 
     enum class SearchCategory(val displayName: String, val queryName: String) {
-        Agents("Agents", "agent"),
-        Alliance("Alliances", "alliance"),
-        Characters("Characters", "character"),
-        Constellation("Constellations", "constellation"),
-        Corporations("Corporations", "corporation"),
-        Factions("Factions", "faction"),
-        InventoryTypes("Items", "inventory_type"),
-        Regions("Regions", "region"),
-        SolarSystems("Solar Systems", "solar_system"),
-        Stations("Stations", "station"),
-        Structures("Structures", "structure"),
+        Agents("代理人", "agent"),
+        Alliance("联盟", "alliance"),
+        Characters("角色", "character"),
+        Constellation("星座", "constellation"),
+        Corporations("军团", "corporation"),
+        Factions("势力", "faction"),
+        InventoryTypes("物品", "inventory_type"),
+        Regions("星域", "region"),
+        SolarSystems("星系", "solar_system"),
+        Stations("空间站", "station"),
+        Structures("建筑", "structure"),
     }
 
     data class SearchResult(
