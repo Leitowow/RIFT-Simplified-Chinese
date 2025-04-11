@@ -7,7 +7,7 @@
 
 ## 📥 下载地址
 最新版本下载：  
-[RIFT-Simplified-Chinese V1.3](https://github.com/Leitowow/RIFT-Simplified-Chinese/releases/download/v1.3.1/RIFT-1.3.1.msi)  
+[RIFT-Simplified-Chinese V1.3.1](https://github.com/Leitowow/RIFT-Simplified-Chinese/releases/download/v1.3.1/RIFT-1.3.1.msi)  
 
 ---
 
