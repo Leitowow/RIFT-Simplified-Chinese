@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.Text
@@ -23,11 +22,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.rememberWindowState
 import dev.nohus.rift.about.AboutViewModel.UiState
-import dev.nohus.rift.about.UpdateController.UpdateAvailability.NOT_PACKAGED
-import dev.nohus.rift.about.UpdateController.UpdateAvailability.NO_UPDATE
-import dev.nohus.rift.about.UpdateController.UpdateAvailability.UNKNOWN
-import dev.nohus.rift.about.UpdateController.UpdateAvailability.UPDATE_AUTOMATIC
-import dev.nohus.rift.about.UpdateController.UpdateAvailability.UPDATE_MANUAL
 import dev.nohus.rift.compose.ButtonCornerCut
 import dev.nohus.rift.compose.ButtonType
 import dev.nohus.rift.compose.CreatorCode
@@ -45,7 +39,6 @@ import dev.nohus.rift.generated.resources.Res
 import dev.nohus.rift.generated.resources.partner_400
 import dev.nohus.rift.generated.resources.window_achievements
 import dev.nohus.rift.generated.resources.window_concord
-import dev.nohus.rift.generated.resources.window_info
 import dev.nohus.rift.generated.resources.window_rift_64
 import dev.nohus.rift.network.AsyncResource
 import dev.nohus.rift.utils.OperatingSystem
@@ -82,38 +75,6 @@ fun AboutWindow(
             onCreditsClick = viewModel::onCreditsClick,
             onWhatsNewClick = viewModel::onWhatsNewClick,
         )
-
-        if (state.isUpdateDialogShown) {
-            RiftDialog(
-                title = "Update available",
-                icon = Res.drawable.window_info,
-                parentState = windowState,
-                state = rememberWindowState(width = 400.dp, height = Dp.Unspecified),
-                onCloseClick = viewModel::onDialogDismissed,
-            ) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(Spacing.medium),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    if (state.updateAvailability.success == UPDATE_AUTOMATIC) {
-                        Text(
-                            text = "A newer version of RIFT is ready to install.",
-                            style = RiftTheme.typography.titlePrimary,
-                        )
-                        RiftButton(
-                            text = "Update now",
-                            onClick = viewModel::onTriggerUpdateClick,
-                            modifier = Modifier.align(Alignment.End),
-                        )
-                    } else {
-                        Text(
-                            text = getUpdateDialogText(state.operatingSystem, state.executablePath),
-                            style = RiftTheme.typography.titlePrimary,
-                        )
-                    }
-                }
-            }
-        }
 
         if (state.isLegalDialogShown) {
             RiftDialog(
@@ -210,40 +171,10 @@ private fun AboutWindowContent(
                             }
 
                             is AsyncResource.Ready -> {
-                                when (isUpdateAvailable.value) {
-                                    NOT_PACKAGED -> {
-                                        val text = if (state.version.endsWith("dev")) {
-                                            "汉化开发版"
-                                        } else {
-                                            "Portable version"
-                                        }
-                                        Text(
-                                            text = text,
-                                            style = RiftTheme.typography.bodySecondary,
-                                        )
-                                    }
-
-                                    UNKNOWN -> {
-                                        Text(
-                                            text = "Couldn't check for updates",
-                                            style = RiftTheme.typography.bodySecondary,
-                                        )
-                                    }
-
-                                    NO_UPDATE -> {
-                                        Text(
-                                            text = "Up to date",
-                                            style = RiftTheme.typography.bodySecondary,
-                                        )
-                                    }
-
-                                    UPDATE_MANUAL, UPDATE_AUTOMATIC -> {
-                                        LinkText(
-                                            text = "Update available",
-                                            onClick = onUpdateClick,
-                                        )
-                                    }
-                                }
+                                Text(
+                                    text = "汉化开发版",
+                                    style = RiftTheme.typography.bodySecondary,
+                                )
                             }
                         }
                     }

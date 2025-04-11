@@ -111,11 +111,14 @@ class ApplicationViewModel(
                     windowManager.onWindowOpen(RiftWindow.StartupWarning, inputModel = StartupWarningInputModel(startupWarnings))
                 }
             }
+            // 注释掉更新检查
+            /*
             if (settings.isSetupWizardFinished) {
                 whatsNewController.showIfRequired()
             } else {
                 whatsNewController.resetWhatsNewVersion()
             }
+             */
         }
     }
 

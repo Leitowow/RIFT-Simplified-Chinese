@@ -12,8 +12,11 @@ class ResetSparkleUpdateCheckUseCase(
      * Force Sparkle to recheck for updates on next start
      */
     operator fun invoke() {
+        // 禁用更新检查
+        /*
         if (operatingSystem == OperatingSystem.MacOs) {
             commandRunner.run("defaults", "delete", "dev.nohus.rift", "SULastCheckTime")
         }
+         */
     }
 }
