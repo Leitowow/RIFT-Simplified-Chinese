@@ -44,6 +44,7 @@ class SoundPlayer(
             val concurrentJobsListener = launch {
                 while (true) {
                     val inputStream = playSubmission.receive()
+                    val gain = settings.soundsVolume / 100f
                     playingJobs += launch {
                         player.play(inputStream, gain)
                     }

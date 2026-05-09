@@ -7,6 +7,7 @@ import dev.nohus.rift.alerts.AlertAction
 import dev.nohus.rift.alerts.AlertTrigger
 import dev.nohus.rift.alerts.AlertsRepository
 import dev.nohus.rift.alerts.ChatMessageChannel
+import dev.nohus.rift.alerts.ContactLabel
 import dev.nohus.rift.alerts.GameActionType
 import dev.nohus.rift.alerts.IntelChannel
 import dev.nohus.rift.alerts.IntelReportLocation
@@ -17,6 +18,7 @@ import dev.nohus.rift.alerts.JumpRange
 import dev.nohus.rift.alerts.PapType
 import dev.nohus.rift.alerts.PiEventType
 import dev.nohus.rift.alerts.create.FormAnswer.CharacterAnswer
+import dev.nohus.rift.alerts.create.FormAnswer.ContactsLabelAnswer
 import dev.nohus.rift.alerts.create.FormAnswer.FreeformTextAnswer
 import dev.nohus.rift.alerts.create.FormAnswer.IntelChannelAnswer
 import dev.nohus.rift.alerts.create.FormAnswer.JumpsRangeAnswer
@@ -27,6 +29,7 @@ import dev.nohus.rift.alerts.create.FormAnswer.SoundAnswer
 import dev.nohus.rift.alerts.create.FormAnswer.SpecificCharactersAnswer
 import dev.nohus.rift.alerts.create.FormAnswer.SystemAnswer
 import dev.nohus.rift.alerts.create.FormQuestion.CombatTargetQuestion
+import dev.nohus.rift.alerts.create.FormQuestion.ContactsLabelQuestion
 import dev.nohus.rift.alerts.create.FormQuestion.FreeformTextQuestion
 import dev.nohus.rift.alerts.create.FormQuestion.IntelChannelQuestion
 import dev.nohus.rift.alerts.create.FormQuestion.JumpsRangeQuestion
@@ -40,6 +43,8 @@ import dev.nohus.rift.alerts.create.FormQuestion.SystemQuestion
 import dev.nohus.rift.characters.repositories.LocalCharactersRepository
 import dev.nohus.rift.characters.repositories.LocalCharactersRepository.LocalCharacter
 import dev.nohus.rift.configurationpack.ConfigurationPackRepository
+import dev.nohus.rift.contacts.ContactsRepository
+import dev.nohus.rift.contacts.ContactsRepository.Label
 import dev.nohus.rift.gamelogs.RecentTargetsRepository
 import dev.nohus.rift.logs.parse.CharacterNameValidator
 import dev.nohus.rift.planetaryindustry.PlanetaryIndustryRepository
@@ -51,7 +56,6 @@ import dev.nohus.rift.utils.sound.Sound
 import dev.nohus.rift.utils.sound.SoundsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.koin.core.annotation.Factory
@@ -76,6 +80,7 @@ class CreateAlertViewModel(
     configurationPackRepository: ConfigurationPackRepository,
     private val recentTargetsRepository: RecentTargetsRepository,
     private val planetaryIndustryRepository: PlanetaryIndustryRepository,
+    private val contactsRepository: ContactsRepository,
 ) : ViewModel() {
 
     data class UiState(
@@ -89,6 +94,7 @@ class CreateAlertViewModel(
         val sounds: List<Sound> = emptyList(),
         val recentTargets: Set<String> = emptySet(),
         val colonies: List<ColonyItem> = emptyList(),
+        val labels: List<Label> = emptyList(),
         val dismissEvent: Event? = null,
         val highlightQuestionEvent: Event? = null,
     )
@@ -133,6 +139,11 @@ class CreateAlertViewModel(
                 resource.success?.values?.let { colonies ->
                     _state.update { it.copy(colonies = colonies.toList()) }
                 }
+            }
+        }
+        viewModelScope.launch {
+            contactsRepository.contacts.collect { contacts ->
+                _state.update { it.copy(labels = contacts.labels.values.flatten()) }
             }
         }
     }
@@ -218,6 +229,9 @@ class CreateAlertViewModel(
             _state.update { it.copy(isPendingAnswerValid = isValid) }
         } else if (answer is PlanetaryIndustryColoniesAnswer) {
             _state.update { it.copy(isPendingAnswerValid = true) }
+        } else if (answer is ContactsLabelAnswer) {
+            val isValid = answer.labels.isNotEmpty()
+            _state.update { it.copy(isPendingAnswerValid = isValid) }
         }
     }
 
@@ -272,6 +286,9 @@ class CreateAlertViewModel(
                     if (INTEL_REPORT_TYPE_SPECIFIC_CHARACTERS.id in INTEL_REPORT_TYPE_QUESTION.answer!!.ids) {
                         INTEL_REPORT_TYPE_SPECIFIC_CHARACTERS_QUESTION.answer ?: return INTEL_REPORT_TYPE_SPECIFIC_CHARACTERS_QUESTION
                     }
+                    if (INTEL_REPORT_TYPE_LABELED_CONTACTS.id in INTEL_REPORT_TYPE_QUESTION.answer!!.ids) {
+                        INTEL_REPORT_TYPE_LABELED_CONTACTS_QUESTION.answer ?: return INTEL_REPORT_TYPE_LABELED_CONTACTS_QUESTION
+                    }
                     if (INTEL_REPORT_TYPE_SPECIFIC_SHIP_CLASSES.id in INTEL_REPORT_TYPE_QUESTION.answer!!.ids) {
                         INTEL_REPORT_TYPE_SPECIFIC_SHIP_CLASSES_QUESTION.answer ?: return INTEL_REPORT_TYPE_SPECIFIC_SHIP_CLASSES_QUESTION
                     }
@@ -282,6 +299,11 @@ class CreateAlertViewModel(
                         }
                         INTEL_REPORT_LOCATION_ANY_OWNED_CHARACTER.id -> {}
                         INTEL_REPORT_LOCATION_OWNED_CHARACTER.id -> {
+                            INTEL_REPORT_LOCATION_OWNED_CHARACTER_QUESTION.answer
+                                ?: return INTEL_REPORT_LOCATION_OWNED_CHARACTER_QUESTION
+                        }
+                        INTEL_REPORT_LOCATION_ANY_UNDOCKED_CHARACTER.id -> {}
+                        INTEL_REPORT_LOCATION_UNDOCKED_CHARACTER.id -> {
                             INTEL_REPORT_LOCATION_OWNED_CHARACTER_QUESTION.answer
                                 ?: return INTEL_REPORT_LOCATION_OWNED_CHARACTER_QUESTION
                         }
@@ -307,6 +329,9 @@ class CreateAlertViewModel(
                     if (GAME_ACTION_TYPE_COMBAT_STOPPED.id in GAME_ACTION_TYPE_QUESTION.answer!!.ids) {
                         GAME_ACTION_TYPE_COMBAT_STOPPED_DURATION_QUESTION.answer ?: return GAME_ACTION_TYPE_COMBAT_STOPPED_DURATION_QUESTION
                     }
+                    if (GAME_ACTION_TYPE_CUSTOM.id in GAME_ACTION_TYPE_QUESTION.answer!!.ids) {
+                        GAME_ACTION_TYPE_CUSTOM_MESSAGE_QUESTION.answer ?: return GAME_ACTION_TYPE_CUSTOM_MESSAGE_QUESTION
+                    }
                 }
 
                 ALERT_TRIGGER_PLANETARY_INDUSTRY.id -> {
@@ -324,6 +349,7 @@ class CreateAlertViewModel(
                         }
                     }
                     CHAT_MESSAGE_SENDER_QUESTION.answer ?: return CHAT_MESSAGE_SENDER_QUESTION
+                    CHAT_MESSAGE_SENDER_EXCLUDE_SELF_QUESTION.answer ?: return CHAT_MESSAGE_SENDER_EXCLUDE_SELF_QUESTION
                     CHAT_MESSAGE_MESSAGE_CONTAINING_QUESTION.answer ?: return CHAT_MESSAGE_MESSAGE_CONTAINING_QUESTION
                 }
 
@@ -395,6 +421,10 @@ class CreateAlertViewModel(
                                     val answer = INTEL_REPORT_TYPE_SPECIFIC_CHARACTERS_QUESTION.answer ?: return null
                                     IntelReportType.SpecificCharacters(answer.characters)
                                 }
+                                INTEL_REPORT_TYPE_LABELED_CONTACTS.id -> {
+                                    val answer = INTEL_REPORT_TYPE_LABELED_CONTACTS_QUESTION.answer ?: return null
+                                    IntelReportType.LabeledContacts(answer.labels.map { ContactLabel(it.owner.id, it.id) })
+                                }
                                 INTEL_REPORT_TYPE_ANY_SHIP.id -> IntelReportType.AnyShip
                                 INTEL_REPORT_TYPE_SPECIFIC_SHIP_CLASSES.id -> {
                                     val answer = INTEL_REPORT_TYPE_SPECIFIC_SHIP_CLASSES_QUESTION.answer ?: return null
@@ -403,6 +433,8 @@ class CreateAlertViewModel(
                                 INTEL_REPORT_TYPE_WORMHOLE.id -> IntelReportType.Wormhole
                                 INTEL_REPORT_TYPE_GATE_CAMP.id -> IntelReportType.GateCamp
                                 INTEL_REPORT_TYPE_BUBBLES.id -> IntelReportType.Bubbles
+                                INTEL_REPORT_TYPE_ESS.id -> IntelReportType.Ess
+                                INTEL_REPORT_TYPE_SKYHOOK.id -> IntelReportType.Skyhook
                                 else -> throw IllegalStateException()
                             }
                         }
@@ -418,6 +450,7 @@ class CreateAlertViewModel(
 
                         INTEL_REPORT_LOCATION_ANY_OWNED_CHARACTER.id -> IntelReportLocation.AnyOwnedCharacter(
                             jumpsRange = jumpsRange,
+                            onlyUndocked = false,
                         )
 
                         INTEL_REPORT_LOCATION_OWNED_CHARACTER.id -> {
@@ -425,6 +458,22 @@ class CreateAlertViewModel(
                                 IntelReportLocation.OwnedCharacter(
                                     characterId = it.characterId,
                                     jumpsRange = jumpsRange,
+                                    onlyUndocked = false,
+                                )
+                            } ?: return null
+                        }
+
+                        INTEL_REPORT_LOCATION_ANY_UNDOCKED_CHARACTER.id -> IntelReportLocation.AnyOwnedCharacter(
+                            jumpsRange = jumpsRange,
+                            onlyUndocked = true,
+                        )
+
+                        INTEL_REPORT_LOCATION_UNDOCKED_CHARACTER.id -> {
+                            INTEL_REPORT_LOCATION_OWNED_CHARACTER_QUESTION.answer?.let {
+                                IntelReportLocation.OwnedCharacter(
+                                    characterId = it.characterId,
+                                    jumpsRange = jumpsRange,
+                                    onlyUndocked = true,
                                 )
                             } ?: return null
                         }
@@ -474,6 +523,13 @@ class CreateAlertViewModel(
                                         else -> throw IllegalStateException()
                                     }
                                     GameActionType.CombatStopped(target.text.takeIf { it.isNotBlank() }, durationSeconds)
+                                }
+                                GAME_ACTION_TYPE_RUN_OUT_OF_CHARGES.id -> {
+                                    GameActionType.RanOutOfCharges
+                                }
+                                GAME_ACTION_TYPE_CUSTOM.id -> {
+                                    val message = GAME_ACTION_TYPE_CUSTOM_MESSAGE_QUESTION.answer ?: return null
+                                    GameActionType.Custom(message.text, message.isRegex)
                                 }
                                 else -> throw IllegalStateException()
                             }
@@ -535,11 +591,18 @@ class CreateAlertViewModel(
                         else -> throw IllegalStateException()
                     }
                     val sender = CHAT_MESSAGE_SENDER_QUESTION.answer?.text ?: return null
-                    val messageContaining = CHAT_MESSAGE_MESSAGE_CONTAINING_QUESTION.answer?.text ?: return null
+                    val isExcludingSelf = when (CHAT_MESSAGE_SENDER_EXCLUDE_SELF_QUESTION.answer?.id) {
+                        CHAT_MESSAGE_SENDER_EXCLUDE_SELF_YES.id -> true
+                        CHAT_MESSAGE_SENDER_EXCLUDE_SELF_NO.id -> false
+                        else -> throw IllegalStateException()
+                    }
+                    val messageContaining = CHAT_MESSAGE_MESSAGE_CONTAINING_QUESTION.answer ?: return null
                     AlertTrigger.ChatMessage(
                         channel = channel,
                         sender = sender.takeIf { it.isNotBlank() },
-                        messageContaining = messageContaining.takeIf { it.isNotBlank() },
+                        messageContaining = messageContaining.text.takeIf { it.isNotBlank() },
+                        isRegex = messageContaining.isRegex,
+                        isExcludingSelf = isExcludingSelf,
                     )
                 }
 
@@ -589,11 +652,12 @@ class CreateAlertViewModel(
                         else -> throw IllegalStateException()
                     }
                     val sender = JABBER_MESSAGE_SENDER_QUESTION.answer?.text ?: return null
-                    val messageContaining = JABBER_MESSAGE_MESSAGE_CONTAINING_QUESTION.answer?.text ?: return null
+                    val messageContaining = JABBER_MESSAGE_MESSAGE_CONTAINING_QUESTION.answer ?: return null
                     AlertTrigger.JabberMessage(
                         channel = channel,
                         sender = sender.takeIf { it.isNotBlank() },
-                        messageContaining = messageContaining.takeIf { it.isNotBlank() },
+                        messageContaining = messageContaining.text.takeIf { it.isNotBlank() },
+                        isRegex = messageContaining.isRegex,
                     )
                 }
 
@@ -701,4 +765,5 @@ class CreateAlertViewModel(
     private val CombatTargetQuestion.answer: FreeformTextAnswer? get() = formAnswer as? FreeformTextAnswer
     private val PlanetaryIndustryColoniesQuestion.answer: PlanetaryIndustryColoniesAnswer? get() = formAnswer as? PlanetaryIndustryColoniesAnswer
     private val FreeformTextQuestion.answer: FreeformTextAnswer? get() = formAnswer as? FreeformTextAnswer
+    private val ContactsLabelQuestion.answer: ContactsLabelAnswer? get() = formAnswer as? ContactsLabelAnswer
 }

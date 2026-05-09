@@ -4,6 +4,7 @@ import dev.nohus.rift.database.local.Characters2
 import dev.nohus.rift.database.local.LocalDatabase
 import dev.nohus.rift.logs.parse.CharacterNameValidator
 import dev.nohus.rift.network.esi.EsiApi
+import dev.nohus.rift.network.requests.Originator
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -16,6 +17,7 @@ import org.jetbrains.exposed.sql.selectAll
 import org.koin.core.annotation.Single
 import java.time.Instant
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
 import dev.nohus.rift.database.local.CharacterStatus as DbCharacterStatus
 
 private val logger = KotlinLogging.logger {}
@@ -35,12 +37,12 @@ class CharactersRepository(
         val checkTimestamp: Long,
     )
 
-    suspend fun getCharacterNamesStatus(names: List<String>): Map<String, CharacterStatus> {
+    suspend fun getCharacterNamesStatus(originator: Originator, names: List<String>): Map<String, CharacterStatus> {
         val databaseCharacters = getCharactersFromDatabase(names)
 
         val missing = names.filter { it !in databaseCharacters.keys }
         val esiCharacters: Map<String, CharacterStatus> = if (missing.isNotEmpty()) {
-            val characters = getCharactersFromEsi(missing)
+            val characters = getCharactersFromEsi(originator, missing)
             saveCharactersToDatabase(characters)
             characters
                 .filter { it.name in missing }
@@ -56,20 +58,20 @@ class CharactersRepository(
         return databaseCharacters + esiCharacters
     }
 
-    suspend fun getCharacterId(name: String): Int? {
+    suspend fun getCharacterId(originator: Originator, name: String): Int? {
         if (!characterNameValidator.isValid(name)) {
             return null
         }
-        return when (val status = getCharacterNamesStatus(listOf(name)).entries.single().value) {
+        return when (val status = getCharacterNamesStatus(originator, listOf(name)).entries.single().value) {
             is CharacterStatus.Exists -> status.characterId
             CharacterStatus.DoesNotExist -> null
         }
     }
 
-    private suspend fun getCharactersFromEsi(names: List<String>): List<Character> = withContext(Dispatchers.IO) {
+    private suspend fun getCharactersFromEsi(originator: Originator, names: List<String>): List<Character> = withContext(Dispatchers.IO) {
         val now = Instant.now().toEpochMilli()
-        val esiCharacters = esiApi.postUniverseIds(names).success?.characters.orEmpty()
-            .map { async { it to characterActivityRepository.getActivityStatus(it.id) } }
+        val esiCharacters = esiApi.postUniverseIds(originator, names).success?.characters.orEmpty()
+            .map { async { it to characterActivityRepository.getActivityStatus(originator, it.id) } }
             .awaitAll()
             .map { (character, status) ->
                 Character(character.name, character.id, status, now)
@@ -81,27 +83,26 @@ class CharactersRepository(
         esiCharacters + notExistingCharacters
     }
 
-    private suspend fun getCharactersFromDatabase(names: List<String>): Map<String, CharacterStatus> =
-        withContext(Dispatchers.IO) {
-            val currentTime = Instant.now().toEpochMilli()
-            localDatabase.transaction {
-                Characters2.selectAll().where {
-                    Characters2.name inList names and (
-                        ((Characters2.status eq DbCharacterStatus.Active) and (Characters2.checkTimestamp greater currentTime - activeRecheckDuration)) or
-                            ((Characters2.status eq DbCharacterStatus.Inactive) and (Characters2.checkTimestamp greater currentTime - inactiveRecheckDuration)) or
-                            ((Characters2.status eq DbCharacterStatus.Dormant) and (Characters2.checkTimestamp greater currentTime - dormantRecheckDuration)) or
-                            ((Characters2.status eq DbCharacterStatus.DoesNotExists) and (Characters2.checkTimestamp greater currentTime - doesNotExistRecheckDuration))
-                        )
-                }.associate { row ->
-                    row[Characters2.name] to when (row[Characters2.status]) {
-                        DbCharacterStatus.Active -> CharacterStatus.Active(row[Characters2.characterId]!!)
-                        DbCharacterStatus.Inactive -> CharacterStatus.Inactive(row[Characters2.characterId]!!)
-                        DbCharacterStatus.Dormant -> CharacterStatus.Dormant(row[Characters2.characterId]!!)
-                        DbCharacterStatus.DoesNotExists -> CharacterStatus.DoesNotExist
-                    }
+    private suspend fun getCharactersFromDatabase(names: List<String>): Map<String, CharacterStatus> = withContext(Dispatchers.IO) {
+        val currentTime = Instant.now().toEpochMilli()
+        localDatabase.transaction {
+            Characters2.selectAll().where {
+                Characters2.name inList names and (
+                    ((Characters2.status eq DbCharacterStatus.Active) and (Characters2.checkTimestamp greater currentTime - activeRecheckDuration)) or
+                        ((Characters2.status eq DbCharacterStatus.Inactive) and (Characters2.checkTimestamp greater currentTime - inactiveRecheckDuration)) or
+                        ((Characters2.status eq DbCharacterStatus.Dormant) and (Characters2.checkTimestamp greater currentTime - dormantRecheckDuration)) or
+                        ((Characters2.status eq DbCharacterStatus.DoesNotExists) and (Characters2.checkTimestamp greater currentTime - doesNotExistRecheckDuration))
+                    )
+            }.associate { row ->
+                row[Characters2.name] to when (row[Characters2.status]) {
+                    DbCharacterStatus.Active -> CharacterStatus.Active(row[Characters2.characterId]!!)
+                    DbCharacterStatus.Inactive -> CharacterStatus.Inactive(row[Characters2.characterId]!!)
+                    DbCharacterStatus.Dormant -> CharacterStatus.Dormant(row[Characters2.characterId]!!)
+                    DbCharacterStatus.DoesNotExists -> CharacterStatus.DoesNotExist
                 }
             }
         }
+    }
 
     private suspend fun saveCharactersToDatabase(characters: List<Character>) = withContext(Dispatchers.IO) {
         localDatabase.transaction {
@@ -124,5 +125,6 @@ class CharactersRepository(
         private val inactiveRecheckDuration = 1.days.inWholeMilliseconds
         private val dormantRecheckDuration = 7.days.inWholeMilliseconds
         private val doesNotExistRecheckDuration = 7.days.inWholeMilliseconds
+        val expiryDuration = 30.days.inWholeMilliseconds
     }
 }

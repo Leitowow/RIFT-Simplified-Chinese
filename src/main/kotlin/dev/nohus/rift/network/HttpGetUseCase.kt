@@ -1,11 +1,14 @@
 package dev.nohus.rift.network
 
+import dev.nohus.rift.network.requests.Endpoint
+import dev.nohus.rift.network.requests.Originator
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.CacheControl
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import org.koin.core.annotation.Named
 import org.koin.core.annotation.Single
 import java.io.IOException
 
@@ -13,17 +16,21 @@ private val logger = KotlinLogging.logger {}
 
 @Single
 class HttpGetUseCase(
-    private val okHttpClient: OkHttpClient,
+    @Named("api") private val okHttpClient: OkHttpClient,
 ) {
 
     enum class CacheBehavior {
-        Normal, CacheOnly, NetworkOnly
+        Normal,
+        CacheOnly,
+        NetworkOnly,
     }
 
-    suspend operator fun invoke(url: String, cache: CacheBehavior = CacheBehavior.Normal): Result<String> {
+    suspend operator fun invoke(originator: Originator, url: String, cache: CacheBehavior = CacheBehavior.Normal): Result<String> {
         return withContext(Dispatchers.IO) {
             val request = Request.Builder()
                 .url(url)
+                .tag(Originator::class.java, originator)
+                .tag(Endpoint::class.java, Endpoint.Raw)
                 .run {
                     when (cache) {
                         CacheBehavior.Normal -> this

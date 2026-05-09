@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -21,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import dev.nohus.rift.compose.getNow
@@ -60,11 +62,15 @@ fun AnnotatedProgressBar(
 fun AnnotatedProgressBar(
     title: String,
     percentage: Float,
+    secondaryPercentage: Float? = null,
     description: String,
     color: Color,
+    secondaryColor: Color? = null,
     titleStyle: TextStyle = RiftTheme.typography.bodyPrimary,
+    modifier: Modifier = Modifier,
 ) {
     Column(
+        modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(Spacing.verySmall),
     ) {
         Text(
@@ -73,7 +79,9 @@ fun AnnotatedProgressBar(
         )
         ProgressBar(
             percentage = percentage.coerceIn(0f, 1f),
+            secondaryPercentage = secondaryPercentage?.coerceIn(0f, 1f),
             color = color,
+            secondaryColor = secondaryColor,
         )
         Text(
             text = description,
@@ -85,7 +93,9 @@ fun AnnotatedProgressBar(
 @Composable
 private fun ProgressBar(
     percentage: Float,
+    secondaryPercentage: Float? = null,
     color: Color,
+    secondaryColor: Color? = null,
     modifier: Modifier = Modifier,
 ) {
     val width = 144.dp
@@ -96,17 +106,37 @@ private fun ProgressBar(
             .background(RiftTheme.colors.progressBarBackground),
     ) {
         var animatedPercentage by remember { mutableStateOf(0f) }
+        var animatedSecondaryPercentage by remember { mutableStateOf(0f) }
         val progressWidth by animateDpAsState(animatedPercentage * width, spring(stiffness = StiffnessVeryLow))
-        LaunchedEffect(percentage) { animatedPercentage = percentage }
+        val secondaryProgressWidth by animateDpAsState(animatedSecondaryPercentage * width, spring(stiffness = StiffnessVeryLow))
+        LaunchedEffect(percentage, secondaryPercentage) {
+            animatedPercentage = percentage
+            animatedSecondaryPercentage = secondaryPercentage ?: 0f
+        }
+        ProgressBarFill(progressWidth, height, color)
+        if (secondaryColor != null) {
+            ProgressBarFill(secondaryProgressWidth, height, secondaryColor, Modifier.offset(x = progressWidth))
+        }
+    }
+}
+
+@Composable
+private fun ProgressBarFill(
+    width: Dp,
+    height: Dp,
+    color: Color,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier) {
         Box(
             modifier = Modifier
-                .size(progressWidth, height)
+                .size(width, height)
                 .graphicsLayer(renderEffect = BlurEffect(6f, 6f, edgeTreatment = TileMode.Decal))
                 .background(color),
         ) {}
         Box(
             modifier = Modifier
-                .size(progressWidth, height)
+                .size(width, height)
                 .background(color),
         ) {}
     }

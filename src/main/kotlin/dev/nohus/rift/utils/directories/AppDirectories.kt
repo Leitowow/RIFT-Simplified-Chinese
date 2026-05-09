@@ -16,6 +16,6 @@ class AppDirectories(
     }
 
     fun getAppCacheDirectory(): Path {
-        return operatingSystemDirectories.getCacheDirectory(applicationName)
+        return operatingSystemDirectories.getAppCacheDirectory(applicationName)
     }
 }

@@ -117,7 +117,7 @@ fun getCpuPowerUsage(planet: Planet, pins: List<Pin>, links: List<Link>): Pair<I
     val pinsUsage = pins.map { it.getCpuPowerUsage() }
     val linksUsage = links.map { it.getCpuPowerUsage(planet.radius, pins) }
     val totalUsage = pinsUsage + linksUsage
-    return totalUsage.reduce { acc, it -> (acc.first + it.first) to (acc.second + it.second) }
+    return totalUsage.fold(0 to 0) { acc, it -> (acc.first + it.first) to (acc.second + it.second) }
 }
 
 fun getCpuPowerSupply(upgradeLevel: Int): Pair<Int, Int> {

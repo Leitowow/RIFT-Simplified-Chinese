@@ -4,25 +4,28 @@ import dev.nohus.rift.logs.parse.ChatMessageParser.QuestionType.Location
 import dev.nohus.rift.logs.parse.ChatMessageParser.QuestionType.Number
 import dev.nohus.rift.logs.parse.ChatMessageParser.QuestionType.ShipTypes
 import dev.nohus.rift.logs.parse.ChatMessageParser.QuestionType.Status
+import dev.nohus.rift.logs.parse.ChatMessageParser.TokenType.Character
 import dev.nohus.rift.logs.parse.ChatMessageParser.TokenType.Count
 import dev.nohus.rift.logs.parse.ChatMessageParser.TokenType.Gate
 import dev.nohus.rift.logs.parse.ChatMessageParser.TokenType.Keyword
 import dev.nohus.rift.logs.parse.ChatMessageParser.TokenType.Kill
 import dev.nohus.rift.logs.parse.ChatMessageParser.TokenType.Link
 import dev.nohus.rift.logs.parse.ChatMessageParser.TokenType.Movement
-import dev.nohus.rift.logs.parse.ChatMessageParser.TokenType.Player
 import dev.nohus.rift.logs.parse.ChatMessageParser.TokenType.Question
 import dev.nohus.rift.logs.parse.ChatMessageParser.TokenType.Ship
 import dev.nohus.rift.logs.parse.ChatMessageParser.TokenType.System
 import dev.nohus.rift.logs.parse.ChatMessageParser.TokenType.Url
+import dev.nohus.rift.network.requests.Originator
 import dev.nohus.rift.repositories.ShipTypesRepository
 import dev.nohus.rift.repositories.SolarSystemsRepository
+import dev.nohus.rift.repositories.SolarSystemsRepository.MapSolarSystem
+import dev.nohus.rift.repositories.TypesRepository.Type
 import dev.nohus.rift.repositories.WordsRepository
+import dev.nohus.rift.repositories.character.CharacterDetailsRepository.CharacterDetails
 import dev.nohus.rift.repositories.character.CharacterStatus
 import dev.nohus.rift.repositories.character.CharactersRepository
 import kotlinx.coroutines.coroutineScope
 import org.koin.core.annotation.Single
-import java.util.LinkedHashSet
 
 @Single
 class ChatMessageParser(
@@ -35,13 +38,14 @@ class ChatMessageParser(
 
     sealed interface TokenType {
         data class System(
-            val name: String,
+            val system: MapSolarSystem,
         ) : TokenType
-        data class Player(
+        data class Character(
             val characterId: Int,
+            val details: CharacterDetails? = null,
         ) : TokenType
         data class Ship(
-            val name: String,
+            val type: Type,
             val count: Int = 1,
             val isPlural: Boolean = false,
         ) : TokenType
@@ -61,29 +65,41 @@ class ChatMessageParser(
         data class Kill(
             val name: String,
             val characterId: Int?,
+            val details: CharacterDetails? = null,
             val target: String,
         ) : TokenType
         data object Url : TokenType
         data class Gate(
-            val system: String,
+            val system: MapSolarSystem,
             val isAnsiblex: Boolean = false,
         ) : TokenType
         data class Movement(
             val verb: String,
-            val toSystem: String,
+            val toSystem: MapSolarSystem,
             val isGate: Boolean,
         ) : TokenType
     }
 
     enum class KeywordType {
-        NoVisual, Clear, Wormhole, Spike, Ess, Skyhook, GateCamp, CombatProbes, Bubbles
+        NoVisual,
+        Clear,
+        Wormhole,
+        Spike,
+        Ess,
+        Skyhook,
+        GateCamp,
+        CombatProbes,
+        Bubbles,
     }
 
     enum class QuestionType {
-        Location, ShipTypes, Number, Status
+        Location,
+        ShipTypes,
+        Number,
+        Status,
     }
 
-    data class Token(
+    data class MultiTypeToken(
         val words: List<String>,
         val types: List<TokenType>,
     ) {
@@ -96,13 +112,23 @@ class ChatMessageParser(
         }
     }
 
+    data class Token(
+        val words: List<String>,
+        val type: TokenType?,
+        val isLink: Boolean,
+    ) {
+        override fun toString(): String {
+            return "\"${words.joinToString(" ")}\" $type${if (isLink) " Link" else ""}"
+        }
+    }
+
     data class Parsing(
-        val tokens: List<Token>,
+        val tokens: List<MultiTypeToken>,
         val remainingWords: List<String>,
     )
 
     companion object {
-        private const val MAX_TOKEN_WORDS = 3
+        private const val MAX_TOKEN_WORDS = 5
         private const val MAX_INCOMPLETE_TOKENIZATIONS = 1000
         private val SHIP_COUNT_NEXT_REGEX = """[1-9]x|[1-9]\*""".toRegex()
         private val SHIP_COUNT_PREV_REGEX = """x[1-9]""".toRegex()
@@ -113,9 +139,13 @@ class ChatMessageParser(
         private val keywords = mapOf(
             "nv" to KeywordType.NoVisual,
             "clr" to KeywordType.Clear,
+            "сlr" to KeywordType.Clear, // cyrillic c
             "clr du" to KeywordType.Clear,
+            "сlr du" to KeywordType.Clear, // cyrillic c
             "clear" to KeywordType.Clear,
+            "сlear" to KeywordType.Clear, // cyrillic c
             "clear du" to KeywordType.Clear,
+            "сlear du" to KeywordType.Clear, // cyrillic c
             "wh" to KeywordType.Wormhole,
             "wormhole" to KeywordType.Wormhole,
             "k162" to KeywordType.Wormhole,
@@ -189,37 +219,32 @@ class ChatMessageParser(
         message: String,
         regionsHint: List<String>,
     ): Set<List<Token>> = coroutineScope {
-        var replaced = message
-            .replace("* ", "  ") // Links sometimes end with *. Replace with a space, so they get detected as links.
-            .replace("*)", ")") // Links sometimes end with *. Remove when in parentheses.
-            .replace(", ", " ") // Remove commas
-            .replace(" ,", " ")
-            .replace(",", " ")
-            .replace("с", "c") // Replace cyrillic c with latin c
-        if (replaced.endsWith("*") && !replaced.matches(""" [0-9]*""".toRegex())) replaced = replaced.dropLast(1) + " "
-        if (replaced.startsWith(" ")) replaced = replaced.dropWhile { it == ' ' }
-        val collapsed = collapseMultipleSpaces(replaced)
-        val words = collapsed.split(" ")
-        val completeParsings = mutableListOf<List<Token>>()
+        val words = message.split(" ")
+        val completeParsings = mutableListOf<List<MultiTypeToken>>()
         val incompleteParsings = LinkedHashSet<Parsing>()
         incompleteParsings += Parsing(tokens = emptyList(), remainingWords = words)
 
         val possibleCharacterNames = getPossibleCharacterNames(words)
-        val characterNamesStatus = charactersRepository.getCharacterNamesStatus(possibleCharacterNames)
+        val characterNamesStatus = charactersRepository.getCharacterNamesStatus(Originator.ChatLogs, possibleCharacterNames)
 
         while (incompleteParsings.isNotEmpty()) {
             if (incompleteParsings.size > MAX_INCOMPLETE_TOKENIZATIONS) {
                 // This text has an unusual number of branching tokenizations, do not continue parsing
-                return@coroutineScope setOf(listOf(Token(words, types = listOf())))
+                return@coroutineScope setOf(listOf(Token(words, type = null, isLink = false)))
             }
 
             val parsing = incompleteParsings.first()
             incompleteParsings.remove(parsing)
 
-            // A token cannot start with a space, the previous token is a link
-            if (parsing.remainingWords.first().isBlank() && parsing.tokens.isNotEmpty()) {
-                val lastToken = parsing.tokens.last()
-                val newTokens = parsing.tokens.dropLast(1) + lastToken.copy(types = lastToken.types.filterNot { it is Link } + Link)
+            if (parsing.remainingWords.first().isBlank()) {
+                val newTokens = if (parsing.tokens.isNotEmpty()) {
+                    // A token cannot start with a space, the previous token is a link
+                    val lastToken = parsing.tokens.last()
+                    parsing.tokens.dropLast(1) + lastToken.copy(types = lastToken.types.filterNot { it is Link } + Link) + MultiTypeToken(listOf(""), types = listOf())
+                } else {
+                    // This is a space at the beginning of the message
+                    listOf(MultiTypeToken(listOf(""), types = listOf()))
+                }
 
                 val remainingWords = parsing.remainingWords.drop(1)
                 if (remainingWords.isEmpty()) {
@@ -237,7 +262,7 @@ class ChatMessageParser(
                 if (token.any { it.isBlank() }) break
 
                 val types = getPossibleTokenTypes(token, characterNamesStatus, regionsHint)
-                val newToken = Token(token, types = types)
+                val newToken = MultiTypeToken(token, types = types)
                 var tokens = parsing.tokens + newToken
                 val isAtEnd = wordsToConsume == parsing.remainingWords.size
 
@@ -272,19 +297,11 @@ class ChatMessageParser(
             .flatMap { listOf(it.take(1), it.take(2), it.take(3)).map { it.joinToString(" ") } }
             .filterNot { it.startsWith(" ") || it.endsWith(" ") || it.contains("  ") }
             .filter(characterNameValidator::isValid)
-            .toSet()
+            .distinct()
             .toList()
     }
 
-    private fun collapseMultipleSpaces(message: String): String {
-        var squashedMessage = message
-        while ("   " in squashedMessage) {
-            squashedMessage = squashedMessage.replace("   ", "  ")
-        }
-        return squashedMessage
-    }
-
-    private fun findKillMail(tokens: List<Token>, characterNamesStatus: Map<String, CharacterStatus>): List<Token> {
+    private fun findKillMail(tokens: List<MultiTypeToken>, characterNamesStatus: Map<String, CharacterStatus>): List<MultiTypeToken> {
         return if (tokens.size >= 3) {
             val threeTokens = tokens.takeLast(3)
             val (t1, t2, t3) = threeTokens
@@ -294,7 +311,7 @@ class ChatMessageParser(
                 val target = t3.words.joinToString(" ").removePrefix("(").removeSuffix(")")
                 val words = threeTokens.flatMap { it.words }
                 val characterId = (characterNamesStatus[player] as? CharacterStatus.Exists)?.characterId
-                tokens.dropLast(3) + Token(words, types = listOf(Kill(player, characterId, target)))
+                tokens.dropLast(3) + MultiTypeToken(words, types = listOf(Kill(player, characterId, null, target)))
             } else {
                 tokens
             }
@@ -303,23 +320,23 @@ class ChatMessageParser(
         }
     }
 
-    private fun findGates(tokens: List<Token>): List<Token> {
+    private fun findGates(tokens: List<MultiTypeToken>): List<MultiTypeToken> {
         if (tokens.size >= 2) {
             val lastTokens = tokens.takeLast(2)
-            val system = lastTokens.mapNotNull { it.types.filterIsInstance<System>().firstOrNull() }.singleOrNull()?.name
+            val system = lastTokens.mapNotNull { it.types.filterIsInstance<System>().firstOrNull() }.singleOrNull()?.system
             val other = lastTokens.singleOrNull { it.types.none { it is System || it is Keyword } }?.words?.singleOrNull()?.lowercase()
             if (system != null && other != null) {
                 val isGate = other == "gate"
                 val isAnsiblex = other in listOf("ansiblex", "ansi")
                 if (isGate || isAnsiblex) {
-                    return tokens.dropLast(2) + Token(lastTokens.flatMap { it.words }, types = listOf(Gate(system, isAnsiblex)))
+                    return tokens.dropLast(2) + MultiTypeToken(lastTokens.flatMap { it.words }, types = listOf(Gate(system, isAnsiblex)))
                 }
             }
         }
         return tokens
     }
 
-    private fun findMovement(tokens: List<Token>, isAtEnd: Boolean): List<Token> {
+    private fun findMovement(tokens: List<MultiTypeToken>, isAtEnd: Boolean): List<MultiTypeToken> {
         val keywords = listOf("going", "jumped", "jumping")
         if (tokens.size >= 2) {
             val lastTokens = tokens.takeLast(2)
@@ -327,7 +344,7 @@ class ChatMessageParser(
                 val gate = lastTokens[1].types.filterIsInstance<Gate>().first()
                 val before = lastTokens[0].words.joinToString(" ")
                 if (before.lowercase() in keywords) {
-                    return tokens.dropLast(2) + Token(lastTokens.flatMap { it.words }, types = listOf(Movement(before, gate.system, isGate = true)))
+                    return tokens.dropLast(2) + MultiTypeToken(lastTokens.flatMap { it.words }, types = listOf(Movement(before, gate.system, isGate = true)))
                 }
             }
         }
@@ -335,10 +352,10 @@ class ChatMessageParser(
             if (tokens.size >= 2) {
                 val lastTokens = tokens.takeLast(2)
                 if (lastTokens[1].types.filterIsInstance<System>().isNotEmpty()) {
-                    val system = lastTokens[1].types.filterIsInstance<System>().first().name
+                    val system = lastTokens[1].types.filterIsInstance<System>().first().system
                     val before = lastTokens[0].words.joinToString(" ")
                     if (before.lowercase() in keywords) {
-                        return tokens.dropLast(2) + Token(lastTokens.flatMap { it.words }, types = listOf(Movement(before, system, isGate = false)))
+                        return tokens.dropLast(2) + MultiTypeToken(lastTokens.flatMap { it.words }, types = listOf(Movement(before, system, isGate = false)))
                     }
                 }
             }
@@ -346,10 +363,10 @@ class ChatMessageParser(
             if (tokens.size >= 3) {
                 val lastTokens = tokens.takeLast(3)
                 if (lastTokens[1].types.filterIsInstance<System>().isNotEmpty()) {
-                    val system = lastTokens[1].types.filterIsInstance<System>().first().name
+                    val system = lastTokens[1].types.filterIsInstance<System>().first().system
                     val before = lastTokens[0].words.joinToString(" ")
                     if (before.lowercase() in keywords) {
-                        return tokens.dropLast(3) + Token(lastTokens.flatMap { it.words }, types = listOf(Movement(before, system, isGate = false))) + lastTokens.last()
+                        return tokens.dropLast(3) + MultiTypeToken(lastTokens.flatMap { it.words }, types = listOf(Movement(before, system, isGate = false))) + lastTokens.last()
                     }
                 }
             }
@@ -357,7 +374,7 @@ class ChatMessageParser(
         return tokens
     }
 
-    private fun findShipCounts(tokens: List<Token>): List<Token> {
+    private fun findShipCounts(tokens: List<MultiTypeToken>): List<MultiTypeToken> {
         if (tokens.size >= 2) {
             run {
                 val (count, ship) = tokens.takeLast(2)
@@ -421,7 +438,7 @@ class ChatMessageParser(
         }
     }
 
-    private fun findQuestions(tokens: List<Token>): List<Token> {
+    private fun findQuestions(tokens: List<MultiTypeToken>): List<MultiTypeToken> {
         val token = tokens.last()
         val originalText = token.words.joinToString(" ")
         val text = originalText.lowercase()
@@ -435,17 +452,17 @@ class ChatMessageParser(
         }
     }
 
-    private fun findMergeablePlainText(tokens: List<Token>): List<Token> {
+    private fun findMergeablePlainText(tokens: List<MultiTypeToken>): List<MultiTypeToken> {
         return if (tokens.size >= 4) {
             // Last two are potentially going to be used for a 3-token find (e.g. killmail)
-            mergePlainTextTokens(tokens.dropLast(2)) + tokens.takeLast(2)
+            mergePlainTextMultiTypeTokens(tokens.dropLast(2)) + tokens.takeLast(2)
         } else {
             tokens
         }
     }
 
-    private fun filterCharactersUntilDone(parsing: List<Token>, characterNamesStatus: Map<String, CharacterStatus>): List<Token> {
-        var previous: List<Token>
+    private fun filterCharactersUntilDone(parsing: List<MultiTypeToken>, characterNamesStatus: Map<String, CharacterStatus>): List<MultiTypeToken> {
+        var previous: List<MultiTypeToken>
         var new = parsing
         do {
             previous = new
@@ -454,15 +471,15 @@ class ChatMessageParser(
         return new
     }
 
-    private fun filterCharacters(parsing: List<Token>, characterNamesStatus: Map<String, CharacterStatus>): List<Token> {
+    private fun filterCharacters(parsing: List<MultiTypeToken>, characterNamesStatus: Map<String, CharacterStatus>): List<MultiTypeToken> {
         return buildList {
             for ((index, token) in parsing.withIndex()) {
-                if (token.types.any { it is Player }) {
+                if (token.types.any { it is Character }) {
                     val fullText = token.words.joinToString(" ")
-                    val status = characterNamesStatus[fullText]!! // TODO
+                    val status = characterNamesStatus.getValue(fullText)
                     if (status is CharacterStatus.Dormant) {
                         // Character is dormant, ignore
-                        add(token.copy(types = token.types.filterNot { it is Player }))
+                        add(token.copy(types = token.types.filterNot { it is Character }))
                         continue
                     }
                     if (status !is CharacterStatus.Active) {
@@ -479,7 +496,7 @@ class ChatMessageParser(
                                     }
                                 if (surroundingLowercaseWords.isNotEmpty()) {
                                     // Lowercase English words character name touches a lowercase plaintext, ignore
-                                    add(token.copy(types = token.types.filterNot { it is Player }))
+                                    add(token.copy(types = token.types.filterNot { it is Character }))
                                     continue
                                 }
                             } else {
@@ -489,7 +506,7 @@ class ChatMessageParser(
                                     val nextLowercaseWord = nextWord?.all { it.isLowerCase() || it in listOf('\'', '?') }
                                     if (nextLowercaseWord == true) {
                                         // English words character name with first capital letter, with next word being lowercase plaintext, ignore
-                                        add(token.copy(types = token.types.filterNot { it is Player }))
+                                        add(token.copy(types = token.types.filterNot { it is Character }))
                                         continue
                                     }
                                 }
@@ -497,7 +514,7 @@ class ChatMessageParser(
                         }
                         if (isTypeName) {
                             // Character name is a type name
-                            add(token.copy(types = token.types.filterNot { it is Player }))
+                            add(token.copy(types = token.types.filterNot { it is Character }))
                             continue
                         }
                     }
@@ -507,48 +524,66 @@ class ChatMessageParser(
         }
     }
 
-    private fun filterMultiTypes(parsing: List<Token>, regionsHint: List<String>): List<Token> {
-        // TODO: We could expose tokens with a single type instead of list of types after this
+    private fun filterMultiTypes(parsing: List<MultiTypeToken>, regionsHint: List<String>): List<Token> {
         return buildList {
             for (token in parsing) {
+                val isLink = token.types.any { it is Link }
                 if (token.types.any { it is Ship } && token.types.any { it is System }) {
                     // Token is both a system and a ship (Naga)
                     val otherTokens = parsing - token
                     val hasOtherSystem = otherTokens.any { it.types.any { it is System } }
                     if (hasOtherSystem) {
-                        add(token.copy(types = token.types.filterIsInstance<Ship>()))
+                        add(Token(token.words, token.types.filterIsInstance<Ship>().first(), isLink))
                     } else {
-                        add(token.copy(types = token.types.filterIsInstance<System>()))
+                        add(Token(token.words, token.types.filterIsInstance<System>().first(), isLink))
                     }
                     continue
                 }
-                if (token.types.any { it is System } && token.types.any { it is Player }) {
+                if (token.types.any { it is System } && token.types.any { it is Character }) {
                     // Token is both a system and a player
                     val inRegionSystem = token.types.filterIsInstance<System>()
-                        .firstOrNull { solarSystemsRepository.getRegionBySystem(it.name) in regionsHint }
+                        .firstOrNull { solarSystemsRepository.getRegion(it.system.regionId)?.name in regionsHint }
                     if (inRegionSystem != null) {
                         // If the system is in this region, choose the system
-                        add(token.copy(types = listOf(inRegionSystem)))
+                        add(Token(token.words, type = inRegionSystem, isLink))
                     } else {
                         // Otherwise choose the player
-                        add(token.copy(types = token.types.filterIsInstance<Player>()))
+                        add(Token(token.words, type = token.types.filterIsInstance<Character>().first(), isLink))
                     }
                     continue
                 }
-                if (token.types.singleOrNull() == Link) {
-                    add(token.copy(types = emptyList()))
-                    continue
+                val type = token.types.firstOrNull { it !is Link }
+                add(
+                    Token(
+                        words = token.words,
+                        type = type,
+                        isLink = isLink && type != null,
+                    ),
+                )
+            }
+        }
+    }
+
+    private fun mergePlainTextMultiTypeTokens(parsing: List<MultiTypeToken>): List<MultiTypeToken> {
+        return buildList<MultiTypeToken> {
+            for (token in parsing) {
+                val new = if (token.types.isEmpty() && lastOrNull()?.types?.isEmpty() == true) {
+                    val merged = MultiTypeToken(last().words + token.words, types = emptyList())
+                    removeLast()
+                    merged
+                } else {
+                    token
                 }
-                add(token)
+                add(new)
             }
         }
     }
 
     private fun mergePlainTextTokens(parsing: List<Token>): List<Token> {
-        return buildList {
+        return buildList<Token> {
             for (token in parsing) {
-                val new = if (token.types.isEmpty() && lastOrNull()?.types?.isEmpty() == true) {
-                    val merged = Token(last().words + token.words, types = emptyList())
+                val new = if (token.type == null && lastOrNull().let { it != null && it.type == null }) {
+                    val merged = Token(last().words + token.words, type = null, isLink = false)
                     removeLast()
                     merged
                 } else {
@@ -564,38 +599,41 @@ class ChatMessageParser(
         characterNamesStatus: Map<String, CharacterStatus>,
         regionsHint: List<String>,
     ): List<TokenType> {
-        val text = words.joinToString(" ")
+        val text = words.joinToString(" ").removeSuffix("*") // Links sometimes end with *
+        val cleanedText = text.replace(Regex("[(),.]"), "")
+
         return buildList {
+            if (words.last().endsWith("*")) add(Link)
+
             if (words.singleOrNull()?.matches(URL_REGEX) == true) {
                 add(Url)
                 return@buildList
             }
 
-            val systemName = solarSystemsRepository.getSystemName(text, regionsHint)
-            if (systemName != null) add(System(systemName))
-
-            val shipText = text
-                .replace("(", "").replace(")", "").replace(".", "")
-            var shipName = shipTypesRepository.getShip(shipText)
-            if (shipName != null) {
-                add(Ship(shipName, isPlural = false))
-            } else if (text.last() == 's') {
-                shipName = shipTypesRepository.getShip(text.dropLast(1))
-                if (shipName != null) add(Ship(shipName, isPlural = true))
-            }
-
-            if (shipName == null) { // Ship names are assumed to be ships
-                val status = characterNamesStatus[text]
-                if (status is CharacterStatus.Exists) add(Player(status.characterId))
-            }
-
-            val keywordText = words.joinToString(" ")
-                .replace("(", "").replace(")", "").replace(".", "")
-                .lowercase()
-            val keywordType = keywords[keywordText]
+            val keywordType = keywords[cleanedText.lowercase()]
             if (keywordType != null) {
-                clear()
                 add(Keyword(type = keywordType))
+                return@buildList
+            }
+
+            val system = solarSystemsRepository.getFuzzySystem(text, regionsHint)
+            if (system != null) add(System(system))
+
+            var ship = shipTypesRepository.getFuzzyShip(cleanedText)
+            if (ship != null) {
+                add(Ship(ship, isPlural = false))
+            } else if (text.last() == 's') {
+                ship = shipTypesRepository.getFuzzyShip(cleanedText.dropLast(1))
+                if (ship != null) {
+                    add(Ship(ship, isPlural = true))
+                }
+            }
+
+            if (ship == null) {
+                // Ship names are assumed to be ships, only check characters if not a ship
+                (characterNamesStatus[text] as? CharacterStatus.Exists)?.let {
+                    add(Character(it.characterId))
+                }
             }
         }
     }

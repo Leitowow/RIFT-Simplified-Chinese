@@ -1,11 +1,12 @@
 package dev.nohus.rift.pings
 
 import dev.nohus.rift.ViewModel
-import dev.nohus.rift.compose.RiftOpportunityBoxCategory
-import dev.nohus.rift.compose.RiftOpportunityBoxCharacter
+import dev.nohus.rift.compose.RiftOpportunityCardCategory
+import dev.nohus.rift.compose.RiftOpportunityCardTopRight.RiftOpportunityCardCharacter
 import dev.nohus.rift.jabber.client.JabberClient
-import dev.nohus.rift.repositories.GetSystemDistanceFromCharacterUseCase
-import dev.nohus.rift.repositories.SolarSystemsRepository
+import dev.nohus.rift.repositories.GetSolarSystemChipStateUseCase
+import dev.nohus.rift.repositories.SolarSystemChipLocation
+import dev.nohus.rift.repositories.SolarSystemChipState
 import dev.nohus.rift.settings.persistence.Settings
 import dev.nohus.rift.windowing.WindowManager
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,18 +14,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.koin.core.annotation.Single
+import org.koin.core.annotation.Factory
 import java.time.ZoneId
 
-@Single
+@Factory
 class PingsViewModel(
-    private val solarSystemsRepository: SolarSystemsRepository,
-    private val getSystemDistanceFromCharacterUseCase: GetSystemDistanceFromCharacterUseCase,
     private val settings: Settings,
     private val jabberClient: JabberClient,
     private val windowManager: WindowManager,
     private val pingsRepository: PingsRepository,
     private val openMumbleUseCase: OpenMumbleUseCase,
+    private val getSolarSystemChipStateUseCase: GetSolarSystemChipStateUseCase,
 ) : ViewModel() {
 
     data class UiState(
@@ -88,7 +88,7 @@ class PingsViewModel(
                 description = description,
                 fleetCommander = fleetCommander.toUiModel(),
                 fleet = fleet,
-                formupLocations = formupLocations.map { it.toUiModel() },
+                formupLocations = formupLocations.toUiModel(),
                 papType = papType,
                 comms = comms,
                 doctrine = doctrine,
@@ -97,43 +97,41 @@ class PingsViewModel(
         }.also { pingUiModels[this] = it }
     }
 
-    private fun FormupLocation.toUiModel(): FormupLocationUiModel {
-        return when (this) {
-            is FormupLocation.Text -> FormupLocationUiModel.Text(text)
-            is FormupLocation.System -> {
-                val id = solarSystemsRepository.getSystemId(name) ?: return FormupLocationUiModel.Text(name)
-                val security = solarSystemsRepository.getSystemSecurity(id) ?: return FormupLocationUiModel.Text(name)
-                val distance = getSystemDistanceFromCharacterUseCase(id, maxDistance = 9, withJumpBridges = true)?.distance
-                FormupLocationUiModel.System(name, security, distance)
+    private fun List<FormupLocation>.toUiModel(): SolarSystemChipState {
+        val locations = map {
+            when (it) {
+                is FormupLocation.System -> SolarSystemChipLocation.SolarSystem(it.id)
+                is FormupLocation.Text -> SolarSystemChipLocation.Text(it.text)
             }
         }
+        return getSolarSystemChipStateUseCase(locations)
     }
 
-    private fun FleetCommander.toUiModel(): RiftOpportunityBoxCharacter {
-        return RiftOpportunityBoxCharacter(
+    private fun FleetCommander.toUiModel(): RiftOpportunityCardCharacter {
+        return RiftOpportunityCardCharacter(
             name = name,
             id = id,
         )
     }
 
-    private fun PingModel.getOpportunityCategory(): RiftOpportunityBoxCategory {
+    private fun PingModel.getOpportunityCategory(): RiftOpportunityCardCategory {
         return when (this) {
-            is PingModel.PlainText -> RiftOpportunityBoxCategory.Unclassified
+            is PingModel.PlainText -> RiftOpportunityCardCategory.Unclassified
             is PingModel.FleetPing -> {
                 if (listOf("wormhole", "[^a-z]wh[^a-z]").any { it.toRegex() in description.lowercase() }) {
-                    RiftOpportunityBoxCategory.Explorer
+                    RiftOpportunityCardCategory.Explorer
                 } else if (listOf("ess defense", "ess hack ", "hostiles in Delve", "structure defense").any { it in description.lowercase() }) {
-                    RiftOpportunityBoxCategory.Enforcer
+                    RiftOpportunityCardCategory.Enforcer
                 } else if (listOf("pirating", "hunting").any { it in description.lowercase() }) {
-                    RiftOpportunityBoxCategory.SoldierOfFortune
+                    RiftOpportunityCardCategory.SoldierOfFortune
                 } else {
                     if (papType == PapType.Strategic) {
-                        RiftOpportunityBoxCategory.Enforcer
+                        RiftOpportunityCardCategory.Enforcer
                     } else {
                         if (broadcastSource == "skirmishbot") {
-                            RiftOpportunityBoxCategory.SoldierOfFortune
+                            RiftOpportunityCardCategory.SoldierOfFortune
                         } else {
-                            RiftOpportunityBoxCategory.Unclassified
+                            RiftOpportunityCardCategory.Unclassified
                         }
                     }
                 }

@@ -61,7 +61,7 @@ fun RegionNode(
             Box(
                 modifier = Modifier
                     .padding(horizontal = 8.dp) // Space for online indicators
-                    .background(RiftTheme.colors.mapBackground, shape)
+                    .background(RiftTheme.colors.mapBackground.copy(alpha = 1f), shape)
                     .background(color.copy(alpha = 0.2f), shape)
                     .border(if (isHighlightedOrHovered) 2.dp else 1.dp, color, shape)
                     .onPointerEvent(PointerEventType.Enter) {

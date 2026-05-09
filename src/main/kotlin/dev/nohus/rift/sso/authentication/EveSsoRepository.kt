@@ -22,6 +22,7 @@ class EveSsoRepository(
                 accessToken = authentication.accessToken,
                 refreshToken = authentication.refreshToken,
                 expiration = Instant.ofEpochMilli(authentication.expiration),
+                scopes = authentication.scopes,
             )
         }
     }
@@ -56,6 +57,7 @@ class EveSsoRepository(
                 accessToken = authentication.accessToken,
                 refreshToken = authentication.refreshToken,
                 expiration = authentication.expiration.toEpochMilli(),
+                scopes = authentication.scopes,
             )
         }.toMap()
     }

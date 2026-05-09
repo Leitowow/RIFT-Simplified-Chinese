@@ -29,11 +29,11 @@ fun PresenceIndicatorDot(
     val color by animateColorAsState(
         targetValue = when {
             isSubscriptionPending -> RiftTheme.colors.inactiveGray
-            presence.mode == RosterUsersController.PresenceMode.FreeToChat -> RiftTheme.colors.onlineGreen
-            presence.mode == RosterUsersController.PresenceMode.Available -> RiftTheme.colors.onlineGreen
+            presence.mode == RosterUsersController.PresenceMode.FreeToChat -> RiftTheme.colors.successGreen
+            presence.mode == RosterUsersController.PresenceMode.Available -> RiftTheme.colors.successGreen
             presence.mode == RosterUsersController.PresenceMode.Away -> RiftTheme.colors.awayYellow
             presence.mode == RosterUsersController.PresenceMode.ExtendedAway -> RiftTheme.colors.extendedAwayOrange
-            presence.mode == RosterUsersController.PresenceMode.DoNotDisturb -> RiftTheme.colors.offlineRed
+            presence.mode == RosterUsersController.PresenceMode.DoNotDisturb -> RiftTheme.colors.hotRed
             else -> RiftTheme.colors.inactiveGray
         },
         animationSpec = tween(1000),

@@ -9,6 +9,7 @@ import dev.nohus.rift.alerts.IntelReportLocation
 import dev.nohus.rift.alerts.JabberMessageChannel
 import dev.nohus.rift.alerts.JabberPingType
 
+@Suppress("DEPRECATION")
 val AlertsComparator = compareBy<Alert>(
     {
         !it.isEnabled

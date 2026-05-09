@@ -1,5 +1,6 @@
 package dev.nohus.rift.utils
 
+import kotlinx.coroutines.ExperimentalForInheritanceCoroutinesApi
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
@@ -7,6 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 
+@OptIn(ExperimentalForInheritanceCoroutinesApi::class)
 private class TransformedStateFlow<T>(
     private val getValue: () -> T,
     private val flow: Flow<T>,

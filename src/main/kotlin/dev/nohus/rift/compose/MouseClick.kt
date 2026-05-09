@@ -8,7 +8,9 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import java.awt.event.MouseEvent
 
 enum class MouseButton {
-    Left, Middle, Right
+    Left,
+    Middle,
+    Right,
 }
 
 @OptIn(ExperimentalComposeUiApi::class)

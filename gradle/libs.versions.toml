@@ -1,0 +1,150 @@
+[versions]
+kotlin = "2.3.0"
+compose = "1.10.0"
+compose-hot-reload = "1.1.0-alpha05"
+spotless = "7.2.1"
+buildconfig = "5.3.5"
+
+kamel = "1.0.9"
+kotlin-logging = "6.0.9"
+logback = "1.5.6"
+log4j = "2.25.4"
+koin = "4.1.0"
+koin-annotations = "2.1.0"
+kotlinx-serialization = "1.7.0"
+commons-lang3 = "3.14.0"
+commons-exec = "1.4.0"
+commons-math3 = "3.6.1"
+httpclient5 = "5.3.1"
+jose4j = "0.9.6"
+flatlaf = "3.4.1"
+jsoup = "1.17.2"
+autolink = "0.11.0"
+jts = "1.19.0"
+haze = "0.7.2"
+conveyor-control = "1.1"
+androidx-collection = "1.4.3"
+jbr-api = "1.4.0"
+cache4k = "0.14.0"
+joal = "2.5.0"
+gluegen = "2.5.0"
+jlayer = "1.0.1"
+opencv = "4.10.0-1.5.11"
+smack = "4.4.8"
+dorkbox-collections = "2.8"
+dorkbox-executor = "3.14"
+dorkbox-desktop = "1.1"
+dorkbox-jna = "1.4"
+dorkbox-updates = "1.1"
+dorkbox-utilities = "1.48"
+javassist = "3.30.2-GA"
+jna = "5.14.0"
+slf4j = "2.0.13"
+exposed = "0.51.1"
+sqlite-jdbc = "3.45.3.0"
+retrofit = "3.0.0"
+okhttp = "5.3.2"
+retrofit-kotlinx-serialization = "3.0.0"
+ktor = "3.1.1"
+sentry-bom = "7.8.0"
+posthog = "1.1.1"
+kotest = "5.8.1"
+mockk = "1.14.9"
+ktlint = "1.7.1"
+proguard = "7.8.2"
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+compose = { id = "org.jetbrains.compose", version.ref = "compose" }
+compose-hotreload = { id = "org.jetbrains.compose.hot-reload", version.ref = "compose-hot-reload" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "kotlin" }
+buildconfig = { id = "com.github.gmazzo.buildconfig", version.ref = "buildconfig" }
+
+[libraries]
+compose-desktop = { module = "org.jetbrains.compose.desktop:desktop-jvm", version.ref = "compose" }
+compose-desktop-linux = { module = "org.jetbrains.compose.desktop:desktop-jvm-linux-x64", version.ref = "compose" }
+compose-desktop-macos-x64 = { module = "org.jetbrains.compose.desktop:desktop-jvm-macos-x64", version.ref = "compose" }
+compose-desktop-macos-arm64 = { module = "org.jetbrains.compose.desktop:desktop-jvm-macos-arm64", version.ref = "compose" }
+compose-desktop-windows = { module = "org.jetbrains.compose.desktop:desktop-jvm-windows-x64", version.ref = "compose" }
+compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "compose" }
+
+kamel-image = { module = "media.kamel:kamel-image", version.ref = "kamel" }
+kamel-decoder-image-bitmap = { module = "media.kamel:kamel-decoder-image-bitmap", version.ref = "kamel" }
+kamel-decoder-animatedimage = { module = "media.kamel:kamel-decoder-animated-image", version.ref = "kamel" }
+kamel-fetcher-resources = { module = "media.kamel:kamel-fetcher-resources-jvm", version.ref = "kamel" }
+
+kotlin-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "kotlin-logging" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "log4j" }
+
+koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
+koin-logger-slf4j = { module = "io.insert-koin:koin-logger-slf4j", version.ref = "koin" }
+koin-annotations = { module = "io.insert-koin:koin-annotations", version.ref = "koin-annotations" }
+koin-ksp-compiler = { module = "io.insert-koin:koin-ksp-compiler", version.ref = "koin-annotations" }
+
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commons-lang3" }
+commons-exec = { module = "org.apache.commons:commons-exec", version.ref = "commons-exec" }
+commons-math3 = { module = "org.apache.commons:commons-math3", version.ref = "commons-math3" }
+httpclient5 = { module = "org.apache.httpcomponents.client5:httpclient5", version.ref = "httpclient5" }
+jose4j = { module = "org.bitbucket.b_c:jose4j", version.ref = "jose4j" }
+flatlaf = { module = "com.formdev:flatlaf", version.ref = "flatlaf" }
+jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
+autolink = { module = "org.nibor.autolink:autolink", version.ref = "autolink" }
+jts-core = { module = "org.locationtech.jts:jts-core", version.ref = "jts" }
+haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
+conveyor-control = { module = "dev.hydraulic.conveyor:conveyor-control", version.ref = "conveyor-control" }
+androidx-collection = { module = "androidx.collection:collection", version.ref = "androidx-collection" }
+jbr-api = { module = "com.jetbrains:jbr-api", version.ref = "jbr-api" }
+cache4k  = { module = "io.github.reactivecircus.cache4k:cache4k", version.ref = "cache4k" }
+
+joal-main = { module = "org.jogamp.joal:joal-main", version.ref = "joal" }
+gluegen-rtmain = { module = "org.jogamp.gluegen:gluegen-rt-main", version.ref = "gluegen" }
+jlayer = { module = "javazoom:jlayer", version.ref = "jlayer" }
+
+opencv-platform = { module = "org.bytedeco:opencv-platform", version.ref = "opencv" }
+
+smack-java8 = { module = "org.igniterealtime.smack:smack-java8", version.ref = "smack" }
+smack-tcp = { module = "org.igniterealtime.smack:smack-tcp", version.ref = "smack" }
+smack-im = { module = "org.igniterealtime.smack:smack-im", version.ref = "smack" }
+smack-extensions = { module = "org.igniterealtime.smack:smack-extensions", version.ref = "smack" }
+
+dorkbox-collections = { module = "com.dorkbox:Collections", version.ref = "dorkbox-collections" }
+dorkbox-executor = { module = "com.dorkbox:Executor", version.ref = "dorkbox-executor" }
+dorkbox-desktop = { module = "com.dorkbox:Desktop", version.ref = "dorkbox-desktop" }
+dorkbox-jna = { module = "com.dorkbox:JNA", version.ref = "dorkbox-jna" }
+dorkbox-updates = { module = "com.dorkbox:Updates", version.ref = "dorkbox-updates" }
+dorkbox-utilities = { module = "com.dorkbox:Utilities", version.ref = "dorkbox-utilities" }
+javassist = { module = "org.javassist:javassist", version.ref = "javassist" }
+jna = { module = "net.java.dev.jna:jna-jpms", version.ref = "jna" }
+jna-platform = { module = "net.java.dev.jna:jna-platform-jpms", version.ref = "jna" }
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+
+exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
+exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
+sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite-jdbc" }
+
+retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
+retrofit-converter-scalars = { module = "com.squareup.retrofit2:converter-scalars", version.ref = "retrofit" }
+retrofit-converter-kotlinx-serialization = { module = "com.squareup.retrofit2:converter-kotlinx-serialization", version.ref = "retrofit-kotlinx-serialization" }
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+
+ktor-server-core = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor" }
+ktor-server-netty = { module = "io.ktor:ktor-server-netty-jvm", version.ref = "ktor" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-serialization-kotlinxjson = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+
+sentry-bom = { module = "io.sentry:sentry-bom", version.ref = "sentry-bom" }
+sentry = { module = "io.sentry:sentry" }
+sentry-logback = { module = "io.sentry:sentry-logback" }
+
+posthog = { module = "com.posthog.java:posthog", version.ref = "posthog" }
+
+kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest" }
+kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }

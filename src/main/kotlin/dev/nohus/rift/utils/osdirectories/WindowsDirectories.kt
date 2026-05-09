@@ -14,7 +14,7 @@ class WindowsDirectories : OperatingSystemDirectories {
         return getAppDataDirectory().resolve(applicationName).also { it.createDirectories() }
     }
 
-    override fun getCacheDirectory(applicationName: String): Path {
+    override fun getAppCacheDirectory(applicationName: String): Path {
         return getAppConfigDirectory(applicationName).resolve("cache").also { it.createDirectories() }
     }
 

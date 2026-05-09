@@ -7,6 +7,9 @@ class GetSystemsInRangeUseCase(
     private val mapGateConnectionsRepository: MapGateConnectionsRepository,
 ) {
 
+    /**
+     * Returns a set of system IDs that are within the given range of the given system
+     */
     operator fun invoke(system: Int, range: Int): Set<Int> {
         return getSystemsInRange(system, emptySet(), range)
     }

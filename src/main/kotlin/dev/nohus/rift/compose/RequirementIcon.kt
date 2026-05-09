@@ -8,7 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.nohus.rift.generated.resources.Res
 import dev.nohus.rift.generated.resources.status_ok
-import dev.nohus.rift.generated.resources.status_warning
+import dev.nohus.rift.generated.resources.status_warning_orange
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
@@ -20,7 +20,7 @@ fun RequirementIcon(
 ) {
     val tooltip = if (isFulfilled) fulfilledTooltip else notFulfilledTooltip
     RiftTooltipArea(tooltip, modifier) {
-        val icon = if (isFulfilled) Res.drawable.status_ok else Res.drawable.status_warning
+        val icon = if (isFulfilled) Res.drawable.status_ok else Res.drawable.status_warning_orange
         AnimatedContent(icon) {
             Image(
                 painter = painterResource(it),

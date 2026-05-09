@@ -86,7 +86,13 @@ class MapLayoutRepository(
 
     fun getNewEdenSystemPosition(): Map<Int, Position> {
         return solarSystemsRepository.getSystems(knownSpace = true).associate { system ->
-            system.id to transformNewEdenCoordinate(system.x, system.z)
+            system.id to transformNewEdenCoordinate3D(system.x, system.z)
+        }
+    }
+
+    fun getNewEdenSystemPosition2D(): Map<Int, Position> {
+        return solarSystemsRepository.getSystems(knownSpace = true).associate { system ->
+            system.id to transformNewEdenCoordinate2D(system.x2d ?: 0.0, system.y2d ?: 0.0)
         }
     }
 
@@ -98,11 +104,21 @@ class MapLayoutRepository(
         /**
          * Maps in-game system coordinates to map layout coordinates with reasonable values
          */
-        fun transformNewEdenCoordinate(x: Double, z: Double): Position {
+        fun transformNewEdenCoordinate3D(x: Double, z: Double): Position {
             val scale = 100_000_000_000_000
             val shiftX = 5087
             val shiftY = 4729
             return Position((x / scale).roundToInt() + shiftX, (z / scale).roundToInt() + shiftY)
+        }
+
+        /**
+         * Maps in-game system coordinates to map layout coordinates with reasonable values
+         */
+        fun transformNewEdenCoordinate2D(x: Double, y: Double): Position {
+            val scale = 100_000_000_000_000
+            val shiftX = 5087
+            val shiftY = 4729
+            return Position((x / scale).roundToInt() + shiftX, (-y / scale).roundToInt() + shiftY)
         }
     }
 }

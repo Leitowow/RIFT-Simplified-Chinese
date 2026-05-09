@@ -59,14 +59,14 @@ private val colors = listOf(
     0.9f to Color(0xFFCC7E3D),
     1.0f to Color(0xFFCC3D3D),
 )
-private const val legendLineWidth = 4f
-private const val leftTextWidth = 50f
-private const val verticalTextHeight = 30f
-private const val graphWidth = 337f
-private const val graphHeight = 214f
-private const val barsPadding = 2f
-private val fullWidth = (graphWidth + leftTextWidth + legendLineWidth).dp
-private val fullHeight = (graphHeight + verticalTextHeight + legendLineWidth).dp
+private const val LEGEND_LINE_WIDTH = 4f
+private const val LEFT_TEXT_WIDTH = 50f
+private const val VERTICAL_TEXT_HEIGHT = 30f
+private const val GRAPH_WIDTH = 337f
+private const val GRAPH_HEIGHT = 214f
+private const val BARS_PADDING = 2f
+private val fullWidth = (GRAPH_WIDTH + LEFT_TEXT_WIDTH + LEGEND_LINE_WIDTH).dp
+private val fullHeight = (GRAPH_HEIGHT + VERTICAL_TEXT_HEIGHT + LEGEND_LINE_WIDTH).dp
 
 /**
  * Extraction bar graph + animations + tooltip
@@ -81,7 +81,7 @@ fun ExtractionBarGraph(
     var tooltipText by remember { mutableStateOf<AnnotatedString?>(null) }
     val tooltipPrimary = RiftTheme.colors.textPrimary
     val tooltipSecondary = RiftTheme.colors.textSecondary
-    val tooltipFontSize = RiftTheme.typography.titlePrimary.fontSize
+    val tooltipFontSize = RiftTheme.typography.headerPrimary.fontSize
     RiftTooltipArea(
         text = tooltipText,
         contentAnchor = Anchor.Left,
@@ -195,10 +195,10 @@ private fun ExtractionBarGraph(
     }
     val textMeasurer = rememberTextMeasurer()
     val yLegendMeasured = yLegend.map { textMeasurer.measure(it, legendStyle) }
-    val barWidth = max(2, ((graphWidth - barsPadding * 2) / values.size).toInt() - 1).toFloat()
+    val barWidth = max(2, ((GRAPH_WIDTH - BARS_PADDING * 2) / values.size).toInt() - 1).toFloat()
     val barsWidth = values.size * (barWidth + 1f) - 1f
-    val barsEnd = (2 * barsPadding) + barsWidth
-    val firstBarOffset = leftTextWidth + legendLineWidth + barsPadding
+    val barsEnd = (2 * BARS_PADDING) + barsWidth
+    val firstBarOffset = LEFT_TEXT_WIDTH + LEGEND_LINE_WIDTH + BARS_PADDING
     var hoveredCycle by remember { mutableStateOf<Int?>(null) }
 
     val borderPaint = remember(borderColor) {
@@ -268,12 +268,12 @@ private fun ExtractionBarGraph(
     ) {
         // Y axis legend
         yLegendMeasured.forEachIndexed { index, text ->
-            translate(left = leftTextWidth - text.size.width, top = index * (graphHeight / yLegend.lastIndex)) {
+            translate(left = LEFT_TEXT_WIDTH - text.size.width, top = index * (GRAPH_HEIGHT / yLegend.lastIndex)) {
                 drawText(text)
                 translate(left = text.size.width.toFloat() - 1f, top = text.lastBaseline) {
                     drawContext.canvas.drawLine(
                         p1 = Offset(0f, 0f),
-                        p2 = Offset(legendLineWidth, 0f),
+                        p2 = Offset(LEGEND_LINE_WIDTH, 0f),
                         paint = borderPaint,
                     )
                 }
@@ -281,10 +281,10 @@ private fun ExtractionBarGraph(
         }
 
         // X axis legend
-        translate(left = leftTextWidth + legendLineWidth, top = yLegendMeasured[0].lastBaseline + graphHeight) {
+        translate(left = LEFT_TEXT_WIDTH + LEGEND_LINE_WIDTH, top = yLegendMeasured[0].lastBaseline + GRAPH_HEIGHT) {
             val measuredStart = textMeasurer.measure("Program start", legendStyle)
             val measuredEnd = textMeasurer.measure(totalTimeText, legendStyle)
-            translate(top = legendLineWidth) {
+            translate(top = LEGEND_LINE_WIDTH) {
                 drawText(measuredStart)
                 translate(left = barsEnd - measuredEnd.size.width) {
                     drawText(measuredEnd)
@@ -292,23 +292,23 @@ private fun ExtractionBarGraph(
             }
             drawContext.canvas.drawLine(
                 p1 = Offset(0f, 0f),
-                p2 = Offset(0f, legendLineWidth),
+                p2 = Offset(0f, LEGEND_LINE_WIDTH),
                 paint = borderPaint,
             )
             drawContext.canvas.drawLine(
                 p1 = Offset(barsEnd, 0f),
-                p2 = Offset(barsEnd, legendLineWidth),
+                p2 = Offset(barsEnd, LEGEND_LINE_WIDTH),
                 paint = borderPaint,
             )
         }
 
-        translate(left = leftTextWidth + legendLineWidth, top = yLegendMeasured[0].lastBaseline) {
+        translate(left = LEFT_TEXT_WIDTH + LEGEND_LINE_WIDTH, top = yLegendMeasured[0].lastBaseline) {
             // Graph background
             drawContext.canvas.drawRect(
                 left = 0f,
                 top = 0f,
-                right = graphWidth,
-                bottom = graphHeight,
+                right = GRAPH_WIDTH,
+                bottom = GRAPH_HEIGHT,
                 paint = backgroundPaint,
             )
 
@@ -316,26 +316,26 @@ private fun ExtractionBarGraph(
             drawContext.canvas.drawRect(
                 left = 0f,
                 top = 0f,
-                right = graphWidth,
-                bottom = graphHeight,
+                right = GRAPH_WIDTH,
+                bottom = GRAPH_HEIGHT,
                 paint = borderPaint,
             )
 
             // Graph background lines
-            for (y in 2 until graphHeight.toInt() step 2) {
+            for (y in 2 until GRAPH_HEIGHT.toInt() step 2) {
                 drawContext.canvas.drawLine(
                     p1 = Offset(0f, y.toFloat()),
-                    p2 = Offset(graphWidth - 1f, y.toFloat()),
+                    p2 = Offset(GRAPH_WIDTH - 1f, y.toFloat()),
                     paint = backgroundLinesPaint,
                 )
             }
 
             // Bars
-            val bottom = graphHeight - 1f
-            translate(left = barsPadding) {
+            val bottom = GRAPH_HEIGHT - 1f
+            translate(left = BARS_PADDING) {
                 values.forEachIndexed { index, value ->
                     val percent = value.toFloat() / maxValue
-                    val height = (graphHeight * percent).toInt().toFloat()
+                    val height = (GRAPH_HEIGHT * percent).toInt().toFloat()
                     val x = (index * (barWidth + 1f)) + (barWidth / 2f)
 
                     var twoColors = colors.dropWhile { it.first < percent }.take(2)
@@ -381,7 +381,7 @@ private fun ExtractionBarGraph(
 
             // Hovered cycle indicator
             hoveredCycle?.let { hoveredCycle ->
-                val x = barsPadding + (hoveredCycle * (barWidth + 1f)) + (barWidth / 2f)
+                val x = BARS_PADDING + (hoveredCycle * (barWidth + 1f)) + (barWidth / 2f)
                 drawContext.canvas.drawLine(
                     p1 = Offset(x, bottom),
                     p2 = Offset(x, 0f),

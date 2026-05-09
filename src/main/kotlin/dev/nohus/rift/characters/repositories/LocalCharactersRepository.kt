@@ -1,10 +1,14 @@
 package dev.nohus.rift.characters.repositories
 
 import dev.nohus.rift.characters.files.GetEveCharactersSettingsUseCase
-import dev.nohus.rift.network.AsyncResource
+import dev.nohus.rift.network.Result
+import dev.nohus.rift.network.combine
 import dev.nohus.rift.network.esi.EsiApi
-import dev.nohus.rift.network.toResource
+import dev.nohus.rift.network.requests.Originator
+import dev.nohus.rift.repositories.character.CharacterAffiliationRepository
 import dev.nohus.rift.settings.persistence.Settings
+import dev.nohus.rift.sso.scopes.ScopeGroup
+import dev.nohus.rift.sso.scopes.ScopeGroups
 import dev.nohus.rift.utils.stateFlow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -17,7 +21,9 @@ import kotlinx.coroutines.withContext
 import org.jetbrains.skiko.MainUIDispatcher
 import org.koin.core.annotation.Single
 import java.nio.file.Path
+import java.time.Instant
 import kotlin.io.path.getLastModifiedTime
+import kotlin.io.path.name
 import kotlin.io.path.nameWithoutExtension
 
 @Single
@@ -25,22 +31,30 @@ class LocalCharactersRepository(
     private val settings: Settings,
     private val getEveCharactersSettingsUseCase: GetEveCharactersSettingsUseCase,
     private val esiApi: EsiApi,
+    private val characterAffiliationRepository: CharacterAffiliationRepository,
 ) {
 
     data class LocalCharacter(
         val characterId: Int,
-        val settingsFile: Path?,
-        val isAuthenticated: Boolean,
-        val info: AsyncResource<CharacterInfo>,
+        val settingsFiles: Map<String, Path>, // Launcher profile name -> File
+        val scopes: List<ScopeGroup>,
+        val info: CharacterInfo?,
         val isHidden: Boolean,
-    )
+    ) {
+        override fun toString(): String {
+            return "LocalCharacter(${info?.name ?: characterId})"
+        }
+    }
 
     data class CharacterInfo(
         val name: String,
+        val characterId: Int,
+        val corporationRoles: List<String>,
         val corporationId: Int,
         val corporationName: String,
         val allianceId: Int?,
         val allianceName: String?,
+        val birthday: Instant,
     )
 
     private val _characters = MutableStateFlow<List<LocalCharacter>>(emptyList())
@@ -60,39 +74,55 @@ class LocalCharactersRepository(
      * was authenticated-only (no local settings file)
      */
     suspend fun start() {
-        settings.updateFlow.collect { model ->
-            val authenticatedIds = model.authenticatedCharacters.map { it.key }
-            val hiddenCharacterIds = model.hiddenCharacterIds.toSet()
-            _characters.value = _characters.value.mapNotNull { character ->
-                val newCharacter = character.copy(
-                    isAuthenticated = character.characterId in authenticatedIds,
-                    isHidden = character.characterId in hiddenCharacterIds,
-                )
-                if (!newCharacter.isAuthenticated && newCharacter.settingsFile == null) return@mapNotNull null
-                newCharacter
+        settings.updateFlow
+            .map { it.authenticatedCharacters to it.hiddenCharacterIds.toSet() }
+            .collect { (authenticatedCharacters, hiddenCharacterIds) ->
+                val scopes = authenticatedCharacters.mapValues { (_, authentication) ->
+                    ScopeGroups.getByIds(authentication.scopes)
+                }
+                withContext(MainUIDispatcher) {
+                    _characters.value = _characters.value.mapNotNull { character ->
+                        val newCharacter = character.copy(
+                            scopes = scopes[character.characterId] ?: emptyList(),
+                            isHidden = character.characterId in hiddenCharacterIds,
+                        )
+                        if (newCharacter.scopes.isEmpty() && newCharacter.settingsFiles.isEmpty()) return@mapNotNull null
+                        newCharacter
+                    }
+                }
             }
-        }
     }
 
     suspend fun load() = withContext(Dispatchers.IO) {
-        loadLocalCharacters()
-        loadEsiCharacters()
+        val characters = loadLocalCharacters()
+        loadEsiCharacters(characters)
     }
 
-    private fun loadLocalCharacters() {
+    /**
+     * Loads and returns local characters from settings files and authenticated characters
+     */
+    private fun loadLocalCharacters(): List<LocalCharacter> {
         val directory = settings.eveSettingsDirectory
         val authenticatedCharacterIds = settings.authenticatedCharacters.keys
+        val scopes = settings.authenticatedCharacters.mapValues { (_, authentication) ->
+            ScopeGroups.getByIds(authentication.scopes)
+        }
         val hiddenCharacterIds = settings.hiddenCharacterIds.toSet()
         val charactersFromFiles = if (directory != null) {
             getEveCharactersSettingsUseCase(directory)
-                .mapNotNull { file ->
-                    val characterId =
-                        file.nameWithoutExtension.substringAfterLast("_").toIntOrNull() ?: return@mapNotNull null
+                .groupBy { file ->
+                    file.nameWithoutExtension.substringAfterLast("_").toIntOrNull()
+                }
+                .mapNotNull { (characterId, files) ->
+                    characterId ?: return@mapNotNull null
+                    val settingsFiles = files.associateBy { file ->
+                        file.parent.name.substringAfter("settings_")
+                    }
                     LocalCharacter(
                         characterId = characterId,
-                        settingsFile = file,
-                        isAuthenticated = characterId in authenticatedCharacterIds,
-                        info = AsyncResource.Loading,
+                        settingsFiles = settingsFiles,
+                        scopes = scopes[characterId] ?: emptyList(),
+                        info = null,
                         isHidden = characterId in hiddenCharacterIds,
                     )
                 }
@@ -106,47 +136,79 @@ class LocalCharactersRepository(
             .map { characterId ->
                 LocalCharacter(
                     characterId = characterId,
-                    settingsFile = null,
-                    isAuthenticated = true,
-                    info = AsyncResource.Loading,
+                    settingsFiles = emptyMap(),
+                    scopes = scopes[characterId] ?: emptyList(),
+                    info = null,
                     isHidden = characterId in hiddenCharacterIds,
                 )
             }
 
-        _characters.value = (charactersFromFiles + ssoOnlyCharacters)
-            .distinctBy { it.characterId }
-            .sortedWith(
-                compareBy(
-                    { !it.isAuthenticated },
-                    { it.settingsFile?.getLastModifiedTime()?.toMillis()?.let { -it } ?: 0L },
-                ),
-            )
+        return (charactersFromFiles + ssoOnlyCharacters).distinctBy { it.characterId }
     }
 
-    private suspend fun loadEsiCharacters() = coroutineScope {
-        for (item in _characters.value) {
+    private suspend fun loadEsiCharacters(characters: List<LocalCharacter>) = coroutineScope {
+        val characterIds = characters.map { it.characterId }
+        val affiliations = characterAffiliationRepository.getCharacterAffiliations(Originator.LocalCharacters, characterIds)
+
+        for (localCharacter in characters) {
             launch {
-                val result = esiApi.getCharactersId(item.characterId).map { character ->
-                    val corporationDeferred = async { esiApi.getCorporationsId(character.corporationId) }
-                    val allianceDeferred =
-                        if (character.allianceId != null) async { esiApi.getAlliancesId(character.allianceId) } else null
+                val characterInfo = combine(
+                    async {
+                        esiApi.getCharactersId(Originator.LocalCharacters, localCharacter.characterId)
+                    },
+                    async {
+                        if (ScopeGroups.readRoles in localCharacter.scopes) {
+                            esiApi.getCharactersIdRoles(Originator.LocalCharacters, localCharacter.characterId).map { it.roles }
+                        } else {
+                            Result.Success(emptyList())
+                        }
+                    },
+                ) { details, roles ->
+                    val corporationId = affiliations[localCharacter.characterId]?.corporationId ?: details.corporationId
+                    val allianceId = affiliations[localCharacter.characterId]?.allianceId ?: details.allianceId
+                    val corporationDeferred = async { esiApi.getCorporationsId(Originator.LocalCharacters, corporationId) }
+                    val allianceDeferred = if (allianceId != null) async { esiApi.getAlliancesId(Originator.LocalCharacters, allianceId) } else null
                     val corporation = corporationDeferred.await()
                     val alliance = allianceDeferred?.await()
                     CharacterInfo(
-                        name = character.name,
-                        corporationId = character.corporationId,
+                        name = details.name,
+                        characterId = localCharacter.characterId,
+                        corporationRoles = roles,
+                        corporationId = corporationId,
                         corporationName = corporation.success?.name ?: "?",
-                        allianceId = character.allianceId,
+                        allianceId = allianceId,
                         allianceName = if (alliance != null) alliance.success?.name ?: "?" else null,
+                        birthday = details.birthday,
                     )
-                }
+                }.success
+
+                val updatedCharacter = localCharacter.copy(info = characterInfo ?: localCharacter.info)
                 withContext(MainUIDispatcher) {
+                    var isExistingCharacterUpdated = false
                     val characters = _characters.value.map { current ->
-                        if (current.characterId == item.characterId) current.copy(info = result.toResource()) else current
+                        if (current.characterId == localCharacter.characterId) {
+                            isExistingCharacterUpdated = true
+                            updatedCharacter
+                        } else {
+                            current
+                        }
                     }
-                    _characters.value = characters
+                    if (!isExistingCharacterUpdated) {
+                        _characters.value = (characters + updatedCharacter).sort()
+                    } else {
+                        _characters.value = characters
+                    }
                 }
             }
         }
+    }
+
+    private fun List<LocalCharacter>.sort(): List<LocalCharacter> {
+        return sortedWith(
+            compareBy(
+                { it.scopes.isEmpty() },
+                { it.settingsFiles.values.maxOfOrNull { it.getLastModifiedTime().toMillis() }?.let { -it } ?: 0L },
+            ),
+        )
     }
 }

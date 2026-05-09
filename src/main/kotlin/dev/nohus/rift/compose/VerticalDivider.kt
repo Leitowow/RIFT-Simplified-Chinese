@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun VerticalDivider(
     modifier: Modifier = Modifier,
-    color: Color = MaterialTheme.colors.onSurface.copy(alpha = DividerAlpha),
+    color: Color = MaterialTheme.colors.onSurface.copy(alpha = DIVIDER_ALPHA),
     thickness: Dp = 1.dp,
 ) {
     Box(
@@ -25,4 +25,4 @@ fun VerticalDivider(
     )
 }
 
-private const val DividerAlpha = 0.12f
+private const val DIVIDER_ALPHA = 0.12f

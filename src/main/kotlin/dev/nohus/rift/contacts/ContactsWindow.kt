@@ -22,7 +22,6 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,7 +30,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
@@ -43,17 +41,19 @@ import androidx.compose.ui.unit.dp
 import dev.nohus.rift.characters.repositories.LocalCharactersRepository.LocalCharacter
 import dev.nohus.rift.compose.AsyncAllianceLogo
 import dev.nohus.rift.compose.AsyncCorporationLogo
-import dev.nohus.rift.compose.AsyncPlayerPortrait
 import dev.nohus.rift.compose.AsyncTypeIcon
 import dev.nohus.rift.compose.ButtonType
 import dev.nohus.rift.compose.ClickableAlliance
+import dev.nohus.rift.compose.ClickableCharacter
 import dev.nohus.rift.compose.ClickableCorporation
 import dev.nohus.rift.compose.ClickableLocation
-import dev.nohus.rift.compose.ClickablePlayer
 import dev.nohus.rift.compose.ClickableSystem
+import dev.nohus.rift.compose.ConstellationIllustrationIconSmall
 import dev.nohus.rift.compose.ContextMenuItem
 import dev.nohus.rift.compose.ExpandChevron
+import dev.nohus.rift.compose.FlagIcon
 import dev.nohus.rift.compose.LoadingSpinner
+import dev.nohus.rift.compose.RegionIllustrationIconSmall
 import dev.nohus.rift.compose.RiftButton
 import dev.nohus.rift.compose.RiftContextMenuArea
 import dev.nohus.rift.compose.RiftDropdown
@@ -64,10 +64,12 @@ import dev.nohus.rift.compose.RiftTooltipArea
 import dev.nohus.rift.compose.RiftWindow
 import dev.nohus.rift.compose.ScrollbarColumn
 import dev.nohus.rift.compose.ScrollbarLazyColumn
+import dev.nohus.rift.compose.SystemIllustrationIconSmall
 import dev.nohus.rift.compose.Tab
 import dev.nohus.rift.compose.hoverBackground
 import dev.nohus.rift.compose.modifyIf
 import dev.nohus.rift.compose.modifyIfNotNull
+import dev.nohus.rift.compose.rememberPointerInteractionStateHolder
 import dev.nohus.rift.compose.theme.RiftTheme
 import dev.nohus.rift.compose.theme.Spacing
 import dev.nohus.rift.contacts.ContactsRepository.Contact
@@ -78,8 +80,8 @@ import dev.nohus.rift.contacts.ContactsViewModel.Filter
 import dev.nohus.rift.contacts.ContactsViewModel.UiState
 import dev.nohus.rift.contacts.SearchRepository.SearchCategory
 import dev.nohus.rift.contacts.SearchRepository.SearchResult
+import dev.nohus.rift.dynamicportraits.DynamicCharacterPortraitParallax
 import dev.nohus.rift.generated.resources.Res
-import dev.nohus.rift.generated.resources.constellation
 import dev.nohus.rift.generated.resources.contact_allcontacts
 import dev.nohus.rift.generated.resources.contact_alliance
 import dev.nohus.rift.generated.resources.contact_blocked
@@ -89,21 +91,14 @@ import dev.nohus.rift.generated.resources.contact_faction
 import dev.nohus.rift.generated.resources.contact_standings
 import dev.nohus.rift.generated.resources.contact_tag
 import dev.nohus.rift.generated.resources.contact_watched
-import dev.nohus.rift.generated.resources.flag_background
-import dev.nohus.rift.generated.resources.flag_negative
-import dev.nohus.rift.generated.resources.flag_neutral
-import dev.nohus.rift.generated.resources.flag_positive
-import dev.nohus.rift.generated.resources.region
 import dev.nohus.rift.generated.resources.window_contacts
 import dev.nohus.rift.generated.resources.window_titlebar_tune
 import dev.nohus.rift.network.AsyncResource
 import dev.nohus.rift.standings.Standing
-import dev.nohus.rift.standings.StandingUtils
 import dev.nohus.rift.standings.StandingUtils.formatStanding
-import dev.nohus.rift.standings.getFlagColor
 import dev.nohus.rift.utils.toggle
-import dev.nohus.rift.utils.viewModel
 import dev.nohus.rift.utils.withColor
+import dev.nohus.rift.viewModel
 import dev.nohus.rift.windowing.WindowManager.RiftWindowState
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -231,7 +226,7 @@ private fun ContactsTabContent(
 }
 
 @Composable
-private fun ToolbarRow(
+fun ToolbarRow(
     state: UiState,
     fixedHeight: Dp,
     onTabSelected: (ContactsTab) -> Unit,
@@ -412,10 +407,10 @@ private fun ContactFilters(
                 }
                 for (label in owner.second) {
                     ContactLabelRow(
-                        text = label,
+                        text = label.name,
                         count = ownerContacts.count { label in it.labels },
                         currentFilter = state.filter,
-                        filter = Filter.Label(owner.first, label),
+                        filter = Filter.Label(label),
                         onClick = onFilterClick,
                     )
                 }
@@ -553,11 +548,11 @@ private fun Contact(
                 ) {
                     Text(
                         text = contact.entity.name,
-                        style = RiftTheme.typography.titlePrimary,
+                        style = RiftTheme.typography.headerPrimary,
                     )
                     if (contact.labels.isNotEmpty()) {
                         Text(
-                            text = contact.labels.joinToString(", "),
+                            text = contact.labels.joinToString(", ") { it.name },
                             style = RiftTheme.typography.bodySecondary,
                         )
                     }
@@ -603,41 +598,6 @@ private fun BlockIcon() {
                 painter = painterResource(Res.drawable.contact_blocked),
                 contentDescription = null,
                 modifier = Modifier.size(12.dp),
-            )
-        }
-    }
-}
-
-@Composable
-private fun FlagIcon(standing: Float, modifier: Modifier = Modifier) {
-    val level = StandingUtils.getStandingLevel(standing)
-    val tooltip = when (level) {
-        Standing.Terrible -> "Pilot has Terrible Standing"
-        Standing.Bad -> "Pilot has Bad Standing"
-        Standing.Neutral -> "Pilot has No Standing"
-        Standing.Good -> "Pilot has Good Standing"
-        Standing.Excellent -> "Pilot has Excellent Standing"
-    }
-    RiftTooltipArea(tooltip, modifier) {
-        Box(
-            contentAlignment = Alignment.Center,
-        ) {
-            val tint = level.getFlagColor().copy(alpha = 0.75f)
-            Image(
-                painter = painterResource(Res.drawable.flag_background),
-                contentDescription = null,
-                colorFilter = ColorFilter.tint(tint),
-                modifier = Modifier.size(12.dp),
-            )
-            val icon = when (level) {
-                Standing.Terrible, Standing.Bad -> Res.drawable.flag_negative
-                Standing.Neutral -> Res.drawable.flag_neutral
-                Standing.Good, Standing.Excellent -> Res.drawable.flag_positive
-            }
-            Image(
-                painter = painterResource(icon),
-                contentDescription = null,
-                modifier = Modifier.size(8.dp),
             )
         }
     }
@@ -709,7 +669,7 @@ private fun EmptyState(isLoading: Boolean, contacts: List<Contact>) {
         } else {
             "No contacts loaded"
         },
-        style = RiftTheme.typography.titlePrimary,
+        style = RiftTheme.typography.headerPrimary,
         textAlign = TextAlign.Center,
         modifier = Modifier
             .fillMaxWidth()
@@ -744,7 +704,7 @@ private fun SearchTabContent(
                     items = state.characters,
                     selectedItem = selectedCharacter,
                     onItemSelected = { selectedCharacter = it },
-                    getItemName = { it?.let { it.info.success?.name ?: "${it.characterId}" } ?: "Select character" },
+                    getItemName = { it?.let { it.info?.name ?: "${it.characterId}" } ?: "Select character" },
                 )
             }
             RiftContextMenuArea(
@@ -883,40 +843,43 @@ private fun SearchResultRow(
     category: SearchCategory,
     item: SearchResult,
 ) {
+    val pointerInteractionStateHolder = rememberPointerInteractionStateHolder()
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .hoverBackground()
+            .hoverBackground(pointerInteractionStateHolder = pointerInteractionStateHolder)
             .padding(vertical = Spacing.verySmall)
             .padding(start = Spacing.verySmall)
             .padding(end = Spacing.small),
     ) {
         when (category) {
-            SearchCategory.Agents -> AsyncPlayerPortrait(
-                characterId = item.id.toInt(),
-                size = 32,
-                modifier = Modifier.size(32.dp),
-            )
+            SearchCategory.Agents -> {
+                DynamicCharacterPortraitParallax(
+                    characterId = item.id.toInt(),
+                    size = 32.dp,
+                    enterTimestamp = null,
+                    pointerInteractionStateHolder = pointerInteractionStateHolder,
+                )
+            }
             SearchCategory.Alliance -> AsyncAllianceLogo(
                 allianceId = item.id.toInt(),
                 size = 32,
                 modifier = Modifier.size(32.dp),
             )
             SearchCategory.Characters -> {
-                ClickablePlayer(item.id.toInt()) {
-                    AsyncPlayerPortrait(
+                ClickableCharacter(item.id.toInt()) {
+                    DynamicCharacterPortraitParallax(
                         characterId = item.id.toInt(),
-                        size = 32,
-                        modifier = Modifier.size(32.dp),
+                        size = 32.dp,
+                        enterTimestamp = null,
+                        pointerInteractionStateHolder = pointerInteractionStateHolder,
                     )
                 }
             }
             SearchCategory.Constellation -> {
-                Image(
-                    painter = painterResource(Res.drawable.constellation),
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
+                ConstellationIllustrationIconSmall(
+                    constellationId = item.typeId,
                 )
             }
             SearchCategory.Corporations -> AsyncCorporationLogo(
@@ -935,17 +898,13 @@ private fun SearchResultRow(
                 modifier = Modifier.size(32.dp),
             )
             SearchCategory.Regions -> {
-                Image(
-                    painter = painterResource(Res.drawable.region),
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
+                RegionIllustrationIconSmall(
+                    regionId = item.id.toInt(),
                 )
             }
             SearchCategory.SolarSystems -> {
-                AsyncTypeIcon(
-                    typeId = item.typeId,
-                    nameHint = item.name,
-                    modifier = Modifier.size(32.dp),
+                SystemIllustrationIconSmall(
+                    solarSystemId = item.typeId,
                 )
             }
             SearchCategory.Stations -> {
@@ -998,7 +957,7 @@ private fun SearchResultRow(
                 ) {
                     Text(
                         text = item.name,
-                        style = RiftTheme.typography.titlePrimary,
+                        style = RiftTheme.typography.headerPrimary,
                     )
                     if (item.description != null) {
                         Text(
@@ -1010,7 +969,7 @@ private fun SearchResultRow(
             }
             when (category) {
                 SearchCategory.Characters -> {
-                    ClickablePlayer(item.id.toInt()) {
+                    ClickableCharacter(item.id.toInt()) {
                         textContent()
                     }
                 }
@@ -1035,12 +994,12 @@ private fun SearchResultRow(
                     }
                 }
                 SearchCategory.Stations -> {
-                    ClickableLocation(item.systemId, item.id) {
+                    ClickableLocation(item.systemId, item.id, item.typeId, item.name) {
                         textContent()
                     }
                 }
                 SearchCategory.Structures -> {
-                    ClickableLocation(item.systemId, item.id) {
+                    ClickableLocation(item.systemId, item.id, item.typeId, item.name) {
                         textContent()
                     }
                 }

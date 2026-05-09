@@ -15,7 +15,7 @@ class GetLinuxPartitionsUseCase {
     private val ignoredTypes = listOf("squashfs")
 
     /**
-     * Returns a list partition roots, ignoring system and technical mounts
+     * Returns a list of partition roots, ignoring system and technical mounts
      */
     operator fun invoke(): List<Path> {
         return mountsFile.readText().trim().lines().map { line ->

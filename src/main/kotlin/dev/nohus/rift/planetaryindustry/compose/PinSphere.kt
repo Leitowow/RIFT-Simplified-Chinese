@@ -43,7 +43,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import dev.nohus.rift.compose.AsyncTypeIcon
 import dev.nohus.rift.compose.RiftTooltipArea
-import dev.nohus.rift.compose.scale
+import dev.nohus.rift.compose.imageResourceRescaling
 import dev.nohus.rift.compose.theme.RiftTheme
 import dev.nohus.rift.compose.theme.Spacing
 import dev.nohus.rift.generated.resources.Res
@@ -66,6 +66,7 @@ import dev.nohus.rift.planetaryindustry.models.PinStatus.ExtractorInactive
 import dev.nohus.rift.planetaryindustry.models.PinStatus.InputNotRouted
 import dev.nohus.rift.planetaryindustry.models.PinStatus.NotSetup
 import dev.nohus.rift.planetaryindustry.models.PinStatus.OutputNotRouted
+import dev.nohus.rift.planetaryindustry.models.PinStatus.StorageFull
 import dev.nohus.rift.planetaryindustry.models.getCapacity
 import dev.nohus.rift.planetaryindustry.models.getName
 import dev.nohus.rift.utils.formatNumberCompact
@@ -77,6 +78,7 @@ private val saveLayerPaint = Paint()
 private val storageUsageTint = ColorFilter.tint(Color(0xFF00a9f4), BlendMode.Modulate)
 private val factoryInputsTint = ColorFilter.tint(Color(0xFFed9935), BlendMode.Modulate)
 private val needsAttentionTint = ColorFilter.tint(Color(0xFFFF0000))
+private val imageCache = mutableMapOf<Pair<DrawableResource, Int>, ImageBitmap>()
 
 @Composable
 fun PinSphere(
@@ -90,16 +92,16 @@ fun PinSphere(
     val pxSize = LocalDensity.current.run { size.toPx().toInt() }
     val shadow = imageResource(Res.drawable.pi_disc_shadow)
     val iconSize = ((125f / 256f) * pxSize).toInt()
-    val icon = imageResource(getIcon(pin), iconSize)
-    val gauge = imageResource(Res.drawable.pi_gauge_15px, pxSize)
+    val icon = imageResourceRescaling(getIcon(pin), iconSize, imageCache)
+    val gauge = imageResourceRescaling(Res.drawable.pi_gauge_15px, pxSize, imageCache)
     val attentionGauge = imageResource(Res.drawable.pi_gauge_20px)
     val cpuPowerDiameter = (((256f - 45f) / 256f) * pxSize).toInt()
-    val cpuPower = imageResource(Res.drawable.pi_hash15px, cpuPowerDiameter)
+    val cpuPower = imageResourceRescaling(Res.drawable.pi_hash15px, cpuPowerDiameter, imageCache)
     val cycleDiameter = (pxSize * 0.7).toInt()
-    val cycle = imageResource(Res.drawable.pi_cycle_10px, cycleDiameter)
+    val cycle = imageResourceRescaling(Res.drawable.pi_cycle_10px, cycleDiameter, imageCache)
 
     val needsAttention by derivedStateOf {
-        pin.status in listOf(NotSetup, InputNotRouted, OutputNotRouted, ExtractorExpired, ExtractorInactive)
+        pin.status in listOf(NotSetup, InputNotRouted, OutputNotRouted, ExtractorExpired, ExtractorInactive, StorageFull)
     }
     val loadAnimation = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
@@ -203,7 +205,7 @@ private fun Tooltip(
     ) {
         Text(
             text = pin.getName(),
-            style = RiftTheme.typography.titlePrimary,
+            style = RiftTheme.typography.headerPrimary,
         )
         when (pin) {
             is Pin.CommandCenter -> {
@@ -509,19 +511,4 @@ private fun getIcon(pin: Pin): DrawableResource {
         "Storage" in pin.name -> Res.drawable.pi_circle_storage
         else -> Res.drawable.pi_circle_command
     }
-}
-
-private val imageCache = mutableMapOf<Pair<DrawableResource, Int>, ImageBitmap>()
-
-/**
- * Version of imageResource that will do a high quality rescale of the image and cache the result
- */
-@Composable
-private fun imageResource(resource: DrawableResource, sizeToScale: Int): ImageBitmap {
-    val original = imageResource(resource)
-    val scaled = remember {
-        imageCache[resource to sizeToScale]?.let { return@remember it }
-        original.scale(sizeToScale, sizeToScale).also { imageCache[resource to sizeToScale] = it }
-    }
-    return scaled
 }

@@ -13,6 +13,7 @@ import java.awt.Toolkit
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.StringSelection
 import java.awt.datatransfer.UnsupportedFlavorException
+import kotlin.time.measureTimedValue
 
 @Single
 class Clipboard {
@@ -28,17 +29,25 @@ class Clipboard {
 
     private suspend fun observeClipboard() = withContext(Dispatchers.IO) {
         while (true) {
-            val contents = try {
-                clipboard.getContents(null)?.getTransferData(DataFlavor.stringFlavor) as? String
-            } catch (e: IllegalStateException) {
-                null
-            } catch (e: UnsupportedFlavorException) {
-                null
-            } catch (e: IOException) {
-                null
+            val (contents, duration) = measureTimedValue {
+                getClipboardContents()
             }
             _state.value = contents
-            delay(250)
+            val delay = (duration.inWholeMilliseconds * 4).coerceIn(1000, 2000)
+            delay(delay)
+        }
+    }
+
+    private fun getClipboardContents(): String? {
+        return try {
+            val transferable = clipboard.getContents(null)
+            transferable.getTransferData(DataFlavor.stringFlavor) as? String
+        } catch (_: IllegalStateException) {
+            null
+        } catch (_: UnsupportedFlavorException) {
+            null
+        } catch (_: IOException) {
+            null
         }
     }
 

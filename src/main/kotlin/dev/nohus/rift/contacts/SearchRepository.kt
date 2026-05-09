@@ -1,9 +1,9 @@
 package dev.nohus.rift.contacts
 
-import dev.nohus.rift.characters.repositories.LocalCharactersRepository
 import dev.nohus.rift.network.Result
 import dev.nohus.rift.network.esi.EsiApi
-import dev.nohus.rift.network.esi.UniverseStructuresId
+import dev.nohus.rift.network.esi.models.UniverseStructuresId
+import dev.nohus.rift.network.requests.Originator
 import dev.nohus.rift.repositories.NamesRepository
 import dev.nohus.rift.repositories.SolarSystemsRepository
 import dev.nohus.rift.repositories.StationsRepository
@@ -19,7 +19,6 @@ import org.koin.core.annotation.Single
 @Single
 class SearchRepository(
     private val esiApi: EsiApi,
-    private val localCharactersRepository: LocalCharactersRepository,
     private val namesRepository: NamesRepository,
     private val solarSystemsRepository: SolarSystemsRepository,
     private val stationsRepository: StationsRepository,
@@ -53,11 +52,13 @@ class SearchRepository(
     )
 
     suspend fun search(
+        originator: Originator,
         characterId: Int,
         categories: List<SearchCategory>,
         search: String,
     ): Result<Map<SearchCategory, List<SearchResult>>> {
         return esiApi.getCharactersIdSearch(
+            originator = originator,
             characterId = characterId,
             categories = categories.map { it.queryName },
             strict = false,
@@ -67,13 +68,13 @@ class SearchRepository(
                 val ids = response.agent + response.alliance + response.character + response.constellation +
                     response.corporation + response.faction + response.inventoryType + response.region +
                     response.solarSystem + response.station + response.station
-                namesRepository.resolveNames(ids.map { it.toInt() })
+                namesRepository.resolveNames(Originator.Contacts, ids.map { it.toInt() })
                 buildMap {
                     put(SearchCategory.Agents, response.agent.mapResults())
                     put(SearchCategory.Alliance, response.alliance.mapAlliancesResults())
                     if (response.character.isNotEmpty()) {
                         val characters = response.character.map { characterId ->
-                            async { characterDetailsRepository.getCharacterDetails(characterId.toInt()) }
+                            async { characterDetailsRepository.getCharacterDetails(Originator.Contacts, characterId.toInt()) }
                         }.awaitAll().filterNotNull().associateBy { it.characterId }
                         put(SearchCategory.Characters, response.character.mapCharactersResults(characters))
                     }
@@ -86,7 +87,7 @@ class SearchRepository(
                     put(SearchCategory.Stations, response.station.mapStationsResults())
                     if (response.structure.isNotEmpty()) {
                         val structures = response.structure.map { structureId ->
-                            async { structureId to esiApi.getUniverseStructuresId(structureId, characterId) }
+                            async { structureId to esiApi.getUniverseStructuresId(originator, structureId, characterId) }
                         }.awaitAll().mapNotNull { it.first to (it.second.success ?: return@mapNotNull null) }.toMap()
                         put(SearchCategory.Structures, response.structure.mapStructuresResults(structures))
                     }
@@ -101,6 +102,7 @@ class SearchRepository(
                 id = id,
                 typeId = id.toInt(),
                 name = namesRepository.getName(id.toInt()) ?: "$id",
+                description = "ID: $id",
             )
         }.sortedBy { it.name }
     }
@@ -151,14 +153,10 @@ class SearchRepository(
     private fun List<Long>.mapSolarSystemsResults(): List<SearchResult> {
         return map { id ->
             val name = solarSystemsRepository.getSystem(id.toInt())?.name
-            val sunTypeId = if (name != null) {
-                solarSystemsRepository.getSystemSunTypeId(name)
-            } else {
-                0
-            }
             SearchResult(
                 id = id,
-                typeId = sunTypeId,
+                typeId = id.toInt(),
+                systemId = id.toInt(),
                 name = namesRepository.getName(id.toInt()) ?: name ?: "$id",
             )
         }.sortedBy { it.name }

@@ -21,7 +21,7 @@ private val logger = KotlinLogging.logger {}
 class CleanupTempFilesUseCase {
 
     suspend operator fun invoke() = withContext(Dispatchers.IO) {
-        val maxAge = Instant.now() - Duration.ofDays(7)
+        val maxAge = Instant.now() - Duration.ofHours(1)
         try {
             val path = Path.of(System.getProperty("java.io.tmpdir"))
             path

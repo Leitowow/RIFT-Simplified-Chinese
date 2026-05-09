@@ -1,52 +1,47 @@
 package dev.nohus.rift.whatsnew
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.onClick
 import androidx.compose.material.Divider
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.BlurEffect
-import androidx.compose.ui.graphics.TileMode
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import dev.nohus.rift.compose.AffiliateCode
+import dev.nohus.rift.compose.Bullet
 import dev.nohus.rift.compose.CreatorCode
+import dev.nohus.rift.compose.LinkText
 import dev.nohus.rift.compose.Patrons
-import dev.nohus.rift.compose.RiftButton
 import dev.nohus.rift.compose.RiftWindow
 import dev.nohus.rift.compose.ScrollbarLazyColumn
+import dev.nohus.rift.compose.hoverBackground
 import dev.nohus.rift.compose.theme.RiftTheme
 import dev.nohus.rift.compose.theme.Spacing
 import dev.nohus.rift.generated.resources.Res
+import dev.nohus.rift.generated.resources.creator_awards
 import dev.nohus.rift.generated.resources.window_redeem
-import dev.nohus.rift.utils.viewModel
+import dev.nohus.rift.utils.openBrowser
+import dev.nohus.rift.utils.toURIOrNull
+import dev.nohus.rift.viewModel
 import dev.nohus.rift.whatsnew.WhatsNewViewModel.UiState
 import dev.nohus.rift.whatsnew.WhatsNewViewModel.Version
 import dev.nohus.rift.windowing.WindowManager.RiftWindowState
+import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun WhatsNewWindow(
@@ -63,15 +58,14 @@ fun WhatsNewWindow(
     ) {
         WhatsNewWindowContent(
             state = state,
-            onDoneClick = onCloseRequest,
         )
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun WhatsNewWindowContent(
     state: UiState,
-    onDoneClick: () -> Unit,
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(Spacing.medium),
@@ -83,25 +77,61 @@ private fun WhatsNewWindowContent(
                 VersionItem(it)
             }
         }
-        var size: IntSize? by remember { mutableStateOf(null) }
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(Spacing.small),
-            modifier = Modifier
-                .height(LocalDensity.current.run { size?.height?.toDp() ?: 200.dp })
-                .fillMaxWidth(),
+        Column(
+            verticalArrangement = Arrangement.spacedBy(Spacing.medium),
         ) {
-            Box(Modifier.weight(1f).onSizeChanged { size = it }) {
-                CreatorCode()
+            EveCreatorAwards()
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
+            ) {
+                Box(Modifier.weight(1f)) {
+                    AffiliateCode()
+                }
+                Box(Modifier.weight(1f)) {
+                    CreatorCode()
+                }
             }
-            Box(Modifier.weight(1f)) {
-                Patrons(state.patrons, Modifier.fillMaxHeight())
-            }
+            Patrons(state.patrons, Modifier.fillMaxWidth())
         }
-        RiftButton(
-            text = "Done",
-            onClick = onDoneClick,
-            modifier = Modifier.align(Alignment.End),
+    }
+}
+
+@Composable
+@OptIn(ExperimentalFoundationApi::class)
+private fun EveCreatorAwards() {
+    Column {
+        Image(
+            painter = painterResource(Res.drawable.creator_awards),
+            contentDescription = null,
+            modifier = Modifier.fillMaxWidth(),
         )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Spacing.small),
+            modifier = Modifier
+                .onClick {
+                    "https://www.eveonline.com/news/view/eve-creator-awards".toURIOrNull()?.openBrowser()
+                }
+                .hoverBackground()
+                .border(1.dp, RiftTheme.colors.borderGreyLight)
+                .fillMaxWidth()
+                .padding(Spacing.medium),
+        ) {
+            Text(
+                text = "EVE Creator Awards",
+                style = RiftTheme.typography.headlineHighlighted.copy(fontWeight = FontWeight.Bold),
+            )
+            LinkText(
+                text = "Nominate RIFT for Third Party App of the Year",
+                onClick = {
+                    "https://www.eveonline.com/news/view/eve-creator-awards".toURIOrNull()?.openBrowser()
+                },
+            )
+            Text(
+                text = "Thank you!",
+                style = RiftTheme.typography.bodyPrimary,
+            )
+        }
     }
 }
 
@@ -136,12 +166,12 @@ private fun VersionItem(version: Version) {
                     Spacer(Modifier.width(Spacing.medium))
                 }
                 val style = if (point.isHighlighted) {
-                    RiftTheme.typography.titlePrimary.copy(
+                    RiftTheme.typography.headerPrimary.copy(
                         color = RiftTheme.colors.textSpecialHighlighted,
                         fontWeight = FontWeight.Bold,
                     )
                 } else {
-                    RiftTheme.typography.titlePrimary
+                    RiftTheme.typography.headerPrimary
                 }
                 Text(
                     text = point.text,
@@ -149,28 +179,5 @@ private fun VersionItem(version: Version) {
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun Bullet() {
-    val color = RiftTheme.colors.textHighlighted
-    val blur = 4f
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier.height(16.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .size(6.dp)
-                .graphicsLayer(renderEffect = BlurEffect(blur, blur, edgeTreatment = TileMode.Decal))
-                .border(2.dp, color, CircleShape),
-        ) {}
-        Box(
-            modifier = Modifier
-                .size(6.dp)
-                .clip(CircleShape)
-                .background(color),
-        ) {}
     }
 }

@@ -16,7 +16,9 @@ class MapGateConnectionsRepository(
     )
 
     enum class ConnectionType {
-        System, Constellation, Region
+        System,
+        Constellation,
+        Region,
     }
 
     val gateConnections: List<GateConnection>

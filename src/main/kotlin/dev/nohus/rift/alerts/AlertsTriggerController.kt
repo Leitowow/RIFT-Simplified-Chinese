@@ -6,12 +6,15 @@ import dev.nohus.rift.alerts.AlertTrigger.IntelReported
 import dev.nohus.rift.alerts.AlertTrigger.JabberMessage
 import dev.nohus.rift.alerts.AlertTrigger.JabberPing
 import dev.nohus.rift.alerts.AlertTrigger.NoChannelActivity
+import dev.nohus.rift.characters.repositories.LocalCharactersRepository
 import dev.nohus.rift.characters.repositories.OnlineCharactersRepository
+import dev.nohus.rift.contacts.ContactsRepository
 import dev.nohus.rift.gamelogs.GameLogAction
 import dev.nohus.rift.intel.ParsedChannelChatMessage
 import dev.nohus.rift.intel.state.AlertTriggeringMessagesRepository
 import dev.nohus.rift.intel.state.IntelUnderstanding
 import dev.nohus.rift.intel.state.SystemEntity
+import dev.nohus.rift.killboard.KillmailProcessor.ProcessedKillmail
 import dev.nohus.rift.location.CharacterLocationRepository
 import dev.nohus.rift.logs.parse.ChannelChatMessage
 import dev.nohus.rift.pings.FormupLocation
@@ -20,7 +23,10 @@ import dev.nohus.rift.planetaryindustry.PlanetaryIndustryRepository.ColonyItem
 import dev.nohus.rift.repositories.GetSystemDistanceUseCase
 import dev.nohus.rift.repositories.ShipTypesRepository
 import dev.nohus.rift.repositories.SolarSystemsRepository
+import dev.nohus.rift.repositories.SolarSystemsRepository.MapSolarSystem
 import dev.nohus.rift.settings.persistence.Settings
+import dev.nohus.rift.standings.isFriendly
+import dev.nohus.rift.utils.toRegexOrNull
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -44,10 +50,13 @@ class AlertsTriggerController(
     private val alertsActionController: AlertsActionController,
     private val shipTypesRepository: ShipTypesRepository,
     private val alertTriggeringMessagesRepository: AlertTriggeringMessagesRepository,
+    private val contactsRepository: ContactsRepository,
+    private val localCharactersRepository: LocalCharactersRepository,
 ) {
 
     private val enabledAlerts: List<Alert> get() = settings.alerts.filter { it.isEnabled }
     private val triggerTimestamps: MutableMap<String, Instant> = mutableMapOf()
+    private val killmailSystemTriggerTimestamps: MutableMap<String, Instant> = mutableMapOf()
     private val lastSeenMessagePerChannel = mutableMapOf<String, Instant>()
     private val alertedInactiveChannels = mutableSetOf<String>()
     private var loggedInTimestamp: Instant? = null
@@ -72,8 +81,54 @@ class AlertsTriggerController(
         val matchingEntities: List<Pair<IntelReportType, List<SystemEntity>>>,
         val entities: List<SystemEntity>,
         val locationMatch: AlertLocationMatch,
-        val solarSystem: String,
+        val solarSystem: MapSolarSystem,
     )
+
+    fun onNewKillmail(killmail: ProcessedKillmail) {
+        if (killmail.timestamp.isBefore(Instant.now() - Duration.ofMinutes(3))) {
+            return // Don't alert for old killmails
+        }
+        val lastTriggeredInThisSystem = killmailSystemTriggerTimestamps[killmail.system.name] ?: Instant.EPOCH
+        val duration = Duration.between(lastTriggeredInThisSystem, Instant.now())
+        if (duration < Duration.ofSeconds(15)) {
+            return // Don't repeatedly alert for kills in the same system
+        }
+
+        val triggeredIntelAlerts = enabledAlerts.mapNotNull { alert ->
+            if (alert.trigger is IntelReported) {
+                val matchingEntities = getMatchingEntities(alert.trigger.reportTypes, killmail)
+                if (matchingEntities.isNotEmpty()) {
+                    getMatchingAlertLocation(alert.trigger.reportLocation, killmail.system.id)?.let { alertLocationMatch ->
+                        withCooldown(alert) {
+                            return@mapNotNull TriggeredIntelAlert(
+                                alert = alert,
+                                matchingEntities = matchingEntities,
+                                entities = killmail.entities,
+                                locationMatch = alertLocationMatch,
+                                solarSystem = killmail.system,
+                            )
+                        }
+                    }
+                }
+            }
+            null
+        }.sortedBy { triggeredIntelAlert ->
+            when (val locationMatch = triggeredIntelAlert.locationMatch) {
+                is AlertLocationMatch.Character -> locationMatch.distance
+                is AlertLocationMatch.System -> locationMatch.distance
+            }
+        }
+        triggeredIntelAlerts.forEach {
+            killmailSystemTriggerTimestamps[it.solarSystem.name] = Instant.now()
+            alertsActionController.triggerIntelAlert(
+                alert = it.alert,
+                matchingEntities = it.matchingEntities,
+                entities = it.entities,
+                locationMatch = it.locationMatch,
+                solarSystem = it.solarSystem,
+            )
+        }
+    }
 
     fun onNewIntel(message: ParsedChannelChatMessage, understanding: IntelUnderstanding) {
         logger.debug { "Checking alerts for new intel: $understanding" }
@@ -83,7 +138,7 @@ class AlertsTriggerController(
                 if (matchingEntities.isNotEmpty() && understanding.systems.isNotEmpty()) {
                     logger.debug { "Entities are matching the alert: $matchingEntities" }
                     val reportSystem = understanding.systems.first()
-                    val reportSystemId = solarSystemsRepository.getSystemId(reportSystem) ?: throw IllegalArgumentException("No system $reportSystem")
+                    val reportSystemId = reportSystem.id
                     getMatchingAlertLocation(alert.trigger.reportLocation, reportSystemId)?.let { alertLocationMatch ->
                         withCooldown(alert) {
                             return@mapNotNull TriggeredIntelAlert(
@@ -156,6 +211,22 @@ class AlertsTriggerController(
                             }
                             false // Alert will be triggered after duration
                         }
+                        GameActionType.RanOutOfCharges -> {
+                            action is GameLogAction.RanOutOfCharges
+                        }
+                        is GameActionType.Custom -> {
+                            if (action is GameLogAction.Generic) {
+                                val containing = trigger.messageContaining
+                                if (trigger.isRegex) {
+                                    val regex = containing.toRegexOrNull(RegexOption.IGNORE_CASE)
+                                    regex?.find(action.message) != null
+                                } else {
+                                    action.message.lowercase().containsNonNull(containing)
+                                }
+                            } else {
+                                false
+                            }
+                        }
                     }
                 }
                 if (hasTriggered) {
@@ -176,14 +247,27 @@ class AlertsTriggerController(
                 }
                 if (isChannelMatching) {
                     val triggerSender = alert.trigger.sender
-                    val isEveSystem = channelChatMessage.metadata.channelName == "Local" && channelChatMessage.chatMessage.author == "EVE System"
-                    val isSenderMatching = triggerSender == null && !isEveSystem || channelChatMessage.chatMessage.author == triggerSender
+                    val isEveSystem = channelChatMessage.chatMessage.author == "EVE System"
+                    var isSenderMatching = triggerSender == null && !isEveSystem || channelChatMessage.chatMessage.author == triggerSender
+                    if (alert.trigger.isExcludingSelf) {
+                        val selfCharacterNames = localCharactersRepository.characters.value.mapNotNull { it.info?.name }
+                        if (channelChatMessage.chatMessage.author in selfCharacterNames) isSenderMatching = false
+                    }
                     if (isSenderMatching) {
+                        val message = channelChatMessage.chatMessage.message
                         val containing = alert.trigger.messageContaining
-                        val isMessageMatching = channelChatMessage.chatMessage.message.lowercase().containsNonNull(containing?.lowercase())
+
+                        val (isMessageMatching, match) = if (alert.trigger.isRegex) {
+                            val regex = containing?.toRegexOrNull(RegexOption.IGNORE_CASE)
+                            val match = regex?.find(message)
+                            (match != null) to (match?.value ?: "")
+                        } else {
+                            message.lowercase().containsNonNull(containing?.lowercase()) to (containing ?: "")
+                        }
+
                         if (isMessageMatching) {
                             withCooldown(alert) {
-                                alertsActionController.triggerChatMessageAlert(alert, channelChatMessage, containing)
+                                alertsActionController.triggerChatMessageAlert(alert, channelChatMessage, match)
                             }
                         }
                     }
@@ -206,10 +290,18 @@ class AlertsTriggerController(
                     val isSenderMatching = triggerSender == null && !isDirectorbot || sender == triggerSender
                     if (isSenderMatching) {
                         val containing = alert.trigger.messageContaining
-                        val isMessageMatching = message.lowercase().containsNonNull(containing?.lowercase())
+
+                        val (isMessageMatching, match) = if (alert.trigger.isRegex) {
+                            val regex = containing?.toRegexOrNull(RegexOption.IGNORE_CASE)
+                            val match = regex?.find(message)
+                            (match != null) to (match?.value ?: "")
+                        } else {
+                            message.lowercase().containsNonNull(containing?.lowercase()) to (containing ?: "")
+                        }
+
                         if (isMessageMatching) {
                             withCooldown(alert) {
-                                alertsActionController.triggerJabberMessageAlert(alert, chat, sender, message, containing)
+                                alertsActionController.triggerJabberMessageAlert(alert, chat, sender, message, match)
                             }
                         }
                     }
@@ -221,6 +313,7 @@ class AlertsTriggerController(
     fun onNewJabberPing(ping: PingModel) {
         enabledAlerts.forEach { alert ->
             if (alert.trigger is JabberPing) {
+                @Suppress("DEPRECATION")
                 when (alert.trigger.pingType) {
                     is JabberPingType.Fleet -> {
                         if (ping is PingModel.FleetPing) {
@@ -235,7 +328,9 @@ class AlertsTriggerController(
                             } else {
                                 ping.formupLocations.any { location ->
                                     when (location) {
-                                        is FormupLocation.System -> location.name == fleetPingAlert.formupSystem
+                                        is FormupLocation.System -> {
+                                            solarSystemsRepository.getSystemName(location.id) == fleetPingAlert.formupSystem
+                                        }
                                         is FormupLocation.Text -> false
                                     }
                                 }
@@ -256,7 +351,7 @@ class AlertsTriggerController(
                                 ping.target?.lowercase()?.contains(fleetPingAlert.target.lowercase()) == true
                             }
                             if (isFleetCommanderMatching && isFormupSystemMatching && isPapTypeMatching && isDoctrineMatching && isTargetMatching) {
-                                alertsActionController.triggerJabberPingAlert(alert)
+                                alertsActionController.triggerJabberPingAlert(alert, ping)
                             }
                         }
                     }
@@ -270,7 +365,7 @@ class AlertsTriggerController(
                                 ping.target?.lowercase()?.contains(messagePingAlert.target.lowercase()) == true
                             }
                             if (isTargetMatching) {
-                                alertsActionController.triggerJabberPingAlert(alert)
+                                alertsActionController.triggerJabberPingAlert(alert, ping)
                             }
                         }
                     }
@@ -359,6 +454,38 @@ class AlertsTriggerController(
 
     private fun getMatchingEntities(
         types: List<IntelReportType>,
+        killmail: ProcessedKillmail,
+    ): List<Pair<IntelReportType, List<SystemEntity>>> {
+        return types.map { type ->
+            type to when (type) {
+                IntelReportType.AnyCharacter ->
+                    killmail.attackers
+                        .filter { !it.details.standingLevel.isFriendly }
+                is IntelReportType.SpecificCharacters ->
+                    killmail.attackers
+                        .filter { it.name in type.characters }
+                IntelReportType.AnyShip ->
+                    killmail.ships
+                        .filter { it.standing?.isFriendly != true }
+                is IntelReportType.SpecificShipClasses ->
+                    killmail.ships
+                        .filter { shipTypesRepository.getShipClass(it.type.id) in type.classes }
+                        .filter { it.standing?.isFriendly != true }
+                IntelReportType.Bubbles -> emptyList()
+                IntelReportType.GateCamp -> emptyList()
+                IntelReportType.Wormhole -> emptyList()
+                is IntelReportType.LabeledContacts -> {
+                    killmail.attackers
+                        .filter { character -> isMatchingLabeledContact(character, type) }
+                }
+                IntelReportType.Ess -> emptyList()
+                IntelReportType.Skyhook -> emptyList()
+            }
+        }.filter { it.second.isNotEmpty() }
+    }
+
+    private fun getMatchingEntities(
+        types: List<IntelReportType>,
         understanding: IntelUnderstanding,
     ): List<Pair<IntelReportType, List<SystemEntity>>> {
         return types.map { type ->
@@ -376,36 +503,61 @@ class AlertsTriggerController(
                 is IntelReportType.SpecificShipClasses ->
                     understanding.entities
                         .filterIsInstance<SystemEntity.Ship>()
-                        .filter { shipTypesRepository.getShipClass(it.name) in type.classes }
+                        .filter { shipTypesRepository.getShipClass(it.type.id) in type.classes }
                 IntelReportType.Bubbles -> understanding.entities.filterIsInstance<SystemEntity.Bubbles>()
                 IntelReportType.GateCamp -> understanding.entities.filterIsInstance<SystemEntity.GateCamp>()
                 IntelReportType.Wormhole -> understanding.entities.filterIsInstance<SystemEntity.Wormhole>()
+                is IntelReportType.LabeledContacts -> {
+                    understanding.entities
+                        .filterIsInstance<SystemEntity.Character>()
+                        .filter { character -> isMatchingLabeledContact(character, type) }
+                }
+                IntelReportType.Ess -> understanding.entities.filterIsInstance<SystemEntity.Ess>()
+                IntelReportType.Skyhook -> understanding.entities.filterIsInstance<SystemEntity.Skyhook>()
             }
         }.filter { it.second.isNotEmpty() }
     }
 
+    private fun isMatchingLabeledContact(
+        character: SystemEntity.Character,
+        type: IntelReportType.LabeledContacts,
+    ): Boolean {
+        val ids = listOfNotNull(character.characterId, character.details.corporationId, character.details.allianceId)
+        val labels = contactsRepository.getLabels(ids)
+        if (labels.isEmpty()) return false
+        return type.labels.any { expectedLabel ->
+            labels.any { label ->
+                label.owner.id == expectedLabel.ownerId && label.id == expectedLabel.id
+            }
+        }
+    }
+
     sealed interface AlertLocationMatch {
-        data class System(val systemId: Int, val distance: Int) : AlertLocationMatch
+        data class System(val system: MapSolarSystem, val distance: Int) : AlertLocationMatch
         data class Character(val characterId: Int, val distance: Int) : AlertLocationMatch
     }
 
     private fun getMatchingAlertLocation(location: IntelReportLocation, reportSystemId: Int): AlertLocationMatch? {
         return when (location) {
             is IntelReportLocation.System -> {
-                val systemId = solarSystemsRepository.getSystemId(location.systemName)
+                val system = solarSystemsRepository.getSystem(location.systemName)
                     ?: throw IllegalArgumentException("No system ${location.systemName}")
-                val distance = getSystemDistanceUseCase(systemId, reportSystemId, location.jumpsRange.max, withJumpBridges = false) ?: Int.MAX_VALUE
-                if (distance in location.jumpsRange) AlertLocationMatch.System(systemId, distance) else null
+                val distance = getSystemDistanceUseCase(system.id, reportSystemId, withJumpBridges = false) ?: Int.MAX_VALUE
+                if (distance in location.jumpsRange) AlertLocationMatch.System(system, distance) else null
             }
             is IntelReportLocation.AnyOwnedCharacter -> {
                 onlineCharactersRepository.onlineCharacters.value.firstNotNullOfOrNull { characterId ->
+                    if (location.onlyUndocked && !characterLocationRepository.isUndocked(characterId)) return@firstNotNullOfOrNull null
                     isCharacterWithinDistance(characterId, reportSystemId, location.jumpsRange)?.let {
                         AlertLocationMatch.Character(characterId, it)
                     }
                 }
             }
             is IntelReportLocation.OwnedCharacter -> {
-                if (location.characterId in onlineCharactersRepository.onlineCharacters.value) {
+                if (
+                    location.characterId in onlineCharactersRepository.onlineCharacters.value &&
+                    (!location.onlyUndocked || characterLocationRepository.isUndocked(location.characterId))
+                ) {
                     isCharacterWithinDistance(location.characterId, reportSystemId, location.jumpsRange)?.let {
                         AlertLocationMatch.Character(location.characterId, it)
                     }
@@ -419,7 +571,7 @@ class AlertsTriggerController(
     private fun isCharacterWithinDistance(characterId: Int, systemId: Int, range: JumpRange): Int? {
         val characterSystemId = characterLocationRepository.locations.value[characterId]?.solarSystemId
         return if (characterSystemId != null) {
-            val distance = getSystemDistanceUseCase(characterSystemId, systemId, range.max, withJumpBridges = settings.isUsingJumpBridgesForDistance) ?: Int.MAX_VALUE
+            val distance = getSystemDistanceUseCase(characterSystemId, systemId, withJumpBridges = settings.isUsingJumpBridgesForDistance) ?: Int.MAX_VALUE
             if (distance in range) distance else null
         } else {
             null

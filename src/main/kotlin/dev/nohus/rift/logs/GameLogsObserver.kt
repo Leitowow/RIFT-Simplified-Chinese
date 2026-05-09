@@ -3,9 +3,10 @@ package dev.nohus.rift.logs
 import dev.nohus.rift.logs.DirectoryObserver.DirectoryObserverEvent.FileEvent
 import dev.nohus.rift.logs.DirectoryObserver.DirectoryObserverEvent.OverflowEvent
 import dev.nohus.rift.logs.DirectoryObserver.FileEventType.Created
+import dev.nohus.rift.logs.DirectoryObserver.FileEventType.Deleted
+import dev.nohus.rift.logs.DirectoryObserver.FileEventType.Modified
 import dev.nohus.rift.logs.parse.GameLogFileMetadata
 import dev.nohus.rift.logs.parse.GameLogFileParser
-import dev.nohus.rift.logs.parse.GameLogMessage
 import dev.nohus.rift.logs.parse.GameLogMessageWithMetadata
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.sync.Mutex
@@ -34,7 +35,7 @@ class GameLogsObserver(
     private val logFilesMutex = Mutex()
     private var activeLogFiles: Map<String, GameLogFileMetadata> = emptyMap() // String is the filename
     private var onMessageCallback: ((GameLogMessageWithMetadata) -> Unit)? = null
-    private val handledMessages = mutableSetOf<GameLogMessage>()
+    private val readingOffsets = mutableMapOf<Path, Long>() // Seek offset of already read portion
 
     suspend fun observe(
         directory: Path,
@@ -63,16 +64,16 @@ class GameLogsObserver(
                                 updateActiveLogFiles()
                                 matchGameLogFilenameUseCase(event.file)?.characterId?.toIntOrNull()?.let { onCharacterLogin(it) }
                             }
-                            DirectoryObserver.FileEventType.Deleted -> {
+                            Deleted -> {
                                 logFilesMutex.withLock {
                                     val file = logFiles.find { it.file.name == logFile.file.name }
                                     if (file != null) logFiles -= file
                                 }
                                 updateActiveLogFiles()
                             }
-                            DirectoryObserver.FileEventType.Modified -> {
+                            Modified -> {
                                 activeLogFiles[logFile.file.name]?.let { metadata ->
-                                    readLogFile(logFile, metadata) // TODO: Optimise, we don't need to reread the file in full
+                                    readLogFile(logFile, metadata)
                                 }
                             }
                         }
@@ -139,10 +140,13 @@ class GameLogsObserver(
 
     private fun readLogFile(logFile: GameLogFile, metadata: GameLogFileMetadata) {
         try {
-            val newMessages = logFileParser.parse(logFile.file).filter { it !in handledMessages }
+            val offset = readingOffsets[logFile.file] ?: 0L
+            val (newMessages, newOffset) = logFileParser.parse(logFile.file, offset)
+            readingOffsets[logFile.file] = newOffset
             if (newMessages.isEmpty()) return
-            handledMessages += newMessages
-            newMessages.forEach { onMessageCallback?.invoke(GameLogMessageWithMetadata(it, metadata)) }
+            newMessages.forEach {
+                onMessageCallback?.invoke(GameLogMessageWithMetadata(it, metadata))
+            }
         } catch (e: IOException) {
             logger.error(e) { "Could not read game log file" }
         }

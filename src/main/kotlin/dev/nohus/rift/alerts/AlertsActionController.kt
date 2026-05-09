@@ -1,22 +1,27 @@
 package dev.nohus.rift.alerts
 
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withAnnotation
 import dev.nohus.rift.alerts.AlertsTriggerController.AlertLocationMatch
+import dev.nohus.rift.contacts.ContactsRepository
 import dev.nohus.rift.gamelogs.GameLogAction
 import dev.nohus.rift.intel.state.SystemEntity
-import dev.nohus.rift.logging.analytics.Analytics
 import dev.nohus.rift.logs.parse.ChannelChatMessage
+import dev.nohus.rift.network.requests.Originator
 import dev.nohus.rift.notifications.NotificationsController
 import dev.nohus.rift.notifications.NotificationsController.Notification
 import dev.nohus.rift.notifications.system.SendNotificationUseCase
+import dev.nohus.rift.pings.FormupLocation
+import dev.nohus.rift.pings.PapType
+import dev.nohus.rift.pings.PingModel
 import dev.nohus.rift.planetaryindustry.PlanetaryIndustryRepository.ColonyItem
 import dev.nohus.rift.push.PushNotificationController
 import dev.nohus.rift.repositories.SolarSystemsRepository
+import dev.nohus.rift.repositories.SolarSystemsRepository.MapSolarSystem
 import dev.nohus.rift.repositories.TypesRepository
 import dev.nohus.rift.repositories.TypesRepository.Type
+import dev.nohus.rift.repositories.character.CharacterDetailsRepository
 import dev.nohus.rift.repositories.character.CharactersRepository
 import dev.nohus.rift.utils.formatDurationLong
 import dev.nohus.rift.utils.sound.SoundPlayer
@@ -29,6 +34,7 @@ import org.koin.core.annotation.Single
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
+import java.util.Locale
 import kotlin.io.path.absolutePathString
 
 @Single
@@ -41,8 +47,9 @@ class AlertsActionController(
     private val solarSystemsRepository: SolarSystemsRepository,
     private val typesRepository: TypesRepository,
     private val charactersRepository: CharactersRepository,
+    private val characterDetailsRepository: CharacterDetailsRepository,
     private val windowManager: WindowManager,
-    private val analytics: Analytics,
+    private val contactsRepository: ContactsRepository,
 ) {
 
     private val scope = CoroutineScope(Job())
@@ -53,7 +60,7 @@ class AlertsActionController(
         matchingEntities: List<Pair<IntelReportType, List<SystemEntity>>>,
         entities: List<SystemEntity>,
         locationMatch: AlertLocationMatch,
-        solarSystem: String,
+        solarSystem: MapSolarSystem,
     ) {
         val title = getNotificationTitle(matchingEntities)
         val message = getNotificationMessage(locationMatch)
@@ -66,12 +73,22 @@ class AlertsActionController(
         val message = getNotificationMessage(action)
         val type = getNotificationItemType(action)
         val notification = Notification.TextNotification(title, message, characterId, type)
-        triggerAlert(alert, notification, title, message.toString())
+        val iconUrl = if (type != null) {
+            "https://images.evetech.net/types/${type.id}/icon"
+        } else {
+            null
+        }
+        triggerAlert(alert, notification, title, message.toString(), iconUrl)
     }
 
     fun triggerChatMessageAlert(alert: Alert, chatMessage: ChannelChatMessage, highlight: String?) {
         scope.launch {
-            val characterId = charactersRepository.getCharacterId(chatMessage.chatMessage.author)
+            val characterId = charactersRepository.getCharacterId(Originator.Alerts, chatMessage.chatMessage.author)
+            val standing = if (characterId != null) {
+                characterDetailsRepository.getCharacterDetails(Originator.Alerts, characterId)?.standingLevel
+            } else {
+                null
+            }
             val title = "Chat message in ${chatMessage.metadata.channelName}"
             val message = "${chatMessage.chatMessage.author}: ${chatMessage.chatMessage.message}"
             val notification = Notification.ChatMessageNotification(
@@ -82,6 +99,7 @@ class AlertsActionController(
                         highlight = highlight,
                         sender = chatMessage.chatMessage.author,
                         senderCharacterId = characterId,
+                        senderStanding = standing,
                     ),
                 ),
             )
@@ -102,14 +120,48 @@ class AlertsActionController(
         }
     }
 
-    fun triggerJabberPingAlert(alert: Alert) {
-        triggerAlert(alert, null, "", "")
+    fun triggerJabberPingAlert(alert: Alert, ping: PingModel) {
+        val (title, message) = when (ping) {
+            is PingModel.FleetPing -> {
+                val title = buildString {
+                    val prefix = when (ping.papType) {
+                        PapType.Peacetime -> "Peacetime fleet"
+                        PapType.Strategic -> "Strategic fleet"
+                        is PapType.Text -> "${ping.papType.text} fleet"
+                        else -> "Fleet"
+                    }
+                    appendLine("$prefix under ${ping.fleetCommander.name}")
+                }
+                val message = buildString {
+                    if (ping.formupLocations.isNotEmpty()) {
+                        val formup = ping.formupLocations.joinToString {
+                            when (it) {
+                                is FormupLocation.System -> solarSystemsRepository.getSystemName(it.id) ?: "${it.id}"
+                                is FormupLocation.Text -> it.text
+                            }
+                        }
+                        appendLine("Formup: $formup")
+                    }
+                    if (ping.doctrine != null) {
+                        appendLine("Doctrine: ${ping.doctrine.text}")
+                    }
+                    appendLine(ping.description)
+                }
+                title to message
+            }
+            is PingModel.PlainText -> {
+                "Announcement from ${ping.sender}" to ping.text
+            }
+        }
+        val iconUrl = (ping as? PingModel.FleetPing)?.fleetCommander?.id?.let { id ->
+            "https://images.evetech.net/characters/$id/portrait"
+        }
+        triggerAlert(alert, null, title, message, iconUrl)
     }
 
-    @OptIn(ExperimentalTextApi::class)
     fun triggerInactiveChannelAlert(alert: Alert, triggeredInactiveChannels: List<String>) {
-        val styleTag = Notification.TextNotification.styleTag
-        val styleValue = Notification.TextNotification.styleValue
+        val styleTag = Notification.TextNotification.STYLE_TAG
+        val styleValue = Notification.TextNotification.STYLE_VALUE
         val message = if (triggeredInactiveChannels.size == 1) {
             buildAnnotatedString {
                 append("Channel ")
@@ -132,7 +184,6 @@ class AlertsActionController(
         triggerAlert(alert, notification, title, message.toString())
     }
 
-    @OptIn(ExperimentalTextApi::class)
     fun triggerPlanetaryIndustryAlert(alert: Alert, colonyItem: ColonyItem) {
         val duration = Duration.between(Instant.now(), colonyItem.ffwdColony.currentSimTime)
         val isInFuture = duration >= Duration.ofMinutes(5)
@@ -141,8 +192,8 @@ class AlertsActionController(
         } else {
             "Your colony needs attention"
         }
-        val styleTag = Notification.TextNotification.styleTag
-        val styleValue = Notification.TextNotification.styleValue
+        val styleTag = Notification.TextNotification.STYLE_TAG
+        val styleValue = Notification.TextNotification.STYLE_VALUE
         val riftMessage = buildAnnotatedString {
             append("Planet ")
             withAnnotation(styleTag, styleValue) {
@@ -171,13 +222,12 @@ class AlertsActionController(
         triggerAlert(alert, notification, title, systemMessage)
     }
 
-    private fun triggerAlert(alert: Alert, notification: Notification?, title: String, message: String) {
-        analytics.alertTriggered()
+    private fun triggerAlert(alert: Alert, notification: Notification?, title: String, message: String, iconUrl: String? = null) {
         alert.actions.forEach { action ->
             when (action) {
                 AlertAction.RiftNotification -> if (notification != null) sendRiftNotification(notification)
                 AlertAction.SystemNotification -> sendSystemNotification(title, message)
-                AlertAction.PushNotification -> sendPushNotification(title, message)
+                AlertAction.PushNotification -> sendPushNotification(title, message, iconUrl)
                 is AlertAction.Sound -> {
                     withSoundCooldown {
                         val sound = soundsRepository.getSounds().firstOrNull { it.id == action.id } ?: return@withSoundCooldown
@@ -204,16 +254,31 @@ class AlertsActionController(
     }
 
     private fun getNotificationTitle(matchingEntities: List<Pair<IntelReportType, List<SystemEntity>>>): String {
-        return matchingEntities.map { it.first }.let {
-            if (IntelReportType.GateCamp in it) {
-                "Gate camp reported"
-            } else if (IntelReportType.AnyCharacter in it) {
+        return matchingEntities.let {
+            if (it.any { it.first is IntelReportType.LabeledContacts }) {
+                val (labeledContacts, entities) = it.first { it.first is IntelReportType.LabeledContacts }
+                val expectedLabels = (labeledContacts as IntelReportType.LabeledContacts).labels
+                val matchedLabels = entities.filterIsInstance<SystemEntity.Character>().map { character ->
+                    val ids = listOfNotNull(character.characterId, character.details.corporationId, character.details.allianceId)
+                    contactsRepository.getLabels(ids).filter { label ->
+                        expectedLabels.any { expectedLabel -> label.owner.id == expectedLabel.ownerId && label.id == expectedLabel.id }
+                    }
+                }.flatten().map { it.name }.distinct()
+                val labelsText = matchedLabels.joinToString(", ")
+                "Hostile labeled \"$labelsText\" reported"
+            } else if (it.any { it.first is IntelReportType.SpecificCharacters }) {
+                "Specific hostile reported"
+            } else if (it.any { it.first is IntelReportType.SpecificShipClasses }) {
+                "Specific ship class reported"
+            } else if (it.any { it.first is IntelReportType.AnyCharacter }) {
                 "Hostile reported"
-            } else if (IntelReportType.AnyShip in it) {
+            } else if (it.any { it.first is IntelReportType.GateCamp }) {
+                "Gate camp reported"
+            } else if (it.any { it.first is IntelReportType.AnyShip }) {
                 "Hostile ship reported"
-            } else if (IntelReportType.Bubbles in it) {
+            } else if (it.any { it.first is IntelReportType.Bubbles }) {
                 "Bubbles reported"
-            } else if (IntelReportType.Wormhole in it) {
+            } else if (it.any { it.first is IntelReportType.Wormhole }) {
                 "Wormhole reported"
             } else {
                 "Intel alert"
@@ -232,8 +297,7 @@ class AlertsActionController(
                     1 -> "1 jump away from"
                     else -> "$distance jumps away from"
                 }
-                val systemName = solarSystemsRepository.getSystemName(locationMatch.systemId) ?: "${locationMatch.systemId}"
-                "$distanceText $systemName"
+                "$distanceText ${locationMatch.system.name}"
             }
 
             is AlertLocationMatch.Character -> {
@@ -255,13 +319,14 @@ class AlertsActionController(
             is GameLogAction.Decloaked -> "Decloaked"
             is GameLogAction.CombatStopped -> "Combat stopped"
             GameLogAction.CloneJumping -> throw IllegalStateException("Not used")
+            is GameLogAction.RanOutOfCharges -> "Module out of charges"
+            is GameLogAction.Generic -> action.type.replaceFirstChar { it.titlecase(Locale.US) }
         }
     }
 
-    @OptIn(ExperimentalTextApi::class)
     private fun getNotificationMessage(action: GameLogAction): AnnotatedString {
-        val styleTag = Notification.TextNotification.styleTag
-        val styleValue = Notification.TextNotification.styleValue
+        val styleTag = Notification.TextNotification.STYLE_TAG
+        val styleValue = Notification.TextNotification.STYLE_VALUE
         return when (action) {
             is GameLogAction.UnderAttack -> buildAnnotatedString {
                 append("Attacker is ")
@@ -294,6 +359,15 @@ class AlertsActionController(
                 }
             }
             GameLogAction.CloneJumping -> throw IllegalStateException("Not used")
+            is GameLogAction.RanOutOfCharges -> buildAnnotatedString {
+                withAnnotation(styleTag, styleValue) {
+                    append(action.module)
+                }
+                append(" needs to reload")
+            }
+            is GameLogAction.Generic -> buildAnnotatedString {
+                append(action.message)
+            }
         }
     }
 
@@ -305,6 +379,8 @@ class AlertsActionController(
             is GameLogAction.Decloaked -> typesRepository.getType(action.by)
             is GameLogAction.CombatStopped -> typesRepository.getType(action.target)
             GameLogAction.CloneJumping -> throw IllegalStateException("Not used")
+            is GameLogAction.RanOutOfCharges -> typesRepository.getType(action.module)
+            is GameLogAction.Generic -> typesRepository.findTypeInText(action.message)
         }
     }
 
@@ -322,9 +398,9 @@ class AlertsActionController(
         )
     }
 
-    private fun sendPushNotification(title: String, message: String) {
+    private fun sendPushNotification(title: String, message: String, iconUrl: String?) {
         scope.launch {
-            pushNotificationController.sendPushNotification(title, message)
+            pushNotificationController.sendPushNotification(title, message, iconUrl)
         }
     }
 }

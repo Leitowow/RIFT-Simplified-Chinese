@@ -6,6 +6,7 @@ import dev.nohus.rift.gamelogs.GameLogAction.Attacking
 import dev.nohus.rift.gamelogs.GameLogAction.BeingWarpScrambled
 import dev.nohus.rift.gamelogs.GameLogAction.CloneJumping
 import dev.nohus.rift.gamelogs.GameLogAction.Decloaked
+import dev.nohus.rift.gamelogs.GameLogAction.RanOutOfCharges
 import dev.nohus.rift.gamelogs.GameLogAction.UnderAttack
 import dev.nohus.rift.logs.parse.GameLogMessageWithMetadata
 import org.koin.core.annotation.Single
@@ -41,6 +42,9 @@ class GameLogMessageParser(
             }
             recentTargetsRepository.onNewGameLogAction(action)
         }
+        if (Duration.between(messageWithMetadata.message.timestamp, Instant.now()) < Duration.ofSeconds(5)) {
+            alertsTriggerController.onNewGameLogAction(GameLogAction.Generic(type, message), messageWithMetadata.metadata.characterId)
+        }
     }
 
     private fun checkCombatMessage(message: String): GameLogAction? {
@@ -62,7 +66,7 @@ class GameLogMessageParser(
     }
 
     private fun checkNotifyMessage(message: String): GameLogAction? {
-        NOTIFY_WEAPON_RAN_OUT_OF_CHARGES.onMatch(message) { (weapon) -> return null }
+        NOTIFY_MODULE_RAN_OUT_OF_CHARGES.onMatch(message) { (module) -> return RanOutOfCharges(module) }
         NOTIFY_WEAPON_DEACTIVATES_TARGET_EXPLODED.onMatch(message) { (weapon, target) -> return null }
         NOTIFY_CLONE_JUMPING.onMatch(message) { return CloneJumping }
         NOTIFY_DISEMBARKING_FROM_SHIP.onMatch(message) { return null }
@@ -204,7 +208,7 @@ private val COMBAT_REMOTE_ARMOR_REPAIRED_TO = """^(?<armor>[0-9]+) remote armor 
 
 private val BOUNTY_ADDED = """^(?<amount>.*) ISK added to next bounty payout \(payment adjusted\)$""".toRegex()
 
-private val NOTIFY_WEAPON_RAN_OUT_OF_CHARGES = """^(?<weapon>.*) has run out of charges$""".toRegex()
+private val NOTIFY_MODULE_RAN_OUT_OF_CHARGES = """^(?<module>.*) has run out of charges$""".toRegex()
 private val NOTIFY_WEAPON_DEACTIVATES_TARGET_EXPLODED = """^(?<weapon>.*) deactivates as (?<target>.*) begins to explode.$""".toRegex()
 private val NOTIFY_CLONE_JUMPING = """^Starting clone jumping$""".toRegex()
 private val NOTIFY_DISEMBARKING_FROM_SHIP = """^Disembarking from ship$""".toRegex()

@@ -9,6 +9,9 @@ fun Standing.getColor(): Color? {
         Standing.Neutral -> null
         Standing.Good -> Color(0xFF316BCA)
         Standing.Excellent -> Color(0xFF0062FF)
+        Standing.Self -> Color(0xFF029C02)
+        Standing.Corporation -> Color(0xFF029C02)
+        Standing.Alliance -> Color(0xFF0062FF)
     }
 }
 
@@ -19,6 +22,9 @@ fun Standing.getFlagColor(): Color {
         Standing.Neutral -> Color(0xFFB2B2B2)
         Standing.Good -> Color(0xFF337FFF)
         Standing.Excellent -> Color(0xFF002699)
+        Standing.Self -> Color(0xFF029C02)
+        Standing.Corporation -> Color(0xFF029C02)
+        Standing.Alliance -> Color(0xFF002699)
     }
 }
 
@@ -29,6 +35,7 @@ fun Standing.getSystemColor(): Color {
         Standing.Neutral -> Color(0xFF8D3163)
         Standing.Good -> Color(0xFF4ECEF8)
         Standing.Excellent -> Color(0xFF2C75E1)
+        Standing.Self, Standing.Corporation, Standing.Alliance -> Color(0xFF2C75E1)
     }
 }
 
@@ -39,6 +46,22 @@ val Standing.isFriendly: Boolean get() {
         Standing.Neutral -> false
         Standing.Good -> true
         Standing.Excellent -> true
+        Standing.Self -> true
+        Standing.Corporation -> true
+        Standing.Alliance -> true
+    }
+}
+
+val Standing.isHostile: Boolean get() {
+    return when (this) {
+        Standing.Terrible -> true
+        Standing.Bad -> true
+        Standing.Neutral -> false
+        Standing.Good -> false
+        Standing.Excellent -> false
+        Standing.Self -> false
+        Standing.Corporation -> false
+        Standing.Alliance -> false
     }
 }
 

@@ -36,11 +36,13 @@ import dev.nohus.rift.intel.state.IntelStateController.Dated
 import dev.nohus.rift.intel.state.SystemEntity
 import dev.nohus.rift.location.GetOnlineCharactersLocationUseCase.OnlineCharacterLocation
 import dev.nohus.rift.map.MapViewModel.MapType
+import dev.nohus.rift.map.MapViewModel.MapType.ClusterRegionsMap
+import dev.nohus.rift.map.MapViewModel.MapType.ClusterSystemsMap
+import dev.nohus.rift.map.MapViewModel.MapType.DistanceMap
 import dev.nohus.rift.map.MapViewModel.MapType.RegionMap
 import dev.nohus.rift.map.systemcolor.SystemColorStrategy
 import dev.nohus.rift.repositories.ShipTypesRepository
 import dev.nohus.rift.repositories.SolarSystemsRepository.MapSolarSystem
-import dev.nohus.rift.standings.getColor
 import dev.nohus.rift.standings.isFriendly
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.imageResource
@@ -94,6 +96,7 @@ fun SolarSystemNode(
         hostileOrbitPainter.updateComposition()
         val hasOnlineCharacter = onlineCharacters.any { it.location.solarSystemId == system.id }
 
+        val hasIntel = !intel.isNullOrEmpty()
         val hostileCount = hostileOrbitPainter.getTotalCount(intel)
         val entityIcons = hostileOrbitPainter.getEntityIcons(intel)
         val nodeBackgroundCircleMaxScale = SOLAR_SYSTEM_NODE_BACKGROUND_CIRCLE_MAX_SCALE / LocalDensity.current.density
@@ -101,11 +104,16 @@ fun SolarSystemNode(
         Canvas(
             modifier = Modifier.size(2 * nodeSizes.radiusWithMargin),
         ) {
-            if (mapType is RegionMap && mapScale <= nodeBackgroundCircleMaxScale) {
+            val isDrawingNodeBackgroundCircle = when (mapType) {
+                ClusterRegionsMap -> throw IllegalStateException("ClusterRegionsMap does not draw systems")
+                is ClusterSystemsMap -> mapType.is2D && mapScale <= nodeBackgroundCircleMaxScale
+                is DistanceMap, is RegionMap -> mapScale <= nodeBackgroundCircleMaxScale
+            }
+            if (isDrawingNodeBackgroundCircle) {
                 drawCircle(mapBackground, radius = nodeSizes.radiusWithMarginPx, center = Offset.Zero)
             }
             drawCircle(brush, radius = nodeSizes.radiusPx, center = Offset.Zero)
-            hostileOrbitPainter.draw(this, nodeSizes, hostileCount, entityIcons.takeIf { !isScaled } ?: emptyList())
+            hostileOrbitPainter.draw(this, nodeSizes, hasIntel, hostileCount, entityIcons.takeIf { !isScaled } ?: emptyList())
             characterLocationPainter.draw(this, nodeSizes, hasOnlineCharacter)
         }
     }
@@ -173,14 +181,15 @@ class HostileOrbitPainter {
     fun draw(
         scope: DrawScope,
         nodeSizes: NodeSizes,
+        hasIntel: Boolean,
         hostileCount: Int,
         entityIcons: List<EntityIcon>,
     ) = with(scope) {
-        if (hostileCount > 0) {
+        if (hostileCount > 0 || hasIntel) {
             val endRadius = nodeSizes.radiusWithMarginPx
             val startRadius = nodeSizes.radiusPx
             val centerRadius = (startRadius + endRadius) / 2
-            val color = getColor(hostileCount / 5f)
+            val color = if (hostileCount > 0) getColor(hostileCount / 5f) else Color(0xFF7D7E7E)
             val brush = orbitBrushForColorNodeSizes.getOrPut(color to nodeSizes) {
                 Brush.radialGradient(
                     0.0f to color.copy(alpha = 0.0f),
@@ -279,7 +288,7 @@ class HostileOrbitPainter {
     private fun getIcons(items: List<Dated<SystemEntity>>): List<DrawableResource> {
         return items.mapNotNull {
             val ship = it.item as SystemEntity.Ship
-            val icon = shipTypesRepository.getShipBracketIcon(ship.name) ?: return@mapNotNull null
+            val icon = shipTypesRepository.getShipBracketIcon(ship.type.id) ?: return@mapNotNull null
             List(it.item.count) { icon }
         }.flatten()
     }

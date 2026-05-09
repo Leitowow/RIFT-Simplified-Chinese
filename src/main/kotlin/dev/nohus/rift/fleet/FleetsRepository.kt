@@ -6,6 +6,7 @@ import dev.nohus.rift.network.Result.Failure
 import dev.nohus.rift.network.Result.Success
 import dev.nohus.rift.network.esi.EsiApi
 import dev.nohus.rift.network.esi.EsiErrorException
+import dev.nohus.rift.network.requests.Originator
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -68,10 +69,13 @@ class FleetsRepository(
     private suspend fun updateFleets() = coroutineScope {
         val online = onlineCharactersRepository.onlineCharacters.value
         val characters = localCharactersRepository.characters.value
-            .filter { it.isAuthenticated }.map { it.characterId }.filter { it in online }
+            /* Has fleet scopes */
+            .filter { true }
+            .map { it.characterId }
+            .filter { it in online }
         var needsDetailsUpdate = false
         characters.map { characterId ->
-            async { characterId to esiApi.getCharactersIdFleet(characterId) }
+            async { characterId to esiApi.getCharactersIdFleet(Originator.Fleets, characterId) }
         }.awaitAll().map { (characterId, result) ->
             when (result) {
                 is Success -> {
@@ -111,8 +115,8 @@ class FleetsRepository(
     }
 
     private suspend fun updateFleetDetails(characterId: Int, fleetId: Long) {
-        val details = esiApi.getFleetsId(characterId, fleetId).success ?: return
-        val members = esiApi.getFleetsIdMembers(characterId, fleetId).success ?: return
+        val details = esiApi.getFleetsId(Originator.Fleets, characterId, fleetId).success ?: return
+        val members = esiApi.getFleetsIdMembers(Originator.Fleets, characterId, fleetId).success ?: return
         val fleet = Fleet(
             id = fleetId,
             members = members,

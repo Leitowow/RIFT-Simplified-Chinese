@@ -1,6 +1,7 @@
 package dev.nohus.rift.pings
 
 import dev.nohus.rift.network.HttpGetUseCase
+import dev.nohus.rift.network.requests.Originator
 import dev.nohus.rift.utils.CommandRunner
 import dev.nohus.rift.utils.OperatingSystem
 import dev.nohus.rift.utils.get
@@ -21,7 +22,7 @@ class OpenMumbleUseCase(
     private val regex = """window.location = '(?<redirect>.*)'""".toRegex()
 
     suspend operator fun invoke(link: String) {
-        val response = httpGet(link).success
+        val response = httpGet(Originator.Pings, link).success
         if (response != null) {
             val match = regex.find(response)
             if (match != null) {

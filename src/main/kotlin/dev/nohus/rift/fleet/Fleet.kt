@@ -1,7 +1,7 @@
 package dev.nohus.rift.fleet
 
-import dev.nohus.rift.network.esi.FleetMember
-import dev.nohus.rift.network.esi.FleetsId
+import dev.nohus.rift.network.esi.models.FleetMember
+import dev.nohus.rift.network.esi.models.FleetsId
 
 data class Fleet(
     val id: Long,

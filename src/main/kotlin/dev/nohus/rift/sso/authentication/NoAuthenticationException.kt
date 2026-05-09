@@ -1,3 +1,5 @@
 package dev.nohus.rift.sso.authentication
 
-class NoAuthenticationException(val characterId: Int) : Exception()
+import dev.nohus.rift.sso.scopes.EsiScope
+
+class NoAuthenticationException(val characterId: Int, val scope: EsiScope?) : Exception()

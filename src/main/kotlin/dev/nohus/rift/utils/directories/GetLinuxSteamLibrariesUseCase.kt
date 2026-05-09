@@ -11,7 +11,7 @@ class GetLinuxSteamLibrariesUseCase(
 ) {
 
     private val libraryDirectoryName = "SteamLibrary"
-    private val homeLibraryPath = ".local/share/Steam"
+    private val homeLibraryPath = ".steam/steam"
 
     /**
      * Returns a list of Steam library directories

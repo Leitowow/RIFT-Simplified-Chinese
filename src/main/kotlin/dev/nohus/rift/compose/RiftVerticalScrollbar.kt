@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.foundation.v2.ScrollbarAdapter
 import androidx.compose.runtime.Composable
@@ -45,11 +46,15 @@ import java.time.Instant
 fun RiftVerticalScrollbar(
     scrollState: ScrollState,
     modifier: Modifier = Modifier,
+    reverseLayout: Boolean = false,
+    background: Color = RiftTheme.colors.windowBackground,
     hasBackground: Boolean = true,
 ) {
     RiftVerticalScrollbar(
         scrollKey = scrollState.value,
         scrollbarAdapter = rememberScrollbarAdapter(scrollState),
+        reverseLayout = reverseLayout,
+        background = background,
         hasBackground = hasBackground,
         modifier = modifier,
     )
@@ -59,12 +64,35 @@ fun RiftVerticalScrollbar(
 fun RiftVerticalScrollbar(
     listState: LazyListState,
     modifier: Modifier = Modifier,
+    reverseLayout: Boolean = false,
+    background: Color = RiftTheme.colors.windowBackground,
     hasBackground: Boolean = true,
 ) {
     val scrollKey = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.let { it.index * 100_000 + it.offset } ?: 0
     RiftVerticalScrollbar(
         scrollKey = scrollKey,
         scrollbarAdapter = rememberScrollbarAdapter(listState),
+        reverseLayout = reverseLayout,
+        background = background,
+        hasBackground = hasBackground,
+        modifier = modifier,
+    )
+}
+
+@Composable
+fun RiftVerticalScrollbar(
+    gridState: LazyGridState,
+    modifier: Modifier = Modifier,
+    reverseLayout: Boolean = false,
+    background: Color = RiftTheme.colors.windowBackground,
+    hasBackground: Boolean = true,
+) {
+    val scrollKey = gridState.layoutInfo.visibleItemsInfo.firstOrNull()?.let { it.index * 100_000 + it.offset.x + it.offset.y } ?: 0
+    RiftVerticalScrollbar(
+        scrollKey = scrollKey,
+        scrollbarAdapter = rememberScrollbarAdapter(gridState),
+        reverseLayout = reverseLayout,
+        background = background,
         hasBackground = hasBackground,
         modifier = modifier,
     )
@@ -74,7 +102,9 @@ fun RiftVerticalScrollbar(
 private fun RiftVerticalScrollbar(
     scrollKey: Int,
     scrollbarAdapter: ScrollbarAdapter,
+    reverseLayout: Boolean,
     hasBackground: Boolean,
+    background: Color,
     modifier: Modifier = Modifier,
 ) {
     var lastScrollTimestamp by remember { mutableStateOf(Instant.EPOCH) }
@@ -126,7 +156,7 @@ private fun RiftVerticalScrollbar(
         }
     }
 
-    val background = RiftTheme.colors.windowBackground
+    val background = background.copy(alpha = background.alpha * RiftTheme.colors.transparentWindowAlpha)
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
@@ -137,6 +167,7 @@ private fun RiftVerticalScrollbar(
         val minimalHeight = 30.dp
         VerticalScrollbar(
             adapter = scrollbarAdapter,
+            reverseLayout = reverseLayout,
             style = ScrollbarStyle(
                 minimalHeight = minimalHeight,
                 thickness = shadowThickness,
@@ -151,6 +182,7 @@ private fun RiftVerticalScrollbar(
         )
         VerticalScrollbar(
             adapter = scrollbarAdapter,
+            reverseLayout = reverseLayout,
             style = ScrollbarStyle(
                 minimalHeight = minimalHeight,
                 thickness = thickness,
@@ -166,7 +198,10 @@ private fun RiftVerticalScrollbar(
 }
 
 private enum class ScrollbarInteractionState {
-    Normal, Hover, Press, Scrolling
+    Normal,
+    Hover,
+    Press,
+    Scrolling,
 }
 
 private fun <T> getTransitionSpec(): @Composable Transition.Segment<ScrollbarInteractionState>.() -> FiniteAnimationSpec<T> {

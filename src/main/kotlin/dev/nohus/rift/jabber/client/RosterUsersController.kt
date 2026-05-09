@@ -22,6 +22,7 @@ import org.jxmpp.jid.Jid
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.stringprep.XmppStringprepException
 import org.koin.core.annotation.Factory
+import java.lang.Exception
 import java.util.concurrent.Executors
 
 private val logger = KotlinLogging.logger {}
@@ -60,7 +61,11 @@ class RosterUsersController {
     )
 
     enum class PresenceMode {
-        FreeToChat, Available, Away, ExtendedAway, DoNotDisturb
+        FreeToChat,
+        Available,
+        Away,
+        ExtendedAway,
+        DoNotDisturb,
     }
 
     fun initialize(connection: XMPPConnection) {
@@ -89,7 +94,7 @@ class RosterUsersController {
                 })
             }
 
-            override fun onRosterLoadingFailed(exception: java.lang.Exception) {
+            override fun onRosterLoadingFailed(exception: Exception) {
                 logger.error(exception) { "Roster loading failed" }
             }
         })

@@ -17,5 +17,7 @@ class GetOperatingSystemUseCase {
 }
 
 enum class OperatingSystem {
-    Linux, Windows, MacOs
+    Linux,
+    Windows,
+    MacOs,
 }

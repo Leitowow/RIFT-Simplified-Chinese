@@ -1,15 +1,17 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.compose.reload.gradle.ComposeHotRun
+import org.jetbrains.compose.reload.gradle.isHotReloadBuild
 import java.time.Instant
 
 plugins {
-    kotlin("jvm")
-    kotlin("plugin.serialization")
-    id("org.jetbrains.kotlin.plugin.compose")
-    id("org.jetbrains.compose")
-    id("com.diffplug.spotless")
-    id("com.google.devtools.ksp")
-    id("com.github.gmazzo.buildconfig")
-    id("dev.hydraulic.conveyor")
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.compose)
+    alias(libs.plugins.compose.hotreload)
+    alias(libs.plugins.spotless)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.buildconfig)
+    id("dev.hydraulic.conveyor") version "1.12"
 }
 
 val riftVersion = properties["rift.version"] as String
@@ -19,6 +21,7 @@ version = riftVersion
 buildConfig {
     val environment = (properties["rift.environment"] as? String) ?: "dev"
     buildConfigField("String", "environment", "\"$environment\"")
+    buildConfigField("Boolean", "isDevEnvironment", "${environment == "dev"}")
     buildConfigField("String", "version", "\"${properties["rift.version"]}\"")
     buildConfigField("long", "buildTimestamp", "${Instant.now().toEpochMilli()}")
     buildConfigField("String", "buildUuid", "\"${properties["rift.buildUuid"]}\"")
@@ -31,6 +34,7 @@ buildConfig {
 repositories {
     mavenCentral()
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+    maven("https://packages.jetbrains.team/maven/p/ij/intellij-dependencies/")
     maven("https://oss.sonatype.org/content/repositories/snapshots")
     maven("https://jogamp.org/deployment/maven")
     google()
@@ -38,100 +42,120 @@ repositories {
 
 dependencies {
     // Compose
-    linuxAmd64(compose.desktop.linux_x64)
-    macAmd64(compose.desktop.macos_x64)
-    macAarch64(compose.desktop.macos_arm64)
-    windowsAmd64(compose.desktop.windows_x64)
-    @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
-    implementation(compose.desktop.components.animatedImage)
-    implementation(compose.components.resources)
-    implementation("media.kamel:kamel-image:0.9.5")
+    implementation(libs.compose.desktop.linux)
+    implementation(libs.compose.desktop.macos.x64)
+    implementation(libs.compose.desktop.macos.arm64)
+    implementation(libs.compose.desktop.windows)
+    implementation(libs.compose.components.resources)
+    implementation(libs.compose.desktop) {
+        exclude("org.jetbrains.compose.material")
+        exclude("org.jetbrains.compose.material3")
+    }
+
+    // Kamel
+    implementation(libs.kamel.image)
+    implementation(libs.kamel.decoder.image.bitmap)
+    implementation(libs.kamel.decoder.animatedimage)
+    implementation(libs.kamel.fetcher.resources)
 
     // Logging
-    implementation("io.github.oshai:kotlin-logging-jvm:6.0.9")
-    implementation("ch.qos.logback:logback-classic:1.5.6")
+    implementation(libs.kotlin.logging)
+    implementation(libs.logback.classic)
+    implementation(libs.log4j.api)
 
     // Koin
-    implementation("io.insert-koin:koin-core:3.5.6")
-    implementation("io.insert-koin:koin-logger-slf4j:3.5.6")
-    implementation("io.insert-koin:koin-annotations:1.3.1")
-    ksp("io.insert-koin:koin-ksp-compiler:1.3.1")
+    implementation(libs.koin.core)
+    implementation(libs.koin.logger.slf4j)
+    implementation(libs.koin.annotations)
+    ksp(libs.koin.ksp.compiler)
 
     // Other
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.0")
-    implementation("org.apache.commons:commons-lang3:3.14.0")
-    implementation("org.apache.commons:commons-exec:1.4.0")
-    implementation("org.apache.commons:commons-math3:3.6.1")
-    implementation("org.apache.httpcomponents.client5:httpclient5:5.3.1")
-    implementation("org.bitbucket.b_c:jose4j:0.9.6")
-    implementation("com.formdev:flatlaf:3.4.1")
-    implementation("org.jsoup:jsoup:1.17.2")
-    implementation("org.nibor.autolink:autolink:0.11.0")
-    implementation("org.locationtech.jts:jts-core:1.19.0")
-    implementation("dev.chrisbanes.haze:haze:0.7.2")
-    implementation("dev.hydraulic.conveyor:conveyor-control:1.1")
-    implementation("androidx.collection:collection:1.4.3")
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.commons.lang3)
+    implementation(libs.commons.exec)
+    implementation(libs.commons.math3)
+    implementation(libs.httpclient5)
+    implementation(libs.jose4j)
+    implementation(libs.flatlaf)
+    implementation(libs.jsoup)
+    implementation(libs.autolink)
+    implementation(libs.jts.core)
+    implementation(libs.haze)
+    implementation(libs.conveyor.control)
+    implementation(libs.androidx.collection)
+    implementation(libs.jbr.api)
+    implementation(libs.cache4k)
 
     // OpenAL Audio
-    implementation("org.jogamp.joal:joal-main:2.5.0")
-    implementation("org.jogamp.gluegen:gluegen-rt-main:2.5.0")
+    implementation(libs.joal.main)
+    implementation(libs.gluegen.rtmain)
+
+    implementation(libs.jlayer)
+
+    // JavaCV / OpenCV
+    implementation(libs.opencv.platform)
 
     // Smack (XMPP)
-    implementation("org.igniterealtime.smack:smack-java8:4.4.8")
-    implementation("org.igniterealtime.smack:smack-tcp:4.4.8")
-    implementation("org.igniterealtime.smack:smack-im:4.4.8")
-    implementation("org.igniterealtime.smack:smack-extensions:4.4.8")
+    implementation(libs.smack.java8)
+    implementation(libs.smack.tcp)
+    implementation(libs.smack.im)
+    implementation(libs.smack.extensions)
 
     // SystemTray
-    implementation("com.dorkbox:Collections:2.8")
-    implementation("com.dorkbox:Executor:3.14")
-    implementation("com.dorkbox:Desktop:1.1")
-    implementation("com.dorkbox:JNA:1.4")
+    implementation(libs.dorkbox.collections)
+    implementation(libs.dorkbox.executor)
+    implementation(libs.dorkbox.desktop)
+    implementation(libs.dorkbox.jna)
     implementation(files("libs/OS.jar"))
-    implementation("com.dorkbox:Updates:1.1")
-    implementation("com.dorkbox:Utilities:1.48")
-    implementation("org.javassist:javassist:3.30.2-GA")
-    val jnaVersion = "5.14.0"
-    implementation("net.java.dev.jna:jna-jpms:${jnaVersion}")
-    implementation("net.java.dev.jna:jna-platform-jpms:${jnaVersion}")
-    implementation("org.slf4j:slf4j-api:2.0.13")  // java 8
+    implementation(libs.dorkbox.updates)
+    implementation(libs.dorkbox.utilities)
+    implementation(libs.javassist)
+    implementation(libs.jna)
+    implementation(libs.jna.platform)
+    implementation(libs.slf4j.api)
     implementation(files("libs/SystemTray.jar"))
 
     // Exposed
-    implementation("org.jetbrains.exposed:exposed-core:0.51.1")
-    implementation("org.jetbrains.exposed:exposed-jdbc:0.51.1")
-    implementation("org.xerial:sqlite-jdbc:3.45.3.0")
+    implementation(libs.exposed.core)
+    implementation(libs.exposed.jdbc)
+    implementation(libs.sqlite.jdbc)
 
     // Retrofit
-    implementation("com.squareup.retrofit2:retrofit:2.11.0")
-    implementation("com.squareup.retrofit2:converter-scalars:2.11.0")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.scalars)
+    implementation(libs.retrofit.converter.kotlinx.serialization)
+    implementation(libs.okhttp)
 
     // Ktor
-    implementation("io.ktor:ktor-server-core-jvm:2.3.10")
-    implementation("io.ktor:ktor-server-netty-jvm:2.3.10")
-    implementation("io.ktor:ktor-client-core:2.3.10")
-    implementation("io.ktor:ktor-client-cio:2.3.10")
-    implementation("io.ktor:ktor-client-content-negotiation:2.3.10")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.10")
+    implementation(libs.ktor.server.core)
+    implementation(libs.ktor.server.netty)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinxjson)
 
     // Sentry
-    implementation(platform("io.sentry:sentry-bom:7.8.0"))
-    implementation("io.sentry:sentry")
-    implementation("io.sentry:sentry-logback")
+    implementation(platform(libs.sentry.bom))
+    implementation(libs.sentry)
+    implementation(libs.sentry.logback)
 
-    implementation("com.posthog.java:posthog:1.1.1")
+    implementation(libs.posthog)
 
     // Testing
-    testImplementation("io.kotest:kotest-runner-junit5:5.8.1")
-    testImplementation("io.kotest:kotest-assertions-core:5.8.1")
-    testImplementation("io.mockk:mockk:1.13.10")
+    testImplementation(libs.kotest.runner.junit5)
+    testImplementation(libs.kotest.assertions.core)
+    testImplementation(libs.mockk)
 }
 
 compose.desktop {
     application {
         mainClass = "dev.nohus.rift.MainKt"
+        jvmArgs("--add-opens=java.desktop/java.awt=ALL-UNNAMED", "--add-exports=java.desktop/java.awt.peer=ALL-UNNAMED")
+
+        buildTypes.release.proguard {
+            version.set(libs.versions.proguard.get())
+            configurationFiles.from(project.file("proguard-rules.pro"))
+        }
 
         nativeDistributions {
             modules("java.sql", "java.naming", "jdk.naming.dns")
@@ -139,32 +163,52 @@ compose.desktop {
     }
 }
 
+tasks.withType<ComposeHotRun>().configureEach {
+    mainClass.set("dev.nohus.rift.MainKt")
+    jvmArgs(
+        "--add-opens=java.desktop/java.awt=ALL-UNNAMED",
+        "--add-exports=java.desktop/java.awt.peer=ALL-UNNAMED",
+        "--enable-native-access=ALL-UNNAMED"
+    )
+}
+
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
 }
 
-tasks.withType<KotlinCompile>().configureEach {
-    kotlinOptions.freeCompilerArgs += "-opt-in=kotlin.RequiresOptIn"
-    kotlinOptions.freeCompilerArgs += "-opt-in=org.jetbrains.compose.resources.ExperimentalResourceApi"
+kotlin {
+    compilerOptions {
+        optIn.add("kotlin.RequiresOptIn")
+        optIn.add("org.jetbrains.compose.resources.ExperimentalResourceApi")
+        freeCompilerArgs.add("-Xreturn-value-checker=check")
+    }
 }
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+        languageVersion = JavaLanguageVersion.of(25)
         vendor = JvmVendorSpec.JETBRAINS
         implementation = JvmImplementation.VENDOR_SPECIFIC
     }
 }
 
 configurations.all {
-    attributes {
-        attribute(Attribute.of("ui", String::class.java), "awt")
+    if (isCanBeResolved || isCanBeConsumed) {
+        attributes {
+            attribute(Attribute.of("ui", String::class.java), "awt")
+        }
     }
 }
 
 configure<com.diffplug.gradle.spotless.SpotlessExtension> {
     kotlin {
-        ktlint("0.50.0")
+        ktlint(libs.versions.ktlint.get())
+            .editorConfigOverride(mapOf(
+                "ktlint_function_naming_ignore_when_annotated_with" to "Composable",
+                "ktlint_standard_no-empty-first-line-in-class-body" to "disabled",
+                "ktlint_standard_function-expression-body" to "disabled",
+                "ktlint_standard_class-signature" to "disabled",
+            ))
         targetExclude("**/generated/**")
     }
 }

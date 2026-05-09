@@ -2,6 +2,7 @@ package dev.nohus.rift.compose
 
 import androidx.compose.runtime.Composable
 import dev.nohus.rift.windowing.LocalRiftWindow
+import java.nio.file.InvalidPathException
 import java.nio.file.Path
 import javax.swing.JFileChooser
 import javax.swing.UIManager
@@ -32,7 +33,11 @@ fun RiftFileChooserButton(
             }
             val returnValue = chooser.showOpenDialog(frame)
             if (returnValue == JFileChooser.APPROVE_OPTION) {
-                onFileChosen(chooser.selectedFile.toPath())
+                try {
+                    onFileChosen(chooser.selectedFile.toPath())
+                } catch (_: InvalidPathException) {
+                    // No valid path selected, ignore
+                }
             }
         },
     )

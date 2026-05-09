@@ -12,12 +12,13 @@ import androidx.compose.ui.text.AnnotatedString
 import dev.nohus.rift.alerts.AlertsTriggerController.AlertLocationMatch
 import dev.nohus.rift.intel.state.SystemEntity
 import dev.nohus.rift.notifications.NotificationsController.Notification.ChatMessageNotification
+import dev.nohus.rift.repositories.SolarSystemsRepository.MapSolarSystem
 import dev.nohus.rift.repositories.TypesRepository.Type
 import dev.nohus.rift.settings.persistence.Settings
+import dev.nohus.rift.standings.Standing
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
-import org.jetbrains.exposed.sql.not
 import org.koin.core.annotation.Single
 
 @Single
@@ -33,8 +34,8 @@ class NotificationsController(
             val type: Type?, // Associated type ID
         ) : Notification {
             companion object {
-                const val styleTag = "Style"
-                const val styleValue = "Primary"
+                const val STYLE_TAG = "Style"
+                const val STYLE_VALUE = "Primary"
             }
         }
 
@@ -48,6 +49,7 @@ class NotificationsController(
             val highlight: String?,
             val sender: String,
             val senderCharacterId: Int?,
+            val senderStanding: Standing?,
         )
 
         data class JabberMessageNotification(
@@ -61,7 +63,12 @@ class NotificationsController(
             val title: String,
             val locationMatch: AlertLocationMatch,
             val systemEntities: List<SystemEntity>,
-            val solarSystem: String,
+            val solarSystem: MapSolarSystem,
+        ) : Notification
+
+        data class SovereigntyUpgradeImportNotification(
+            val system: MapSolarSystem,
+            val upgrades: List<Type>,
         ) : Notification
     }
 

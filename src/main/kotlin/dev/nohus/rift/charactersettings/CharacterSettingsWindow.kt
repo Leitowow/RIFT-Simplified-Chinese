@@ -3,11 +3,10 @@ package dev.nohus.rift.charactersettings
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.border
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -33,28 +33,30 @@ import dev.nohus.rift.charactersettings.CharacterSettingsViewModel.CharacterItem
 import dev.nohus.rift.charactersettings.CharacterSettingsViewModel.CopyingState
 import dev.nohus.rift.charactersettings.CharacterSettingsViewModel.UiState
 import dev.nohus.rift.charactersettings.GetAccountsUseCase.Account
-import dev.nohus.rift.compose.AsyncPlayerPortrait
 import dev.nohus.rift.compose.ButtonCornerCut
 import dev.nohus.rift.compose.ButtonType
 import dev.nohus.rift.compose.RequirementIcon
 import dev.nohus.rift.compose.RiftButton
+import dev.nohus.rift.compose.RiftDropdownWithLabel
 import dev.nohus.rift.compose.RiftImageButton
 import dev.nohus.rift.compose.RiftMessageDialog
 import dev.nohus.rift.compose.RiftTooltipArea
+import dev.nohus.rift.compose.RiftWarningBanner
 import dev.nohus.rift.compose.RiftWindow
-import dev.nohus.rift.compose.ScrollbarColumn
+import dev.nohus.rift.compose.ScrollbarLazyColumn
 import dev.nohus.rift.compose.getNow
 import dev.nohus.rift.compose.getRelativeTime
+import dev.nohus.rift.compose.modifyIf
 import dev.nohus.rift.compose.theme.RiftTheme
 import dev.nohus.rift.compose.theme.Spacing
+import dev.nohus.rift.dynamicportraits.DynamicCharacterPortraitParallax
 import dev.nohus.rift.generated.resources.Res
 import dev.nohus.rift.generated.resources.copy_16px
 import dev.nohus.rift.generated.resources.editplanicon
 import dev.nohus.rift.generated.resources.recall_drones_16px
 import dev.nohus.rift.generated.resources.window_character_settings
-import dev.nohus.rift.network.AsyncResource
-import dev.nohus.rift.utils.viewModel
 import dev.nohus.rift.utils.withColor
+import dev.nohus.rift.viewModel
 import dev.nohus.rift.windowing.WindowManager.RiftWindowState
 import org.jetbrains.compose.resources.painterResource
 import java.time.ZoneId
@@ -76,6 +78,8 @@ fun CharacterSettingsWindow(
             state = state,
             onCancelClick = viewModel::onCancelClick,
             onCopySourceClick = viewModel::onCopySourceClick,
+            onCopySourceProfileClick = viewModel::onCopySourceProfileClick,
+            onCopyTargetProfileClick = viewModel::onCopyTargetProfileClick,
             onCopyDestinationClick = viewModel::onCopyDestinationClick,
             onCopySettingsConfirmClick = viewModel::onCopySettingsConfirmClick,
             onAssignAccount = viewModel::onAssignAccount,
@@ -96,6 +100,8 @@ private fun CharacterSettingsWindowContent(
     state: UiState,
     onCancelClick: () -> Unit,
     onCopySourceClick: (Int) -> Unit,
+    onCopySourceProfileClick: (String) -> Unit,
+    onCopyTargetProfileClick: (String) -> Unit,
     onCopyDestinationClick: (Int) -> Unit,
     onCopySettingsConfirmClick: () -> Unit,
     onAssignAccount: (characterId: Int, accountId: Int) -> Unit,
@@ -104,6 +110,13 @@ private fun CharacterSettingsWindowContent(
         Column(
             verticalArrangement = Arrangement.spacedBy(Spacing.medium),
         ) {
+            AnimatedVisibility(state.isOnline) {
+                RiftWarningBanner(
+                    text = "You are online. Settings can't be copied while the game is open. Make sure to close EVE first.",
+                )
+            }
+            var selectedSourceProfile: String? by remember { mutableStateOf(null) }
+            var selectedTargetProfile: String? by remember { mutableStateOf(null) }
             AnimatedContent(state.copying, contentKey = { it::class }) { copying ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -117,6 +130,35 @@ private fun CharacterSettingsWindowContent(
                                 style = RiftTheme.typography.bodyPrimary,
                                 modifier = Modifier.weight(1f),
                             )
+                        }
+
+                        is CopyingState.SelectingSourceLauncherProfile -> {
+                            LaunchedEffect(copying) {
+                                selectedSourceProfile = copying.profiles.first()
+                            }
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(Spacing.medium),
+                            ) {
+                                Text(
+                                    text = buildAnnotatedString {
+                                        append("Copying EVE settings from ")
+                                        withColor(RiftTheme.colors.textHighlighted) {
+                                            append(copying.source.name)
+                                        }
+                                        append(".\n\nThis character has settings in multiple launcher profiles. From which profile would you like to copy?")
+                                    },
+                                    style = RiftTheme.typography.bodyPrimary,
+                                )
+                                Row {
+                                    RiftDropdownWithLabel(
+                                        label = "Source profile:",
+                                        items = copying.profiles,
+                                        selectedItem = selectedSourceProfile,
+                                        onItemSelected = { selectedSourceProfile = it },
+                                        getItemName = { it ?: "" },
+                                    )
+                                }
+                            }
                         }
 
                         is CopyingState.SelectingDestination -> {
@@ -159,7 +201,7 @@ private fun CharacterSettingsWindowContent(
                                             appendLine()
                                             appendLine()
                                             append("Some settings are account-wide, so these will also affect ")
-                                            unselectedAffectedCharacters.map { it.info.success?.name ?: "${it.characterId}" }.forEachIndexed { index, character ->
+                                            unselectedAffectedCharacters.map { it.info?.name ?: "${it.characterId}" }.forEachIndexed { index, character ->
                                                 if (index != 0) append(", ")
                                                 withColor(RiftTheme.colors.textHighlighted) {
                                                     append(character)
@@ -172,106 +214,146 @@ private fun CharacterSettingsWindowContent(
                                 )
                             }
                         }
+
+                        is CopyingState.SelectingTargetLauncherProfile -> Column(
+                            verticalArrangement = Arrangement.spacedBy(Spacing.medium),
+                        ) {
+                            LaunchedEffect(copying) {
+                                selectedTargetProfile = copying.profiles.first()
+                            }
+                            Text(
+                                text = buildAnnotatedString {
+                                    append("Copying EVE settings from ")
+                                    withColor(RiftTheme.colors.textHighlighted) {
+                                        append(copying.source.name)
+                                    }
+                                    append(" to ")
+                                    copying.destination.forEachIndexed { index, character ->
+                                        if (index != 0) append(", ")
+                                        withColor(RiftTheme.colors.textHighlighted) {
+                                            append(character.name)
+                                        }
+                                    }
+                                    append(".\n\nYou have multiple launcher profiles. To which profile would you like to paste settings?")
+                                },
+                                style = RiftTheme.typography.bodyPrimary,
+                            )
+                            Row {
+                                RiftDropdownWithLabel(
+                                    label = "Target profile:",
+                                    items = copying.profiles,
+                                    selectedItem = selectedTargetProfile,
+                                    onItemSelected = { selectedTargetProfile = it },
+                                    getItemName = { it ?: "" },
+                                )
+                            }
+                        }
                     }
                 }
             }
 
-            ScrollbarColumn(
-                verticalArrangement = Arrangement.spacedBy(Spacing.medium),
+            var accountEditingCharacter by remember { mutableStateOf<Int?>(null) }
+            val accounts = state.accounts
+                .sortedByDescending { it.lastModified }
+            ScrollbarLazyColumn(
                 modifier = Modifier.weight(1f),
             ) {
-                var accountEditingCharacter by remember { mutableStateOf<Int?>(null) }
-                val accounts = state.accounts
-                    .sortedByDescending { it.lastModified }
-                val accountOrdinals = accounts
-                    .mapIndexed { index, account -> account to index + 1 }
-                    .toMap()
-
-                (accounts + listOf(null)).forEach { account ->
+                (accounts + listOf(null)).forEachIndexed { index, account ->
                     val characters = state.characters.filter { it.accountId == account?.id }
-                    if (account == null && characters.isEmpty()) return@forEach
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(Spacing.small),
-                        modifier = Modifier
-                            .padding(end = Spacing.small)
-                            .border(1.dp, RiftTheme.colors.borderGreyLight)
-                            .padding(Spacing.medium)
-                            .fillMaxWidth(),
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(bottom = Spacing.small),
+                    item(key = account) {
+                        if (account == null && characters.isEmpty()) return@item
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(Spacing.small),
+                            modifier = Modifier
+                                .modifyIf(index != 0) { padding(top = Spacing.medium) }
+                                .background(RiftTheme.colors.windowBackgroundSecondary)
+                                .padding(Spacing.medium)
+                                .fillMaxWidth(),
                         ) {
-                            val accountName = account?.let { "Account ${accountOrdinals[it]}" } ?: "Unassigned characters"
-                            val tooltip = account?.let { "Settings file: ${account.path}" } ?: "RIFT doesn't know which account these characters belong to"
-                            RiftTooltipArea(tooltip) {
-                                Text(
-                                    text = accountName.uppercase(),
-                                    style = RiftTheme.typography.titlePrimary,
-                                )
-                            }
-                            Spacer(Modifier.weight(1f))
-                            val lastUsed = account?.lastModified
-                            if (lastUsed != null) {
-                                val now = getNow()
-                                val age = key(now) { getRelativeTime(lastUsed, ZoneId.systemDefault(), now) }
-                                Text(
-                                    text = "Last used: $age",
-                                    style = RiftTheme.typography.bodySecondary,
-                                )
-                            }
-                        }
-
-                        if (characters.isEmpty()) {
-                            Text(
-                                text = "No characters assigned",
-                                style = RiftTheme.typography.bodySecondary,
-                            )
-                        }
-
-                        if (characters.size > 3) {
-                            Text(
-                                text = "Warning: This account has more than 3 characters, which is not possible. Correct the assignment.",
-                                style = RiftTheme.typography.bodySecondary,
+                            Row(
                                 modifier = Modifier.padding(bottom = Spacing.small),
-                            )
-                        }
-
-                        if (account == null) {
-                            val text = when (state.copying) {
-                                CopyingState.SelectingSource -> "Assign these characters to accounts to be able to copy settings from them. Log in to assign automatically."
-                                is CopyingState.SelectingDestination -> "Assign these characters to accounts to be able to copy settings to them. Log in to assign automatically."
-                                is CopyingState.DestinationSelected -> null
-                            }
-                            AnimatedContent(text) {
-                                if (it != null) {
+                            ) {
+                                val accountName = account?.let { "Account ${account.id}" } ?: "Unassigned characters"
+                                val tooltip = account?.let { "Settings files: ${account.paths.values.joinToString()}" } ?: "RIFT doesn't know which account these characters belong to"
+                                RiftTooltipArea(tooltip) {
                                     Text(
-                                        text = it,
+                                        text = accountName.uppercase(),
+                                        style = RiftTheme.typography.headerPrimary,
+                                    )
+                                }
+                                Spacer(Modifier.weight(1f))
+                                val lastUsed = account?.lastModified
+                                if (lastUsed != null) {
+                                    val now = getNow()
+                                    val age = key(now) { getRelativeTime(lastUsed, ZoneId.systemDefault(), now) }
+                                    Text(
+                                        text = "Last used: $age",
                                         style = RiftTheme.typography.bodySecondary,
-                                        modifier = Modifier.padding(bottom = Spacing.small),
                                     )
                                 }
                             }
-                        }
 
-                        characters.sortedBy { it.characterId }.forEach { character ->
-                            val isEditingAccount = accountEditingCharacter == character.characterId
-                            CharacterRow(
-                                character = character,
-                                copying = state.copying,
-                                account = account,
-                                accounts = accounts,
-                                isEditingAccount = accountEditingCharacter == character.characterId,
-                                onUpdateAccountClick = {
-                                    accountEditingCharacter = if (!isEditingAccount) character.characterId else null
-                                },
-                                accountOrdinals = accountOrdinals,
-                                onAssignAccount = { characterId, accountId ->
-                                    onAssignAccount(characterId, accountId)
-                                    accountEditingCharacter = null
-                                },
-                                onCopyClick = { onCopySourceClick(character.characterId) },
-                                onPasteClick = { onCopyDestinationClick(character.characterId) },
-                            )
+                            if (characters.isEmpty()) {
+                                Text(
+                                    text = "No characters assigned",
+                                    style = RiftTheme.typography.bodySecondary,
+                                )
+                            }
+
+                            if (characters.size > 3 && account != null) {
+                                Text(
+                                    text = "Warning: This account has more than 3 characters, which is not possible. Correct the assignment.",
+                                    style = RiftTheme.typography.bodySecondary,
+                                    modifier = Modifier.padding(bottom = Spacing.small),
+                                )
+                            }
+
+                            if (account == null) {
+                                val text = when (state.copying) {
+                                    CopyingState.SelectingSource -> "Assign these characters to accounts to be able to copy settings from them. Log in to assign automatically."
+                                    is CopyingState.SelectingSourceLauncherProfile -> null
+                                    is CopyingState.SelectingDestination -> "Assign these characters to accounts to be able to copy settings to them. Log in to assign automatically."
+                                    is CopyingState.DestinationSelected -> "Assign these characters to accounts to be able to copy settings to them. Log in to assign automatically."
+                                    is CopyingState.SelectingTargetLauncherProfile -> null
+                                }
+                                AnimatedContent(text) {
+                                    if (it != null) {
+                                        Text(
+                                            text = it,
+                                            style = RiftTheme.typography.bodySecondary,
+                                            modifier = Modifier.padding(bottom = Spacing.small),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    characters.sortedBy { it.characterId }.forEachIndexed { index, character ->
+                        item(key = character) {
+                            Column(
+                                modifier = Modifier
+                                    .background(RiftTheme.colors.windowBackgroundSecondary)
+                                    .padding(horizontal = Spacing.medium, vertical = Spacing.verySmall)
+                                    .fillMaxWidth(),
+                            ) {
+                                val isEditingAccount = accountEditingCharacter == character.characterId
+                                CharacterRow(
+                                    character = character,
+                                    copying = state.copying,
+                                    account = account,
+                                    accounts = accounts,
+                                    isEditingAccount = accountEditingCharacter == character.characterId,
+                                    onUpdateAccountClick = {
+                                        accountEditingCharacter = if (!isEditingAccount) character.characterId else null
+                                    },
+                                    onAssignAccount = { characterId, accountId ->
+                                        onAssignAccount(characterId, accountId)
+                                        accountEditingCharacter = null
+                                    },
+                                    onCopyClick = { onCopySourceClick(character.characterId) },
+                                    onPasteClick = { onCopyDestinationClick(character.characterId) },
+                                )
+                            }
                         }
                     }
                 }
@@ -288,6 +370,21 @@ private fun CharacterSettingsWindowContent(
                                 type = ButtonType.Secondary,
                                 cornerCut = ButtonCornerCut.Both,
                                 onClick = onCancelClick,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        is CopyingState.SelectingSourceLauncherProfile -> {
+                            RiftButton(
+                                text = "Cancel",
+                                type = ButtonType.Secondary,
+                                cornerCut = ButtonCornerCut.BottomLeft,
+                                onClick = onCancelClick,
+                                modifier = Modifier.weight(1f),
+                            )
+                            RiftButton(
+                                text = "Confirm profile",
+                                cornerCut = ButtonCornerCut.BottomRight,
+                                onClick = { selectedSourceProfile?.let(onCopySourceProfileClick) },
                                 modifier = Modifier.weight(1f),
                             )
                         }
@@ -309,9 +406,24 @@ private fun CharacterSettingsWindowContent(
                                 modifier = Modifier.weight(1f),
                             )
                             RiftButton(
-                                text = "Confirm",
+                                text = "Confirm characters",
                                 cornerCut = ButtonCornerCut.BottomRight,
                                 onClick = onCopySettingsConfirmClick,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        is CopyingState.SelectingTargetLauncherProfile -> {
+                            RiftButton(
+                                text = "Cancel",
+                                type = ButtonType.Secondary,
+                                cornerCut = ButtonCornerCut.BottomLeft,
+                                onClick = onCancelClick,
+                                modifier = Modifier.weight(1f),
+                            )
+                            RiftButton(
+                                text = "Confirm profile",
+                                cornerCut = ButtonCornerCut.BottomRight,
+                                onClick = { selectedTargetProfile?.let(onCopyTargetProfileClick) },
                                 modifier = Modifier.weight(1f),
                             )
                         }
@@ -322,7 +434,7 @@ private fun CharacterSettingsWindowContent(
     } else {
         Text(
             text = "No characters found.\n\nMake sure the game directory is selected in settings, and that you have logged in to at least one character on this computer before.",
-            style = RiftTheme.typography.titlePrimary,
+            style = RiftTheme.typography.headerPrimary,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(Spacing.medium),
@@ -330,7 +442,6 @@ private fun CharacterSettingsWindowContent(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun CharacterRow(
     character: CharacterItem,
@@ -339,7 +450,6 @@ private fun CharacterRow(
     accounts: List<Account>,
     isEditingAccount: Boolean,
     onUpdateAccountClick: () -> Unit,
-    accountOrdinals: Map<Account, Int>,
     onAssignAccount: (characterId: Int, accountId: Int) -> Unit,
     onCopyClick: () -> Unit,
     onPasteClick: () -> Unit,
@@ -351,21 +461,15 @@ private fun CharacterRow(
             horizontalArrangement = Arrangement.spacedBy(Spacing.small),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            AsyncPlayerPortrait(
+            DynamicCharacterPortraitParallax(
                 characterId = character.characterId,
-                size = 32,
-                modifier = Modifier.size(32.dp),
+                size = 48.dp,
+                enterTimestamp = null,
+                pointerInteractionStateHolder = null,
             )
 
             when (character.info) {
-                is AsyncResource.Ready -> {
-                    Text(
-                        text = character.info.value.name,
-                        style = RiftTheme.typography.titleHighlighted,
-                    )
-                }
-
-                is AsyncResource.Error -> {
+                null -> {
                     Text(
                         text = "Could not load",
                         style = RiftTheme.typography.bodySecondary.copy(color = RiftTheme.colors.borderError),
@@ -373,11 +477,10 @@ private fun CharacterRow(
                     )
                 }
 
-                AsyncResource.Loading -> {
+                else -> {
                     Text(
-                        text = "Loading…",
-                        style = RiftTheme.typography.bodySecondary,
-                        modifier = Modifier.padding(horizontal = Spacing.medium),
+                        text = character.info.name,
+                        style = RiftTheme.typography.headerHighlighted,
                     )
                 }
             }
@@ -395,7 +498,7 @@ private fun CharacterRow(
             if (account != null) {
                 when (copying) {
                     CopyingState.SelectingSource -> {
-                        if (character.settingsFile != null) {
+                        if (character.settingsFiles.isNotEmpty()) {
                             RiftButton(
                                 text = "Copy",
                                 icon = Res.drawable.copy_16px,
@@ -405,36 +508,34 @@ private fun CharacterRow(
                             NoSettingsFileIcon()
                         }
                     }
-                    is CopyingState.SelectingDestination -> {
-                        if (character.settingsFile != null) {
-                            if (copying.sourceId == character.characterId) {
-                                CopyingIcon()
-                            } else {
-                                RiftButton(
-                                    text = "Paste",
-                                    icon = Res.drawable.recall_drones_16px,
-                                    onClick = onPasteClick,
-                                )
-                            }
-                        } else {
-                            NoSettingsFileIcon()
+                    is CopyingState.SelectingSourceLauncherProfile -> {
+                        if (copying.source.id == character.characterId) {
+                            CopyingIcon()
                         }
                     }
+                    is CopyingState.SelectingDestination -> {
+                        RiftButton(
+                            text = "Paste",
+                            icon = Res.drawable.recall_drones_16px,
+                            onClick = onPasteClick,
+                        )
+                    }
                     is CopyingState.DestinationSelected -> {
-                        if (character.settingsFile != null) {
-                            if (copying.source.id == character.characterId) {
-                                CopyingIcon()
-                            } else if (copying.destination.any { it.id == character.characterId }) {
-                                PastingIcon()
-                            } else {
-                                RiftButton(
-                                    text = "Paste",
-                                    icon = Res.drawable.recall_drones_16px,
-                                    onClick = onPasteClick,
-                                )
-                            }
+                        if (copying.destination.any { it.id == character.characterId }) {
+                            PastingIcon()
                         } else {
-                            NoSettingsFileIcon()
+                            RiftButton(
+                                text = "Paste",
+                                icon = Res.drawable.recall_drones_16px,
+                                onClick = onPasteClick,
+                            )
+                        }
+                    }
+                    is CopyingState.SelectingTargetLauncherProfile -> {
+                        if (copying.source.id == character.characterId) {
+                            CopyingIcon()
+                        } else if (copying.destination.any { it.id == character.characterId }) {
+                            PastingIcon()
                         }
                     }
                 }
@@ -455,9 +556,9 @@ private fun CharacterRow(
                         style = RiftTheme.typography.bodyPrimary,
                     )
                 }
-                accountOrdinals.filter { it.key != account }.forEach { (account, accountName) ->
+                accounts.filter { it != account }.forEach { account ->
                     RiftButton(
-                        text = accountName.toString(),
+                        text = account.id.toString(),
                         isCompact = true,
                         onClick = {
                             onAssignAccount(character.characterId, account.id)

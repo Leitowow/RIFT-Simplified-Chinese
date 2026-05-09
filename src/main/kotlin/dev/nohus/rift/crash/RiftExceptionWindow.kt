@@ -66,7 +66,7 @@ fun RiftExceptionWindow(
     RiftWindow(
         title = "Fatal Error",
         icon = Res.drawable.window_log,
-        state = RiftWindowState(windowState = windowState, isVisible = true, minimumSize = (200 * scale).toInt() to (200 * scale).toInt()),
+        state = RiftWindowState(windowState = windowState, minimumSize = (200 * scale).toInt() to (200 * scale).toInt()),
         onCloseClick = onCloseRequest,
     ) {
         Column {
@@ -95,7 +95,8 @@ fun RiftExceptionWindow(
                                         appendLine(errorId)
                                     }
                                     appendLine()
-                                    append("Please report this issue and copy the code into a Discord ticket.")
+                                    appendLine("Please report this issue and copy the code into a Discord ticket.")
+                                    append("Don't send a screenshot of the code.")
                                 }
                             },
                         )
@@ -128,7 +129,7 @@ fun RiftExceptionWindow(
                 modifier = Modifier.align(Alignment.End),
             ) {
                 @Suppress("KotlinConstantConditions")
-                if (BuildConfig.environment == "dev") {
+                if (BuildConfig.isDevEnvironment) {
                     val detailsButtonText = if (areDetailsVisible) "Hide details" else "Show details"
                     RiftButton(
                         text = detailsButtonText,

@@ -25,7 +25,8 @@ import java.text.NumberFormat
 import java.util.UUID
 
 private enum class AnimationDirection {
-    Up, Down
+    Up,
+    Down,
 }
 
 private data class TickerCharacter(

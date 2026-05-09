@@ -11,7 +11,8 @@ class JoveObservatorySystemColorStrategy(
 ) : SystemColorStrategy() {
 
     override fun hasData(system: Int): Boolean {
-        return true
+        val hasJoveObservatory = solarSystemsRepository.getSystem(system)?.hasJoveObservatory
+        return hasJoveObservatory == true
     }
 
     override fun getColor(system: Int): Color {

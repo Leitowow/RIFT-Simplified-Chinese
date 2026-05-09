@@ -33,13 +33,13 @@ class ChatLogsObserver(
     private val directoryObserver: DirectoryObserver,
     private val matchChatLogFilenameUseCase: MatchChatLogFilenameUseCase,
     private val logFileParser: ChatLogFileParser,
+    private val messageDeduplicator: MessageDeduplicator,
 ) {
     private val logFiles = mutableListOf<ChatLogFile>()
     private val logFilesMutex = Mutex()
     private var activeLogFiles: Map<String, ChatLogFileMetadata> = emptyMap() // String is the filename
     private var onMessageCallback: ((ChannelChatMessage) -> Unit)? = null
-    private val handledMessagesSet = mutableSetOf<ChatMessage>()
-    private val handledMessagesList = mutableSetOf<ChatMessage>()
+    private val readingOffsets = mutableMapOf<Path, Long>() // Seek offset of already read portion
     private val handlingNewMessageMutex = Mutex()
 
     suspend fun observe(
@@ -76,13 +76,16 @@ class ChatLogsObserver(
                             }
                             Modified -> {
                                 activeLogFiles[logFile.file.name]?.let { metadata ->
-                                    readLogFile(logFile, metadata) // TODO: Optimise, we don't need to reread the file in full
+                                    readLogFile(logFile, metadata)
                                 }
                             }
                         }
                     }
                 }
-                OverflowEvent -> reloadLogFiles(directory)
+                OverflowEvent -> {
+                    logger.debug { "Chat log overflow event" }
+                    reloadLogFiles(directory)
+                }
             }
         }
         logger.info { "Stopped observing" }
@@ -115,7 +118,7 @@ class ChatLogsObserver(
 
     private suspend fun updateActiveLogFiles() {
         try {
-            logger.debug { "Updating active chat log files: ${logFiles.size}" }
+            logger.debug { "Updating active chat log files. All files: ${logFiles.size}" }
             val minTime = Instant.now() - Duration.ofDays(7)
             val currentActiveLogFiles = logFilesMutex.withLock { logFiles.toList() }
                 .filter { it.dateTime.toInstant(ZoneOffset.UTC).isAfter(minTime) }
@@ -123,12 +126,12 @@ class ChatLogsObserver(
                     if (it.isEmpty()) logger.info { "No chat log files within the last week" }
                 }
                 .groupBy { it.characterId }
-                .flatMap { (characterId, playerLogFiles) ->
-                    playerLogFiles
+                .flatMap { (characterId, characterLogFiles) ->
+                    characterLogFiles
                         .groupBy { it.channelName }
-                        .mapNotNull { (channelName, playerChannelLogFiles) ->
-                            // Take the latest file for this player / channel combination
-                            val logFile = playerChannelLogFiles
+                        .mapNotNull { (channelName, characterChannelLogFiles) ->
+                            // Take the latest file for this character / channel combination
+                            val logFile = characterChannelLogFiles
                                 .sortedBy { it.lastModified }
                                 .lastOrNull { it.file.exists() }
                                 ?: return@mapNotNull null
@@ -145,7 +148,7 @@ class ChatLogsObserver(
 
             val newActiveLogFiles = currentActiveLogFiles.filter { it.first.file.name !in activeLogFiles.keys }
             activeLogFiles = currentActiveLogFiles.associate { (logFile, metadata) -> logFile.file.name to metadata }
-            logger.debug { "Active chat log files: ${newActiveLogFiles.size}" }
+            logger.debug { "Active chat log files: ${activeLogFiles.size}, new: ${newActiveLogFiles.size}" }
 
             newActiveLogFiles.forEach { (logFile, metadata) ->
                 readLogFile(logFile, metadata)
@@ -157,8 +160,9 @@ class ChatLogsObserver(
 
     private suspend fun readLogFile(logFile: ChatLogFile, metadata: ChatLogFileMetadata) {
         try {
-            val newMessages = logFileParser.parse(logFile.file)
-                .filter { it !in handledMessagesSet }
+            val offset = readingOffsets[logFile.file] ?: 0L
+            val (newMessages, newOffset) = logFileParser.parse(logFile.file, offset)
+            readingOffsets[logFile.file] = newOffset
             if (newMessages.isEmpty()) return
             newMessages.forEach { handleNewMessage(it, metadata) }
         } catch (e: IOException) {
@@ -168,15 +172,7 @@ class ChatLogsObserver(
 
     private suspend fun handleNewMessage(message: ChatMessage, metadata: ChatLogFileMetadata) {
         handlingNewMessageMutex.withLock {
-            val now = Instant.now()
-            val recentMessages = handledMessagesList.reversed().takeWhile { handledMessage ->
-                val age = Duration.between(handledMessage.timestamp, now)
-                age < Duration.ofSeconds(2)
-            }
-            val isDuplicated = recentMessages.any { it.author == message.author && it.message == message.message }
-            handledMessagesSet += message
-            handledMessagesList += message
-            if (!isDuplicated) {
+            if (!messageDeduplicator.isDuplicate(message)) {
                 onMessageCallback?.invoke(ChannelChatMessage(message, metadata))
             }
         }

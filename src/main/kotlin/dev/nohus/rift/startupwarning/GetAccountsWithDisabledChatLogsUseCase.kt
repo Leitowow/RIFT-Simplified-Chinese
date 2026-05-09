@@ -4,7 +4,6 @@ import dev.nohus.rift.characters.repositories.LocalCharactersRepository
 import dev.nohus.rift.characters.repositories.LocalCharactersRepository.LocalCharacter
 import dev.nohus.rift.charactersettings.AccountAssociationsRepository
 import dev.nohus.rift.charactersettings.GetAccountsUseCase
-import dev.nohus.rift.charactersettings.GetAccountsUseCase.Account
 import dev.nohus.rift.network.AsyncResource
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.FlowPreview
@@ -34,22 +33,24 @@ class GetAccountsWithDisabledChatLogsUseCase(
     suspend operator fun invoke(): List<String> = coroutineScope {
         val accounts = getAccounts()
         val characters = async { getLoadedCharacters() }
-        accounts.mapNotNull { account ->
-            try {
-                val bytes = account.path.readBytes()
-                val indexOfLogChat = bytes.indexOf("logchat")
-                if (indexOfLogChat != null) {
-                    if (bytes[indexOfLogChat + CHAT_LOGS_DISABLED_BYTE_OFFSET].toInt() == CHAT_LOGS_DISABLED_BYTE_VALUE) {
-                        getMessageForAccount(account, characters.await())
+        accounts.flatMap { account ->
+            account.paths.mapNotNull { (profile, path) ->
+                try {
+                    val bytes = path.readBytes()
+                    val indexOfLogChat = bytes.indexOf("logchat")
+                    if (indexOfLogChat != null) {
+                        if (bytes[indexOfLogChat + CHAT_LOGS_DISABLED_BYTE_OFFSET].toInt() == CHAT_LOGS_DISABLED_BYTE_VALUE) {
+                            getMessageForAccount(account.id, profile, characters.await())
+                        } else {
+                            null // Chat logs are enabled
+                        }
                     } else {
-                        null // Chat logs are enabled
+                        null // The setting is not set, and defaults to enabled
                     }
-                } else {
-                    null // The setting is not set, and defaults to enabled
+                } catch (e: IOException) {
+                    logger.warn { "Could not read settings file to determine if chat logs are enabled: ${e.message}" }
+                    null
                 }
-            } catch (e: IOException) {
-                logger.warn { "Could not read settings file to determine if chat logs are enabled: ${e.message}" }
-                null
             }
         }
     }
@@ -65,21 +66,20 @@ class GetAccountsWithDisabledChatLogsUseCase(
         }
     }
 
-    private fun getMessageForAccount(account: Account, characters: List<LocalCharacter>): String {
+    private fun getMessageForAccount(id: Int, profile: String, characters: List<LocalCharacter>): String {
         val accountAssociations = accountAssociationsRepository.getAssociations()
         val charactersOnAccount = characters.filter { character ->
             val characterAccountId = accountAssociations[character.characterId] ?: return@filter false
-            characterAccountId == account.id
+            characterAccountId == id
         }
 
         return buildString {
-            val profile = account.profile.takeIf { it != "Default" }
-            if (profile != null) {
+            if (profile != "Default") {
                 append("In profile $profile: ")
             }
-            append("Account with ID ${account.id}")
+            append("Account with ID $id")
             if (charactersOnAccount.isNotEmpty()) {
-                val names = charactersOnAccount.mapNotNull { it.info.success?.name }
+                val names = charactersOnAccount.mapNotNull { it.info?.name }
                 if (names.isNotEmpty()) {
                     val characterNames = names.joinToString(", ")
                     append(" and characters $characterNames")

@@ -25,7 +25,7 @@ class GetOnlineCharactersLocationUseCase(
         characterLocationRepository.locations,
     ) { localCharacters, onlineCharacters, locations ->
         onlineCharacters.mapNotNull { characterId ->
-            val name = localCharacters.find { it.characterId == characterId }?.info?.success?.name
+            val name = localCharacters.find { it.characterId == characterId }?.info?.name
                 ?: return@mapNotNull null
             val location = locations[characterId] ?: return@mapNotNull null
             OnlineCharacterLocation(

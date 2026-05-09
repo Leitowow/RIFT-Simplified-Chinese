@@ -15,6 +15,8 @@ import dev.nohus.rift.logs.parse.ChatMessageParser
 import dev.nohus.rift.logs.parse.ChatMessageParser.KeywordType
 import dev.nohus.rift.logs.parse.ChatMessageParser.Token
 import dev.nohus.rift.logs.parse.ChatMessageParser.TokenType
+import dev.nohus.rift.network.requests.Originator
+import dev.nohus.rift.repositories.SolarSystemsRepository.MapSolarSystem
 import dev.nohus.rift.repositories.character.CharacterDetailsRepository
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -39,15 +41,18 @@ class UnderstandMessageUseCase(
     )
 
     enum class QuestionType {
-        Location, ShipTypes, Number, Status
+        Location,
+        ShipTypes,
+        Number,
+        Status,
     }
 
     data class Movement(
-        val toSystem: String,
+        val toSystem: MapSolarSystem,
     )
 
     suspend operator fun invoke(tokens: List<Token>): IntelUnderstanding = coroutineScope {
-        val systems = mutableListOf<String>()
+        val systems = mutableListOf<MapSolarSystem>()
         val entities = mutableListOf<SystemEntity>()
         val kills = mutableListOf<Kill>()
         val questions = mutableListOf<Question>()
@@ -58,22 +63,21 @@ class UnderstandMessageUseCase(
 
         val deferredCharacterDetails = tokens
             .asSequence()
-            .flatMap { it.types }
-            .filterIsInstance<TokenType.Player>()
+            .mapNotNull { it.type }
+            .filterIsInstance<TokenType.Character>()
             .map { it.characterId }
             .distinct()
-            .map { async { characterDetailsRepository.getCharacterDetails(it) } }
+            .map { async { characterDetailsRepository.getCharacterDetails(Originator.ChatLogs, it) } }
             .toList()
         entities += understandRemoteDscanUseCase(tokens)
         val characterDetails = deferredCharacterDetails.awaitAll().filterNotNull().associateBy { it.characterId }
 
         tokens
-            .filter { it.types.isNotEmpty() }
+            .filter { it.type != null }
             .map map@{ token ->
-                val effectiveTypes = token.types.filter { it !is TokenType.Link }
-                if (effectiveTypes.isEmpty()) return@map
+                val type = token.type ?: return@map
                 val text = token.words.joinToString(" ")
-                when (val type = effectiveTypes.singleOrNull()) {
+                when (type) {
                     is TokenType.Count -> {
                         if (type.isPlus) {
                             entities += UnspecifiedCharacter(type.count)
@@ -101,7 +105,7 @@ class UnderstandMessageUseCase(
 
                     is TokenType.Kill -> kills += Kill(type.name, type.characterId, type.target)
                     TokenType.Link -> {}
-                    is TokenType.Player -> {
+                    is TokenType.Character -> {
                         characterDetails[type.characterId]?.let {
                             entities += Character(it.name, it.characterId, it)
                         }
@@ -116,10 +120,9 @@ class UnderstandMessageUseCase(
                         questions += Question(questionType, text)
                     }
 
-                    is TokenType.Ship -> entities += Ship(type.name, type.count)
-                    is TokenType.System -> systems += type.name
+                    is TokenType.Ship -> entities += Ship(type.type, type.count)
+                    is TokenType.System -> systems += type.system
                     TokenType.Url -> {}
-                    null -> throw IllegalArgumentException("More than one type: ${token.types}")
                 }
             }
 

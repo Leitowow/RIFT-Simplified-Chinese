@@ -1,9 +1,10 @@
 package dev.nohus.rift.compose
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
-import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -20,7 +21,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.onClick
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,18 +30,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.nohus.rift.compose.theme.Cursors
 import dev.nohus.rift.compose.theme.RiftTheme
+import dev.nohus.rift.compose.theme.Spacing
 import dev.nohus.rift.di.koin
+import dev.nohus.rift.dynamicportraits.DynamicCharacterPortraitStandings
 import dev.nohus.rift.generated.resources.Res
 import dev.nohus.rift.generated.resources.keywords_clear
 import dev.nohus.rift.generated.resources.keywords_combat_probe
@@ -55,22 +59,21 @@ import dev.nohus.rift.generated.resources.keywords_spike
 import dev.nohus.rift.generated.resources.keywords_systems
 import dev.nohus.rift.generated.resources.keywords_wormhole
 import dev.nohus.rift.intel.ParsedChannelChatMessage
-import dev.nohus.rift.intel.reports.settings.IntelReportsSettings
-import dev.nohus.rift.logs.parse.ChatLogFileMetadata
-import dev.nohus.rift.logs.parse.ChatMessage
+import dev.nohus.rift.intel.reports.IntelReportsSettings
 import dev.nohus.rift.logs.parse.ChatMessageParser.KeywordType
 import dev.nohus.rift.logs.parse.ChatMessageParser.Token
 import dev.nohus.rift.logs.parse.ChatMessageParser.TokenType
 import dev.nohus.rift.logs.parse.ChatMessageParser.TokenType.Link
-import dev.nohus.rift.repositories.ShipTypesRepository
-import dev.nohus.rift.repositories.SolarSystemsRepository
+import dev.nohus.rift.repositories.SolarSystemsRepository.MapSolarSystem
+import dev.nohus.rift.repositories.StarGatesRepository
 import dev.nohus.rift.repositories.TypesRepository
+import dev.nohus.rift.standings.Standing
+import dev.nohus.rift.standings.getColor
 import dev.nohus.rift.utils.openBrowser
 import dev.nohus.rift.utils.toURIOrNull
 import org.jetbrains.compose.resources.painterResource
 import java.time.Duration
 import java.time.Instant
-import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
@@ -79,6 +82,7 @@ fun ChatMessage(
     settings: IntelReportsSettings,
     message: ParsedChannelChatMessage,
     alertTriggerTimestamp: Instant?,
+    enterAnimation: Animatable<Float, AnimationVector1D>,
     modifier: Modifier = Modifier,
 ) {
     val time = ZonedDateTime.ofInstant(message.chatMessage.timestamp, settings.displayTimezone).toLocalTime()
@@ -127,6 +131,7 @@ fun ChatMessage(
             settings = settings,
             metadata = { MessageMetadata(settings, message, formattedTime, pointerState) },
             tokens = message.parsed,
+            enterAnimation = enterAnimation,
         )
     }
 }
@@ -187,6 +192,7 @@ private fun Message(
     settings: IntelReportsSettings,
     metadata: @Composable () -> Unit,
     tokens: List<Token>,
+    enterAnimation: Animatable<Float, AnimationVector1D>,
 ) {
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -194,29 +200,29 @@ private fun Message(
     ) {
         metadata()
         for (token in tokens) {
-            val types = token.types.filter { it !is Link }
+            val type = token.type
             val text = token.words.joinToString(" ")
-            if (types.size == 1) {
-                when (val type = types.single()) {
+            if (type != null) {
+                when (type) {
                     is TokenType.Count -> TokenWithCount(settings.rowHeight, text)
                     is TokenType.Keyword -> TokenWithKeyword(settings.rowHeight, type.type)
                     is TokenType.Kill -> TokenWithKill(settings.rowHeight, type)
                     Link -> TokenWithText(settings.rowHeight, text, "Link")
-                    is TokenType.Player -> TokenWithPlayer(settings.rowHeight, text, type.characterId)
+                    is TokenType.Character -> TokenWithCharacter(settings.rowHeight, text, type)
                     is TokenType.Question -> TokenWithText(settings.rowHeight, text, "Question")
                     is TokenType.Ship -> TokenWithShip(settings.rowHeight, type)
-                    is TokenType.System -> TokenWithSystem(settings.rowHeight, settings.isShowingSystemDistance, settings.isUsingJumpBridgesForDistance, type.name)
+                    is TokenType.System -> TokenWithSystem(settings.rowHeight, settings.isShowingSystemDistance, settings.isUsingJumpBridgesForDistance, type.system, enterAnimation)
                     TokenType.Url -> TokenWithUrl(settings.rowHeight, text)
                     is TokenType.Gate -> {
-                        val fromSystem = tokens.mapNotNull { it.types.filterIsInstance<TokenType.System>().firstOrNull() }.singleOrNull()?.name
-                        TokenWithGate(settings.rowHeight, fromSystem, type.system, type.isAnsiblex)
+                        val fromSystem = tokens.firstNotNullOfOrNull { (it.type as? TokenType.System)?.system }
+                        TokenWithGate(settings.rowHeight, fromSystem, type.system, type.isAnsiblex, enterAnimation)
                     }
                     is TokenType.Movement -> TokenWithMovement(settings.rowHeight, tokens, type)
                 }
-            } else if (types.size > 1) {
-                TokenWithText(settings.rowHeight, text, "Multi")
             } else {
-                TokenWithPlainText(settings.rowHeight, text)
+                if (text.isNotBlank()) {
+                    TokenWithPlainText(settings.rowHeight, text.trim())
+                }
             }
         }
     }
@@ -283,21 +289,19 @@ private fun TokenWithUrl(rowHeight: Dp, text: String) {
 
 @Composable
 private fun TokenWithShip(rowHeight: Dp, ship: TokenType.Ship) {
-    val repository: ShipTypesRepository by koin.inject()
-    val shipTypeId = repository.getShipTypeId(ship.name)
-    ClickableShip(ship.name, shipTypeId) {
+    ClickableShip(ship.type) {
         BorderedToken(rowHeight) {
             AsyncTypeIcon(
-                typeId = shipTypeId,
+                typeId = ship.type.id,
                 modifier = Modifier.size(rowHeight),
             )
             VerticalDivider(color = RiftTheme.colors.borderGreyLight, modifier = Modifier.height(rowHeight))
             val text = if (ship.count > 1) {
-                "${ship.count}x ${ship.name}"
+                "${ship.count}x ${ship.type.name}"
             } else if (ship.isPlural) {
-                "${ship.name}s"
+                "${ship.type.name}s"
             } else {
-                ship.name
+                ship.type.name
             }
             Text(
                 text = text,
@@ -313,46 +317,62 @@ private fun TokenWithSystem(
     rowHeight: Dp,
     isShowingSystemDistance: Boolean,
     isUsingJumpBridges: Boolean,
-    system: String,
+    system: MapSolarSystem,
+    enterAnimation: Animatable<Float, AnimationVector1D>,
 ) {
-    IntelSystem(
-        system = system,
-        rowHeight = rowHeight,
-        isShowingSystemDistance = isShowingSystemDistance,
-        isUsingJumpBridges = isUsingJumpBridges,
-    )
-}
-
-@Composable
-private fun TokenWithGate(rowHeight: Dp, fromSystem: String?, toSystem: String, isAnsiblex: Boolean) {
-    val systemsRepository: SolarSystemsRepository by koin.inject()
-
     BorderedToken(rowHeight) {
-        GateIcon(
-            isAnsiblex = isAnsiblex,
-            fromSystem = fromSystem,
-            toSystem = toSystem,
-            size = rowHeight,
-        )
-        VerticalDivider(color = RiftTheme.colors.borderGreyLight, modifier = Modifier.height(rowHeight))
-        val sunTypeId = systemsRepository.getSystemSunTypeId(toSystem)
-        AsyncTypeIcon(
-            typeId = sunTypeId,
-            modifier = Modifier.size(rowHeight),
-        )
-        VerticalDivider(color = RiftTheme.colors.borderGreyLight, modifier = Modifier.height(rowHeight))
-        val gateText = if (isAnsiblex) "Ansiblex" else "Gate"
-        Text(
-            text = "$toSystem $gateText",
-            style = RiftTheme.typography.bodyLink,
-            modifier = Modifier.padding(4.dp),
+        SystemDetails(
+            system = system,
+            rowHeight = rowHeight,
+            isShowingSystemDistance = isShowingSystemDistance,
+            isUsingJumpBridges = isUsingJumpBridges,
+            enterAnimation = enterAnimation,
         )
     }
 }
 
 @Composable
+private fun TokenWithGate(
+    rowHeight: Dp,
+    fromSystem: MapSolarSystem?,
+    toSystem: MapSolarSystem,
+    isAnsiblex: Boolean,
+    enterAnimation: Animatable<Float, AnimationVector1D>,
+) {
+    val starGatesRepository: StarGatesRepository = remember { koin.get() }
+    val gate = starGatesRepository.getGate(isAnsiblex, fromSystem?.id, toSystem.id)
+    val gateText = if (isAnsiblex) "Ansiblex" else "Gate"
+    val name = "${toSystem.name} $gateText"
+    ClickableLocation(
+        systemId = fromSystem?.id,
+        locationId = gate.locationId,
+        locationTypeId = gate.typeId,
+        locationName = name,
+    ) {
+        BorderedToken(rowHeight) {
+            AsyncTypeIcon(
+                typeId = gate.typeId,
+                modifier = Modifier.size(rowHeight),
+            )
+            VerticalDivider(color = RiftTheme.colors.borderGreyLight, modifier = Modifier.height(rowHeight))
+            SystemIllustrationIconSmall(
+                solarSystemId = toSystem.id,
+                size = rowHeight,
+                animation = enterAnimation,
+                modifier = Modifier.clipToBounds(),
+            )
+            VerticalDivider(color = RiftTheme.colors.borderGreyLight, modifier = Modifier.height(rowHeight))
+            Text(
+                text = name,
+                style = RiftTheme.typography.bodyLink,
+                modifier = Modifier.padding(4.dp),
+            )
+        }
+    }
+}
+
+@Composable
 private fun TokenWithMovement(rowHeight: Dp, previousTokens: List<Token>, movement: TokenType.Movement) {
-    val systemsRepository: SolarSystemsRepository by koin.inject()
     BorderedToken(rowHeight) {
         Image(
             painter = painterResource(Res.drawable.keywords_systems),
@@ -361,19 +381,17 @@ private fun TokenWithMovement(rowHeight: Dp, previousTokens: List<Token>, moveme
         )
         if (movement.isGate) {
             VerticalDivider(color = RiftTheme.colors.borderGreyLight, modifier = Modifier.height(rowHeight))
-            val systemFrom = previousTokens.mapNotNull { it.types.filterIsInstance<TokenType.System>().firstOrNull() }.lastOrNull()?.name
-            GateIcon(
-                isAnsiblex = false,
-                fromSystem = systemFrom,
-                toSystem = movement.toSystem,
-                size = rowHeight,
+            val systemFrom = previousTokens.firstNotNullOfOrNull { (it.type as? TokenType.System)?.system }
+            val starGatesRepository: StarGatesRepository = remember { koin.get() }
+            AsyncTypeIcon(
+                typeId = starGatesRepository.getGate(false, systemFrom?.id, movement.toSystem.id).typeId,
+                modifier = Modifier.size(rowHeight),
             )
         }
         VerticalDivider(color = RiftTheme.colors.borderGreyLight, modifier = Modifier.height(rowHeight))
-        val sunTypeId = systemsRepository.getSystemSunTypeId(movement.toSystem)
-        AsyncTypeIcon(
-            typeId = sunTypeId,
-            modifier = Modifier.size(rowHeight),
+        SystemIllustrationIconSmall(
+            solarSystemId = movement.toSystem.id,
+            size = rowHeight,
         )
         VerticalDivider(color = RiftTheme.colors.borderGreyLight, modifier = Modifier.height(rowHeight))
         Text(
@@ -381,7 +399,7 @@ private fun TokenWithMovement(rowHeight: Dp, previousTokens: List<Token>, moveme
             modifier = Modifier.padding(vertical = 4.dp).padding(start = 4.dp),
         )
         Text(
-            text = movement.toSystem,
+            text = movement.toSystem.name,
             style = RiftTheme.typography.bodyLink,
             modifier = Modifier.padding(4.dp),
         )
@@ -502,19 +520,85 @@ private fun TokenWithKeyword(rowHeight: Dp, type: KeywordType) {
 }
 
 @Composable
-private fun TokenWithPlayer(rowHeight: Dp, name: String, characterId: Int) {
-    ClickablePlayer(characterId) {
-        BorderedToken(rowHeight) {
-            AsyncPlayerPortrait(
-                characterId = characterId,
-                size = 32,
-                modifier = Modifier.size(rowHeight),
+private fun TokenWithCharacter(rowHeight: Dp, name: String, character: TokenType.Character) {
+    BorderedToken(rowHeight) {
+        ClickableCharacter(character.characterId) {
+            DynamicCharacterPortraitStandings(
+                characterId = character.characterId,
+                size = rowHeight,
+                standingLevel = character.details?.standingLevel ?: Standing.Neutral,
+                isAnimated = true,
             )
-            VerticalDivider(color = RiftTheme.colors.borderGreyLight, modifier = Modifier.height(rowHeight))
-            Text(
-                text = name,
-                style = RiftTheme.typography.bodyHighlighted,
-                modifier = Modifier.padding(4.dp),
+        }
+        if (character.details != null) {
+            ClickableCorporation(character.details.corporationId) {
+                RiftTooltipArea(
+                    text = character.details.corporationName ?: "",
+                ) {
+                    AsyncCorporationLogo(
+                        corporationId = character.details.corporationId,
+                        size = 32,
+                        modifier = Modifier.size(rowHeight),
+                    )
+                }
+            }
+            if (character.details.allianceId != null) {
+                ClickableAlliance(character.details.allianceId) {
+                    RiftTooltipArea(
+                        text = character.details.allianceName ?: "",
+                    ) {
+                        AsyncAllianceLogo(
+                            allianceId = character.details.allianceId,
+                            size = 32,
+                            modifier = Modifier.size(rowHeight),
+                        )
+                    }
+                }
+            }
+        }
+
+        VerticalDivider(color = RiftTheme.colors.borderGreyLight, modifier = Modifier.height(rowHeight))
+        ClickableCharacter(character.characterId) {
+            val ticker = buildString {
+                character.details?.corporationTicker?.let { append("$it ") }
+                character.details?.allianceTicker?.let { append(it) }
+            }
+            var nameStyle = RiftTheme.typography.bodyHighlighted.copy(fontWeight = FontWeight.Bold)
+            character.details?.standingLevel?.getColor()?.let { nameStyle = nameStyle.copy(color = it) }
+            if (rowHeight < 32.dp) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.small),
+                    modifier = Modifier.padding(horizontal = Spacing.small),
+                ) {
+                    Text(
+                        text = ticker,
+                        style = RiftTheme.typography.bodySecondary,
+                    )
+                    Text(
+                        text = name,
+                        style = nameStyle,
+                    )
+                }
+            } else {
+                Column(
+                    modifier = Modifier.padding(horizontal = Spacing.small),
+                ) {
+                    Text(
+                        text = name,
+                        style = nameStyle,
+                    )
+                    Text(
+                        text = ticker,
+                        style = RiftTheme.typography.detailSecondary,
+                    )
+                }
+            }
+        }
+
+        if (character.details != null) {
+            ContactLabelTag(
+                details = character.details,
+                modifier = Modifier.padding(end = Spacing.small),
             )
         }
     }
@@ -526,7 +610,7 @@ private fun TokenWithKill(rowHeight: Dp, token: TokenType.Kill) {
     RiftTooltipArea(
         text = "${token.name}\n${token.target}",
     ) {
-        ClickablePlayer(token.characterId) {
+        ClickableCharacter(token.characterId) {
             BorderedToken(rowHeight) {
                 Image(
                     painter = painterResource(Res.drawable.keywords_killreport),
@@ -534,12 +618,15 @@ private fun TokenWithKill(rowHeight: Dp, token: TokenType.Kill) {
                     modifier = Modifier.size(rowHeight),
                 )
                 VerticalDivider(color = RiftTheme.colors.borderGreyLight, modifier = Modifier.height(rowHeight))
-                AsyncPlayerPortrait(
-                    characterId = token.characterId,
-                    size = 32,
-                    modifier = Modifier.size(rowHeight),
-                )
-                VerticalDivider(color = RiftTheme.colors.borderGreyLight, modifier = Modifier.height(rowHeight))
+                if (token.characterId != null) {
+                    DynamicCharacterPortraitStandings(
+                        characterId = token.characterId,
+                        size = rowHeight,
+                        standingLevel = token.details?.standingLevel ?: Standing.Neutral,
+                        isAnimated = true,
+                    )
+                    VerticalDivider(color = RiftTheme.colors.borderGreyLight, modifier = Modifier.height(rowHeight))
+                }
                 val type = repository.getType(token.target)
                 AsyncTypeIcon(
                     type = type,
@@ -552,74 +639,6 @@ private fun TokenWithKill(rowHeight: Dp, token: TokenType.Kill) {
                     modifier = Modifier.padding(4.dp),
                 )
             }
-        }
-    }
-}
-
-@Preview
-@Composable
-private fun ParsedMessagePreview() {
-    fun String.token(vararg types: TokenType): Token {
-        return Token(split(" "), types = types.toList())
-    }
-    val settings = IntelReportsSettings(
-        displayTimezone = ZoneId.systemDefault(),
-        isUsingCompactMode = false,
-        isShowingReporter = true,
-        isShowingChannel = true,
-        isShowingRegion = true,
-        isShowingSystemDistance = true,
-        isUsingJumpBridgesForDistance = true,
-    )
-
-    MaterialTheme {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.padding(16.dp),
-        ) {
-            val message = ParsedChannelChatMessage(
-                ChatMessage(Instant.now(), "Player One", ""),
-                listOf("Delve"),
-                ChatLogFileMetadata("", "Intel", "", 0, "", null, null),
-                listOf(
-                    "ssllss1".token(TokenType.Player(1), Link),
-                    "Yaakov Y2".token(TokenType.Player(1)),
-                    "2x".token(TokenType.Count(2)),
-                    "capsule".token(TokenType.Ship("Capsule"), Link),
-                    "319-3D".token(TokenType.System("319-3D")),
-                ),
-            )
-            ChatMessage(settings, message, null)
-
-            val message2 = ParsedChannelChatMessage(
-                ChatMessage(Instant.now(), "Player Two", ""),
-                listOf("Delve"),
-                ChatLogFileMetadata("", "Intel", "", 0, "", null, null),
-                listOf(
-                    "ssllss1".token(TokenType.Player(1), Link),
-                    "Yaakov Y2".token(TokenType.Player(1)),
-                    "very long text that will not fit".token(),
-                    "2x".token(TokenType.Count(2)),
-                    "capsule".token(TokenType.Ship("Capsule"), Link),
-                    "319-3D".token(TokenType.System("319-3D")),
-                ),
-            )
-            ChatMessage(settings, message2, null)
-
-            val message3 = ParsedChannelChatMessage(
-                ChatMessage(Instant.now(), "Player Three", ""),
-                listOf("Delve"),
-                ChatLogFileMetadata("", "Intel", "", 0, "", null, null),
-                listOf(
-                    "ssllss1".token(TokenType.Player(1), Link),
-                    "Yaakov Y2".token(TokenType.Player(1)),
-                    "very long text that will not fit even on a whole separate line, but will make the pill multiline".token(),
-                    "2x".token(TokenType.Count(2)),
-                    "capsule".token(TokenType.Ship("Capsule"), Link),
-                    "319-3D".token(TokenType.System("319-3D")),
-                ),
-            )
-            ChatMessage(settings, message3, null)
         }
     }
 }

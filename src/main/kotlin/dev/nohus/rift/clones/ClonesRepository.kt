@@ -2,11 +2,16 @@ package dev.nohus.rift.clones
 
 import dev.nohus.rift.characters.repositories.LocalCharactersRepository
 import dev.nohus.rift.location.CharacterLocationRepository
+import dev.nohus.rift.location.CharacterLocationRepository.Location
 import dev.nohus.rift.location.LocationRepository
+import dev.nohus.rift.location.LocationRepository.Station
+import dev.nohus.rift.location.LocationRepository.Structure
 import dev.nohus.rift.network.esi.EsiApi
-import dev.nohus.rift.network.esi.LocationType
+import dev.nohus.rift.network.esi.models.LocationType
+import dev.nohus.rift.network.requests.Originator
 import dev.nohus.rift.repositories.TypesRepository
 import dev.nohus.rift.repositories.TypesRepository.Type
+import dev.nohus.rift.sso.scopes.ScopeGroups
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async
@@ -47,7 +52,7 @@ class ClonesRepository(
     suspend fun start() = coroutineScope {
         launch {
             localCharactersRepository.characters
-                .map { characters -> characters.filter { it.isAuthenticated }.map { it.characterId } }
+                .map { characters -> characters.filter { ScopeGroups.readClones in it.scopes }.map { it.characterId } }
                 .distinctUntilChanged()
                 .debounce(500)
                 .collect {
@@ -57,6 +62,7 @@ class ClonesRepository(
         launch {
             characterLocationRepository.locations.collect { locations ->
                 locations.forEach { (characterId, location) ->
+                    updateActiveCloneLocation(characterId, location)
                     val previous = dockedLocations[characterId]
                     val current = location.structure?.structureId ?: location.station?.stationId?.toLong()
                     if (previous != null && current != null && previous != current) {
@@ -99,7 +105,7 @@ class ClonesRepository(
     }
 
     private suspend fun onNeedToUpdate() {
-        // Update now, and schedule another update after the ESI cache timeout
+        // Update now and schedule another update after the ESI cache timeout
         scheduleUpdate()
         updateClones()
     }
@@ -108,13 +114,50 @@ class ClonesRepository(
         scheduledUpdate = Instant.now() + Duration.ofMinutes(2)
     }
 
+    private fun updateActiveCloneLocation(characterId: Int, location: Location) {
+        val clones = _clones.value[characterId] ?: emptyList()
+        val hasActiveClone = clones.any { it.isActive }
+        val newClones = if (hasActiveClone) {
+            clones.map { clone ->
+                if (clone.isActive) {
+                    clone.copy(solarSystemId = location.solarSystemId, station = location.station, structure = location.structure)
+                } else {
+                    clone
+                }
+            }
+        } else {
+            clones + createActiveClone(characterId, emptyList(), location.solarSystemId, location.station, location.structure)
+        }
+        _clones.value += (characterId to newClones)
+    }
+
+    private fun createActiveClone(
+        characterId: Int,
+        implants: List<Type>,
+        solarSystemId: Int?,
+        station: Station?,
+        structure: Structure?,
+    ): Clone {
+        return Clone(
+            id = 0,
+            characterId = characterId,
+            implants = implants,
+            solarSystemId = solarSystemId,
+            station = station,
+            structure = structure,
+            isActive = true,
+        )
+    }
+
     private suspend fun updateClones() {
-        val characterIds = localCharactersRepository.characters.value.filter { it.isAuthenticated }.map { it.characterId }
+        val characterIds = localCharactersRepository.characters.value
+            .filter { ScopeGroups.readClones in it.scopes }
+            .map { it.characterId }
         val clones = getClones(characterIds)
         if (clones != null) {
             _clones.value = clones
             lastUpdated = Instant.now()
-            logger.info { "Updated clones" }
+            logger.debug { "Updated clones" }
         } else {
             logger.error { "Could not update clones" }
         }
@@ -122,10 +165,10 @@ class ClonesRepository(
 
     private suspend fun getClones(characterIds: List<Int>): Map<Int, List<Clone>>? = coroutineScope {
         val clonesDeferred = characterIds.map { characterId ->
-            async { characterId to esiApi.getCharactersIdClones(characterId) }
+            async { characterId to esiApi.getCharactersIdClones(Originator.Clones, characterId) }
         }
         val implantsDeferred = characterIds.map { characterId ->
-            async { characterId to esiApi.getCharactersIdImplants(characterId) }
+            async { characterId to esiApi.getCharactersIdImplants(Originator.Clones, characterId) }
         }
         val cloneResults = clonesDeferred.awaitAll()
             .map { (characterId, result) -> characterId to (result.success ?: return@coroutineScope null) }
@@ -134,32 +177,31 @@ class ClonesRepository(
 
         val clones = cloneResults.map { (characterId, clones) ->
             characterId to clones.jumpClones.map { clone ->
+                val station = if (clone.locationType == LocationType.Station) {
+                    locationRepository.getStation(Originator.Clones, clone.locationId.toInt())
+                } else {
+                    null
+                }
+                val structure = if (clone.locationType == LocationType.Structure) {
+                    locationRepository.getStructure(Originator.Clones, clone.locationId, characterId)
+                } else {
+                    null
+                }
                 Clone(
                     id = clone.id,
+                    characterId = characterId,
                     implants = getImplants(clone.implants),
-                    station = if (clone.locationType == LocationType.Station) {
-                        locationRepository.getStation(clone.locationId.toInt())
-                    } else {
-                        null
-                    },
-                    structure = if (clone.locationType == LocationType.Structure) {
-                        locationRepository.getStructure(clone.locationId, characterId)
-                    } else {
-                        null
-                    },
+                    solarSystemId = structure?.solarSystemId ?: station?.solarSystemId,
+                    station = station,
+                    structure = structure,
                     isActive = false,
                 )
             }
         }
         val implants = implantsResults.map { (characterId, implants) ->
+            val location = characterLocationRepository.locations.value[characterId]
             characterId to listOf(
-                Clone(
-                    id = 0,
-                    implants = getImplants(implants),
-                    station = null,
-                    structure = null,
-                    isActive = true,
-                ),
+                createActiveClone(characterId, getImplants(implants), location?.solarSystemId, location?.station, location?.structure),
             )
         }
         val combined = (clones + implants).groupBy { it.first }.map { (characterId, groups) ->

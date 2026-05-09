@@ -73,6 +73,7 @@ private fun CreateGroupDialogContent(
             onTextChanged = { text = it.take(24) },
             modifier = Modifier.fillMaxWidth(),
         )
+
         Row(
             horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
         ) {

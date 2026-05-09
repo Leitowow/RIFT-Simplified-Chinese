@@ -8,6 +8,6 @@ data class ChatLogFile(
     val file: Path,
     val channelName: String,
     val dateTime: LocalDateTime,
-    val characterId: String,
+    val characterId: Int,
     val lastModified: Instant,
 )

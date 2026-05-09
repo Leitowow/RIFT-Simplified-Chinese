@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
@@ -34,8 +35,8 @@ import dev.nohus.rift.generated.resources.window_loudspeaker_icon
 import dev.nohus.rift.push.PushViewModel.UiState
 import dev.nohus.rift.utils.openBrowser
 import dev.nohus.rift.utils.toURIOrNull
-import dev.nohus.rift.utils.viewModel
 import dev.nohus.rift.utils.withColor
+import dev.nohus.rift.viewModel
 import dev.nohus.rift.windowing.WindowManager.RiftWindowState
 
 @Composable
@@ -133,7 +134,7 @@ private fun Ntfy(
         )
         Text(
             text = "Setup",
-            style = RiftTheme.typography.titlePrimary,
+            style = RiftTheme.typography.headerPrimary,
             modifier = Modifier.padding(top = Spacing.medium),
         )
         Row {
@@ -184,7 +185,7 @@ private fun Ntfy(
             style = RiftTheme.typography.bodyPrimary,
         )
 
-        Row {
+        FlowRow {
             Text(
                 text = "4. Install the ",
                 style = RiftTheme.typography.bodyPrimary,
@@ -202,7 +203,11 @@ private fun Ntfy(
                 onClick = { "https://apps.apple.com/us/app/ntfy/id1625396347".toURIOrNull()?.openBrowser() },
             )
             Text(
-                text = " ntfy app and enter the same topic name.",
+                text = " ",
+                style = RiftTheme.typography.bodyPrimary,
+            )
+            Text(
+                text = "ntfy app and enter the same topic name.",
                 style = RiftTheme.typography.bodyPrimary,
             )
         }
@@ -248,7 +253,7 @@ private fun Pushover(
         )
         Text(
             text = "Setup",
-            style = RiftTheme.typography.titlePrimary,
+            style = RiftTheme.typography.headerPrimary,
             modifier = Modifier.padding(top = Spacing.medium),
         )
         Row {

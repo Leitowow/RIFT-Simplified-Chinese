@@ -17,7 +17,6 @@ fun WizardWindowWrapper(
         WizardWindow(
             windowState = RiftWindowState(
                 windowState = rememberWindowState(width = (550 * scale).dp, height = (300 * scale).dp),
-                isVisible = true,
                 minimumSize = 550 to 300,
             ),
             onCloseRequest = onCloseRequest,

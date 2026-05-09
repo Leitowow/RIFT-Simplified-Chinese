@@ -1,6 +1,7 @@
 package dev.nohus.rift.assets
 
 import dev.nohus.rift.repositories.TypesRepository
+import dev.nohus.rift.repositories.TypesRepository.Type
 import org.koin.core.annotation.Single
 
 @Single
@@ -46,5 +47,16 @@ class PlanetaryIndustryCommoditiesRepository(
 
     fun isPlanetaryIndustryItems(items: List<Int>): Boolean {
         return items.distinct().all { it in ids }
+    }
+
+    fun getTier(type: Type): Int? {
+        return when (type.name) {
+            in p4Names -> 4
+            in p3Names -> 3
+            in p2Names -> 2
+            in p1Names -> 1
+            in p0Names -> 0
+            else -> null
+        }
     }
 }

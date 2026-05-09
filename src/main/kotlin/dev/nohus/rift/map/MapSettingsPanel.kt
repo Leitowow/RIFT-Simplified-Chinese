@@ -21,6 +21,7 @@ import androidx.compose.foundation.onClick
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,49 +34,69 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeChild
+import dev.nohus.rift.characters.repositories.LocalCharactersRepository
+import dev.nohus.rift.compose.AsyncTypeIcon
 import dev.nohus.rift.compose.RequirementIcon
+import dev.nohus.rift.compose.RiftAutocompleteTextField
 import dev.nohus.rift.compose.RiftDropdownWithLabel
 import dev.nohus.rift.compose.RiftImageButton
 import dev.nohus.rift.compose.RiftPill
-import dev.nohus.rift.compose.RiftTextField
 import dev.nohus.rift.compose.RiftTooltipArea
 import dev.nohus.rift.compose.ScrollbarColumn
 import dev.nohus.rift.compose.theme.RiftTheme
 import dev.nohus.rift.compose.theme.Spacing
+import dev.nohus.rift.di.koin
 import dev.nohus.rift.generated.resources.Res
 import dev.nohus.rift.generated.resources.backicon
 import dev.nohus.rift.generated.resources.expand_more_16px
+import dev.nohus.rift.map.DistanceMapController.DistanceMapState
 import dev.nohus.rift.map.MapJumpRangeController.MapJumpRangeState
 import dev.nohus.rift.map.MapLayoutRepository.Layout
 import dev.nohus.rift.map.MapPlanetsController.MapPlanetsState
 import dev.nohus.rift.map.MapViewModel.MapType
 import dev.nohus.rift.map.MapViewModel.MapType.ClusterRegionsMap
 import dev.nohus.rift.map.MapViewModel.MapType.ClusterSystemsMap
+import dev.nohus.rift.map.MapViewModel.MapType.DistanceMap
 import dev.nohus.rift.map.MapViewModel.MapType.RegionMap
 import dev.nohus.rift.map.MapViewModel.SystemInfoTypes
 import dev.nohus.rift.map.PanelState.CellColor
 import dev.nohus.rift.map.PanelState.Collapsed
+import dev.nohus.rift.map.PanelState.DistanceMapCenter
 import dev.nohus.rift.map.PanelState.Expanded
 import dev.nohus.rift.map.PanelState.Indicators
 import dev.nohus.rift.map.PanelState.InfoBox
 import dev.nohus.rift.map.PanelState.JumpRange
 import dev.nohus.rift.map.PanelState.Planets
+import dev.nohus.rift.map.PanelState.SovereigntyUpgrades
 import dev.nohus.rift.map.PanelState.StarColor
 import dev.nohus.rift.repositories.PlanetTypes
 import dev.nohus.rift.repositories.PlanetTypes.PlanetType
+import dev.nohus.rift.repositories.SolarSystemsRepository
+import dev.nohus.rift.repositories.TypesRepository.Type
 import dev.nohus.rift.settings.persistence.MapSystemInfoType
+import dev.nohus.rift.sovupgrades.MapSovereigntyUpgradesController.MapSovereigntyUpgradesState
+import dev.nohus.rift.sovupgrades.SovereigntyUpgradesRepository
+import dev.nohus.rift.utils.plural
 import org.jetbrains.compose.resources.painterResource
 import dev.nohus.rift.settings.persistence.MapType as SettingsMapType
 
 enum class PanelState {
-    Collapsed, Expanded,
-    StarColor, CellColor, Indicators, InfoBox,
-    JumpRange, Planets
+    Collapsed,
+    Expanded,
+    StarColor,
+    CellColor,
+    Indicators,
+    InfoBox,
+    JumpRange,
+    Planets,
+    SovereigntyUpgrades,
+    DistanceMapCenter,
 }
 
 private val editableInfoTypes = mapOf(
     MapSystemInfoType.JumpRange to JumpRange,
     MapSystemInfoType.Planets to Planets,
+    MapSystemInfoType.SovereigntyUpgrades to SovereigntyUpgrades,
 )
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalLayoutApi::class)
@@ -86,6 +107,8 @@ fun MapSettingsPanel(
     systemInfoTypes: SystemInfoTypes,
     mapJumpRangeState: MapJumpRangeState,
     mapPlanetsState: MapPlanetsState,
+    mapSovereigntyUpgradesState: MapSovereigntyUpgradesState,
+    distanceMapState: DistanceMapState,
     alternativeLayouts: List<Layout>,
     onSystemColorChange: (SettingsMapType, MapSystemInfoType) -> Unit,
     onSystemColorHover: (SettingsMapType, MapSystemInfoType, Boolean) -> Unit,
@@ -96,12 +119,16 @@ fun MapSettingsPanel(
     onJumpRangeTargetUpdate: (String) -> Unit,
     onJumpRangeDistanceUpdate: (Double) -> Unit,
     onPlanetTypesUpdate: (List<PlanetType>) -> Unit,
+    onSovereigntyUpgradeTypesUpdate: (List<Type>) -> Unit,
     onLayoutSelected: (Int) -> Unit,
+    onDistanceMapCenterUpdate: (String) -> Unit,
+    onDistanceMapRangeUpdate: (Int) -> Unit,
 ) {
     val settingsMapType = when (mapType) {
         ClusterRegionsMap -> null
-        ClusterSystemsMap -> SettingsMapType.NewEden
+        is ClusterSystemsMap -> SettingsMapType.NewEden
         is RegionMap -> SettingsMapType.Region
+        is DistanceMap -> SettingsMapType.Distance
     } ?: return
     Column(
         modifier = Modifier.padding(1.dp),
@@ -153,11 +180,10 @@ fun MapSettingsPanel(
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
-
                                 ) {
                                     Text(
                                         text = "System:",
-                                        style = RiftTheme.typography.titlePrimary,
+                                        style = RiftTheme.typography.headerPrimary,
                                     )
                                     SystemColorPills(
                                         isExpanded = false,
@@ -178,7 +204,7 @@ fun MapSettingsPanel(
                                 ) {
                                     Text(
                                         text = "Background:",
-                                        style = RiftTheme.typography.titlePrimary,
+                                        style = RiftTheme.typography.headerPrimary,
                                     )
                                     SystemColorPills(
                                         isExpanded = false,
@@ -199,7 +225,7 @@ fun MapSettingsPanel(
                                 ) {
                                     Text(
                                         text = "Indicators:",
-                                        style = RiftTheme.typography.titlePrimary,
+                                        style = RiftTheme.typography.headerPrimary,
                                     )
                                     val text = systemInfoTypes.indicators[settingsMapType].orEmpty().let {
                                         if (it.isEmpty()) "None" else "${it.size} enabled"
@@ -217,7 +243,7 @@ fun MapSettingsPanel(
                                 ) {
                                     Text(
                                         text = "Info box:",
-                                        style = RiftTheme.typography.titlePrimary,
+                                        style = RiftTheme.typography.headerPrimary,
                                     )
                                     val text = systemInfoTypes.infoBox[settingsMapType].orEmpty().let {
                                         if (it.isEmpty()) "None" else "${it.size} enabled"
@@ -235,6 +261,16 @@ fun MapSettingsPanel(
                                     alternativeLayouts = alternativeLayouts,
                                     selectedLayoutId = mapType.layoutId,
                                     onLayoutSelected = onLayoutSelected,
+                                )
+                            } else if (mapType is DistanceMap) {
+                                DistanceMapPills(
+                                    state = distanceMapState,
+                                    onDistanceMapCenterClick = {
+                                        panelState = DistanceMapCenter
+                                    },
+                                    onDistanceMapRangeClick = {
+                                        panelState = DistanceMapCenter
+                                    },
                                 )
                             }
                         }
@@ -360,6 +396,21 @@ fun MapSettingsPanel(
                             onPlanetTypesUpdate = onPlanetTypesUpdate,
                         )
                     }
+                    SovereigntyUpgrades -> {
+                        SovereigntyUpgradesPanel(
+                            mapSovereigntyUpgradesState = mapSovereigntyUpgradesState,
+                            onBack = { panelState = previousPanelState },
+                            onSovereigntyUpgradeTypesUpdate = onSovereigntyUpgradeTypesUpdate,
+                        )
+                    }
+                    DistanceMapCenter -> {
+                        DistanceMapPanel(
+                            state = distanceMapState,
+                            onBack = { panelState = Expanded },
+                            onDistanceMapCenterUpdate = onDistanceMapCenterUpdate,
+                            onDistanceMapRangeUpdate = onDistanceMapRangeUpdate,
+                        )
+                    }
                 }
             }
         }
@@ -381,14 +432,27 @@ private fun JumpRangePanel(
         modifier = Modifier.padding(Spacing.medium),
     ) {
         SettingsPanelTitle(
-            title = "Jump Range",
+            title = "Jump range",
             onBack = onBack,
         )
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.heightIn(min = 36.dp),
         ) {
+            val solarSystemsRepository: SolarSystemsRepository = remember { koin.get() }
+            val charactersRepository: LocalCharactersRepository = remember { koin.get() }
             var targetText by remember { mutableStateOf("") }
+
+            val suggestions by derivedStateOf {
+                val possibleCharacters = charactersRepository.characters.value
+                    .mapNotNull { it.info?.name }
+                val possibleSystems = solarSystemsRepository.getSystems()
+                    .map { it.name }
+                (possibleCharacters + possibleSystems)
+                    .filter { it.lowercase().startsWith(targetText.lowercase()) }
+                    .filter { it.lowercase() != targetText.lowercase() }
+            }
+
             LaunchedEffect(mapJumpRangeState.target) {
                 when (mapJumpRangeState.target) {
                     is MapJumpRangeController.MapJumpRangeTarget.Character -> targetText = mapJumpRangeState.target.name
@@ -396,13 +460,15 @@ private fun JumpRangePanel(
                     null -> {}
                 }
             }
+
             Text(
                 text = "From:",
                 style = RiftTheme.typography.bodyPrimary,
                 modifier = Modifier.padding(end = Spacing.small),
             )
-            RiftTextField(
+            RiftAutocompleteTextField(
                 text = targetText,
+                suggestions = suggestions.take(5),
                 placeholder = "System or character",
                 onTextChanged = {
                     targetText = it
@@ -463,6 +529,7 @@ private fun PlanetsPanel(
                 RiftPill(
                     text = type.name,
                     icon = type.icon,
+                    isIconColor = true,
                     isSelected = isSelected,
                     onClick = {
                         val new = if (isSelected) {
@@ -475,6 +542,141 @@ private fun PlanetsPanel(
                 )
             }
         }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SovereigntyUpgradesPanel(
+    mapSovereigntyUpgradesState: MapSovereigntyUpgradesState,
+    onBack: () -> Unit,
+    onSovereigntyUpgradeTypesUpdate: (List<Type>) -> Unit,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(Spacing.medium),
+        modifier = Modifier.padding(Spacing.medium),
+    ) {
+        SettingsPanelTitle(
+            title = "Sovereignty upgrade types",
+            onBack = onBack,
+        )
+        FlowRow(
+            verticalArrangement = Arrangement.spacedBy(Spacing.medium),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
+        ) {
+            val sovereigntyUpgradesRepository: SovereigntyUpgradesRepository = remember { koin.get() }
+            sovereigntyUpgradesRepository.groupedUpgradeTypes.forEach { group ->
+                val isSelected = group.any { it in mapSovereigntyUpgradesState.selectedTypes }
+                val name = group.first().name.replace(Regex("\\s+\\d+$"), "")
+                RiftPill(
+                    text = name,
+                    icon = {
+                        Row {
+                            for (type in group) {
+                                AsyncTypeIcon(
+                                    type = type,
+                                    modifier = Modifier
+                                        .padding(end = Spacing.small)
+                                        .size(32.dp),
+                                )
+                            }
+                        }
+                    },
+                    isSelected = isSelected,
+                    onClick = {
+                        val new = if (isSelected) {
+                            mapSovereigntyUpgradesState.selectedTypes - group
+                        } else {
+                            mapSovereigntyUpgradesState.selectedTypes + group
+                        }
+                        onSovereigntyUpgradeTypesUpdate(new)
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DistanceMapPanel(
+    state: DistanceMapState,
+    onBack: () -> Unit,
+    onDistanceMapCenterUpdate: (String) -> Unit,
+    onDistanceMapRangeUpdate: (Int) -> Unit,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(Spacing.medium),
+        modifier = Modifier.padding(Spacing.medium),
+    ) {
+        SettingsPanelTitle(
+            title = "Distance map",
+            onBack = onBack,
+        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.heightIn(min = 36.dp),
+        ) {
+            val solarSystemsRepository: SolarSystemsRepository = remember { koin.get() }
+            val charactersRepository: LocalCharactersRepository = remember { koin.get() }
+            var targetText by remember { mutableStateOf("") }
+            var isEdited by remember { mutableStateOf(false) }
+
+            val suggestions by derivedStateOf {
+                val possibleCharacters = charactersRepository.characters.value
+                    .mapNotNull { it.info?.name }
+                val possibleSystems = solarSystemsRepository.getSystems()
+                    .map { it.name }
+                (possibleCharacters + possibleSystems)
+                    .filter { it.lowercase().startsWith(targetText.lowercase()) }
+                    .filter { it.lowercase() != targetText.lowercase() }
+            }
+
+            LaunchedEffect(state.followingCharacterId, state.followingCharacterName, state.centerSystemId, state.centerSystemName) {
+                targetText = when {
+                    state.followingCharacterId != null -> state.followingCharacterName ?: state.followingCharacterId.toString()
+                    else -> state.centerSystemName ?: state.centerSystemId.toString()
+                }
+            }
+
+            Text(
+                text = "Centered on:",
+                style = RiftTheme.typography.bodyPrimary,
+                modifier = Modifier.padding(end = Spacing.small),
+            )
+            RiftAutocompleteTextField(
+                text = targetText,
+                suggestions = suggestions.take(5),
+                placeholder = "System or character",
+                onTextChanged = {
+                    targetText = it
+                    isEdited = true
+                    onDistanceMapCenterUpdate(it)
+                },
+                modifier = Modifier
+                    .width(150.dp),
+            )
+            AnimatedVisibility(targetText.isNotBlank()) {
+                RequirementIcon(
+                    isFulfilled = state.isEditedCenterValid || !isEdited,
+                    fulfilledTooltip = when {
+                        state.followingCharacterId != null -> "Valid character"
+                        else -> "Valid system"
+                    },
+                    notFulfilledTooltip = "No such system or character",
+                )
+            }
+        }
+        val ranges = List(5) {
+            val range = it + 1
+            "$range jump${range.plural}" to range
+        }
+        RiftDropdownWithLabel(
+            label = "Range:",
+            items = ranges,
+            selectedItem = ranges.firstOrNull { it.second == state.distance } ?: ranges.first(),
+            onItemSelected = { onDistanceMapRangeUpdate(it.second) },
+            getItemName = { it.first },
+        )
     }
 }
 
@@ -496,7 +698,7 @@ private fun SettingsPanelTitle(
         )
         Text(
             text = title,
-            style = RiftTheme.typography.titlePrimary,
+            style = RiftTheme.typography.headerPrimary,
         )
     }
 }
@@ -514,7 +716,7 @@ private fun AlternativeLayoutsPills(
     ) {
         Text(
             text = "Alternative maps:",
-            style = RiftTheme.typography.titlePrimary,
+            style = RiftTheme.typography.headerPrimary,
         )
         alternativeLayouts.forEach { layout ->
             RiftPill(
@@ -523,6 +725,52 @@ private fun AlternativeLayoutsPills(
                 onClick = {
                     onLayoutSelected(layout.layoutId)
                 },
+            )
+        }
+    }
+}
+
+@Composable
+private fun DistanceMapPills(
+    state: DistanceMapState,
+    onDistanceMapCenterClick: () -> Unit,
+    onDistanceMapRangeClick: () -> Unit,
+) {
+    FlowRow(
+        verticalArrangement = Arrangement.spacedBy(Spacing.medium),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
+        ) {
+            Text(
+                text = "Centered on:",
+                style = RiftTheme.typography.headerPrimary,
+            )
+            if (state.followingCharacterId != null) {
+                RiftPill(
+                    text = state.followingCharacterName ?: state.followingCharacterId.toString(),
+                    onClick = onDistanceMapCenterClick,
+                )
+            } else {
+                RiftPill(
+                    text = state.centerSystemName ?: state.centerSystemId.toString(),
+                    onClick = onDistanceMapCenterClick,
+                )
+            }
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
+        ) {
+            Text(
+                text = "Range:",
+                style = RiftTheme.typography.headerPrimary,
+            )
+            RiftPill(
+                text = "${state.distance} jump${state.distance.plural}",
+                onClick = onDistanceMapRangeClick,
             )
         }
     }
@@ -542,7 +790,7 @@ private fun SystemColorPills(
         verticalArrangement = Arrangement.spacedBy(Spacing.medium),
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
-        val colorEntries = MapSystemInfoType.entries - listOf(MapSystemInfoType.Planets)
+        val colorEntries = MapSystemInfoType.entries - listOf(MapSystemInfoType.Planets, MapSystemInfoType.Region, MapSystemInfoType.Constellation)
         val pills = if (isCellColor) colorEntries + null else colorEntries
         pills.filter { isExpanded || selected == it }
             .forEach { type ->
@@ -566,7 +814,6 @@ private fun SystemColorPills(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SystemIndicatorsPills(
     hidden: Set<MapSystemInfoType>,
@@ -616,14 +863,20 @@ private fun getMapStarInfoTypeColorName(color: MapSystemInfoType?): Pair<String,
         MapSystemInfoType.Stations -> "Stations" to "Colored according to the\nnumber of stations"
         MapSystemInfoType.FactionWarfare -> "Faction Warfare" to "Colored according to the\nfaction warfare occupier"
         MapSystemInfoType.Sovereignty -> "Sovereignty" to "Colored according to the\nsovereignty holder"
+        MapSystemInfoType.SovereigntyUpgrades -> "Sovereignty Upgrades" to "Colored according to the\ninstalled sovereignty upgrades"
         MapSystemInfoType.MetaliminalStorms -> "Metaliminal Storms" to "Colored according to the\npresence of metaliminal storms"
         MapSystemInfoType.JumpRange -> "Jump Range" to "Colored according to\njump range"
         MapSystemInfoType.Planets -> throw IllegalArgumentException("Not used for colors")
         MapSystemInfoType.JoveObservatories -> "Jove Observatories" to "Colored when a\nJove Observatory is present"
+        MapSystemInfoType.Wormholes -> "Wormholes" to "Colored when a\nThera or Turnur wormhole is present"
         MapSystemInfoType.Colonies -> "PI Colonies" to "Colored when you have a\nPI colony present"
         MapSystemInfoType.Clones -> "Clones" to "Colored when you have\njump clones present"
         MapSystemInfoType.Standings -> "Standings" to "Colored based on standings\ntowards the sovereignty holder.\nLow and high sec are always yellow and green."
         MapSystemInfoType.RatsType -> "Rats" to "Colored according to the\nfaction of rats in the system"
+        MapSystemInfoType.AsteroidBelts -> "Asteroid Belts" to "Colored when\nasteroid belts are present"
+        MapSystemInfoType.IceFields -> "Ice Fields" to "Colored when\nice fields are present"
+        MapSystemInfoType.Region -> throw IllegalArgumentException("Not used for colors")
+        MapSystemInfoType.Constellation -> throw IllegalArgumentException("Not used for colors")
         MapSystemInfoType.IndustryIndexCopying -> "Copying Index" to "Colored according to the\nindustry cost index of Copying"
         MapSystemInfoType.IndustryIndexInvention -> "Invention Index" to "Colored according to the\nindustry cost index of Invention"
         MapSystemInfoType.IndustryIndexManufacturing -> "Manufacturing Index" to "Colored according to the\nindustry cost index of Manufacturing"
@@ -651,14 +904,20 @@ private fun getMapStarInfoTypeIndicatorName(color: MapSystemInfoType?): Pair<Str
         MapSystemInfoType.Stations -> "Stations" to "Number of stations"
         MapSystemInfoType.FactionWarfare -> "" to ""
         MapSystemInfoType.Sovereignty -> "Sovereignty" to "Sovereignty holder logo"
+        MapSystemInfoType.SovereigntyUpgrades -> "Sovereignty Upgrades" to "Indicators for installed sovereignty upgrades"
         MapSystemInfoType.MetaliminalStorms -> "Metaliminal Storms" to "Indicator for systems with a storm"
         MapSystemInfoType.JumpRange -> "Jump Range" to "Indicator for systems in jump range"
         MapSystemInfoType.Planets -> "Planets" to "Indicators for planets"
         MapSystemInfoType.JoveObservatories -> "Jove Observatories" to "Indicators for Jove Observatories"
+        MapSystemInfoType.Wormholes -> "Wormholes" to "Indicators for Thera and Turnur wormholes"
         MapSystemInfoType.Colonies -> "PI Colonies" to "Indicators for PI colonies"
         MapSystemInfoType.Clones -> "Clones" to "Indicators for jump clones"
         MapSystemInfoType.Standings -> "Standings" to "Standings towards the sovereignty holder"
         MapSystemInfoType.RatsType -> "" to ""
+        MapSystemInfoType.AsteroidBelts -> "Asteroid Belts" to "Indicators for asteroid belts"
+        MapSystemInfoType.IceFields -> "Ice Fields" to "Indicators for ice fields"
+        MapSystemInfoType.Region -> "Region" to "Region name"
+        MapSystemInfoType.Constellation -> "Constellation" to "Constellation name"
         MapSystemInfoType.IndustryIndexCopying -> "Copying Index" to "Industry cost index of Copying"
         MapSystemInfoType.IndustryIndexInvention -> "Invention Index" to "Industry cost index of Invention"
         MapSystemInfoType.IndustryIndexManufacturing -> "Manufacturing Index" to "Industry cost index of Manufacturing"
@@ -686,14 +945,20 @@ private fun getMapStarInfoTypeInfoBoxName(color: MapSystemInfoType?): Pair<Strin
         MapSystemInfoType.Stations -> "Stations" to "Number of stations"
         MapSystemInfoType.FactionWarfare -> "Faction Warfare" to "Faction warfare details"
         MapSystemInfoType.Sovereignty -> "Sovereignty" to "Sovereignty holder"
+        MapSystemInfoType.SovereigntyUpgrades -> "Sovereignty Upgrades" to "Installed sovereignty upgrades"
         MapSystemInfoType.MetaliminalStorms -> "Metaliminal Storms" to "Metaliminal storm type"
         MapSystemInfoType.JumpRange -> "Jump Range" to "Jump distance to system"
         MapSystemInfoType.Planets -> "Planets" to "Planets information"
         MapSystemInfoType.JoveObservatories -> "Jove Observatories" to "Jove Observatory presence information"
+        MapSystemInfoType.Wormholes -> "Wormholes" to "Thera and Turnur wormholes information"
         MapSystemInfoType.Colonies -> "PI Colonies" to "PI colonies information"
         MapSystemInfoType.Clones -> "Clones" to "Jump clones information"
         MapSystemInfoType.Standings -> "Standings" to "Standings towards the sovereignty holder"
         MapSystemInfoType.RatsType -> "Rats" to "Faction of rats in the system"
+        MapSystemInfoType.AsteroidBelts -> "Asteroid Belts" to "Asteroid belts presence information"
+        MapSystemInfoType.IceFields -> "Ice Fields" to "Ice fields presence information"
+        MapSystemInfoType.Region -> "Region" to "Region name"
+        MapSystemInfoType.Constellation -> "Constellation" to "Constellation name"
         MapSystemInfoType.IndustryIndexCopying -> "Copying Index" to "Industry cost index of Copying"
         MapSystemInfoType.IndustryIndexInvention -> "Invention Index" to "Industry cost index of Invention"
         MapSystemInfoType.IndustryIndexManufacturing -> "Manufacturing Index" to "Industry cost index of Manufacturing"

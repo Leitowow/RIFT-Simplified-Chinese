@@ -4,13 +4,20 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import dev.nohus.rift.di.koin
 import dev.nohus.rift.generated.resources.Res
 import dev.nohus.rift.generated.resources.missing
 import dev.nohus.rift.generated.resources.missing_blueprint
 import dev.nohus.rift.generated.resources.missing_skin
+import dev.nohus.rift.network.interceptors.UserAgentInterceptor
+import dev.nohus.rift.network.interceptors.UserAgentInterceptor.Companion.USER_AGENT_KEY
+import dev.nohus.rift.network.requests.Endpoint
+import dev.nohus.rift.network.requests.Originator
+import dev.nohus.rift.network.requests.RequestStatisticsInterceptor
 import dev.nohus.rift.repositories.TypesRepository.Type
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.kamel.core.utils.cacheControl
@@ -34,18 +41,13 @@ fun AsyncImage(
     fallbackIcon: @Composable () -> Unit = { FallbackIcon() },
     withAnimatedLoading: Boolean = true,
 ) {
-    val painter = asyncPainterResource(url) {
-        requestBuilder {
-            header("User-Agent", "RIFT (contact: developer@riftforeve.online)")
-            cacheControl(CacheControl.MAX_AGE)
-        }
-    }
+    val painter = asyncPainterResource(url)
     KamelImage(
-        resource = painter,
+        resource = { painter },
         contentDescription = null,
         contentScale = contentScale,
         onFailure = {
-            logger.error { "Failed to load AsyncImage: $url" }
+            logger.error { "Failed to load AsyncImage: $url, ${it.message}" }
             fallbackIcon()
         },
         animationSpec = if (withAnimatedLoading) tween() else null,
@@ -64,7 +66,6 @@ fun AsyncTypeIcon(
     key(type) {
         AsyncTypeIcon(
             typeId = type?.id,
-            fallbackIconId = type?.iconId,
             nameHint = type?.name,
             modifier = modifier,
         )
@@ -78,7 +79,6 @@ fun AsyncTypeIcon(
 @Composable
 fun AsyncTypeIcon(
     typeId: Int?,
-    fallbackIconId: Int? = null,
     nameHint: String? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -103,22 +103,14 @@ fun AsyncTypeIcon(
             modifier = modifier,
         )
     }
-    val fallbackIcon = @Composable {
-        AsyncImage(
-            url = "https://images.evetech.net/types/$fallbackIconId/icon",
-            modifier = modifier,
-            fallbackIcon = staticFallbackIcon,
-        )
-    }
-    val primaryFallbackIcon = if (fallbackIconId != null) fallbackIcon else staticFallbackIcon
     if (typeId != null) {
         AsyncImage(
             url = "https://images.evetech.net/types/$typeId/icon",
             modifier = modifier,
-            fallbackIcon = primaryFallbackIcon,
+            fallbackIcon = staticFallbackIcon,
         )
     } else {
-        primaryFallbackIcon()
+        staticFallbackIcon()
     }
 }
 
@@ -126,7 +118,7 @@ fun AsyncTypeIcon(
  * Shows a portrait of an EVE Online character
  */
 @Composable
-fun AsyncPlayerPortrait(
+fun AsyncCharacterPortrait(
     characterId: Int?,
     size: Int,
     modifier: Modifier = Modifier,

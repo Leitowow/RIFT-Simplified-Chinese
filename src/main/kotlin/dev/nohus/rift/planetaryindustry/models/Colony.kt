@@ -1,6 +1,6 @@
 package dev.nohus.rift.planetaryindustry.models
 
-import dev.nohus.rift.network.esi.PlanetType
+import dev.nohus.rift.network.esi.models.PlanetType
 import dev.nohus.rift.repositories.PlanetsRepository.Planet
 import dev.nohus.rift.repositories.SolarSystemsRepository.MapSolarSystem
 import dev.nohus.rift.repositories.TypesRepository.Type
@@ -20,6 +20,7 @@ data class Colony(
     val pins: List<Pin>,
     val routes: List<Route>,
     val status: ColonyStatus,
+    val overview: ColonyOverview,
 ) {
     fun clone(): Colony {
         return copy(
@@ -47,7 +48,9 @@ data class Route(
 )
 
 enum class RoutedState {
-    Routed, InputNotRouted, OutputNotRouted
+    Routed,
+    InputNotRouted,
+    OutputNotRouted,
 }
 
 data class Link(

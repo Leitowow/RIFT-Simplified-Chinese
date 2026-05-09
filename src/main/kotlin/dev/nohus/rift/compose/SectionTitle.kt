@@ -22,7 +22,7 @@ fun SectionTitle(
     ) {
         Text(
             text = title,
-            style = RiftTheme.typography.titlePrimary,
+            style = RiftTheme.typography.headerPrimary,
             modifier = Modifier.padding(horizontal = Spacing.medium, vertical = Spacing.small),
         )
     }

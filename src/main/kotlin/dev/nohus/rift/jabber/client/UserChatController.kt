@@ -105,7 +105,11 @@ class UserChatController(
     }
 
     private fun onMessageReceived(from: EntityBareJid, message: Message, chat: Chat) {
-        logger.info { "Chat message from $from in ${chat.xmppAddressOfChatPartner}" }
+        if (from == chat.xmppAddressOfChatPartner) {
+            logger.info { "Direct message from $from" }
+        } else {
+            logger.info { "Chat message from $from in ${chat.xmppAddressOfChatPartner}" }
+        }
         val sender = chat.xmppAddressOfChatPartner.localpartOrNull?.toString()
         if (sender != "directorbot") {
             openConversation(chat)

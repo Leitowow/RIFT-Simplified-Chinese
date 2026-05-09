@@ -10,6 +10,7 @@ import dev.nohus.rift.intel.state.SystemEntity.Ship
 import dev.nohus.rift.intel.state.SystemEntity.UnspecifiedCharacter
 import dev.nohus.rift.killboard.KillmailProcessor.ProcessedKillmail
 import dev.nohus.rift.logs.parse.ChatMessageParser
+import dev.nohus.rift.repositories.SolarSystemsRepository.MapSolarSystem
 import dev.nohus.rift.settings.persistence.Settings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,9 +22,9 @@ import java.time.Instant
 
 @Single
 class IntelStateController(
-    private val understandMessageUseCase: UnderstandMessageUseCase,
     private val settings: Settings,
     private val alertsTriggerController: AlertsTriggerController,
+    private val intelConversationMerger: IntelConversationMerger,
 ) {
 
     data class Dated<T>(
@@ -31,9 +32,10 @@ class IntelStateController(
         val item: T,
     )
 
-    private val systemContents = mutableMapOf<String, List<Dated<SystemEntity>>>()
+    private val systemContents = mutableMapOf<MapSolarSystem, List<Dated<SystemEntity>>>()
+
     private val mutex = Mutex()
-    private val _state = MutableStateFlow<Map<String, List<Dated<SystemEntity>>>>(emptyMap())
+    private val _state = MutableStateFlow<Map<MapSolarSystem, List<Dated<SystemEntity>>>>(emptyMap())
     val state = _state.asStateFlow()
 
     private fun updateState() {
@@ -48,27 +50,26 @@ class IntelStateController(
     suspend fun submitKillmail(
         killmail: ProcessedKillmail,
     ) = mutex.withLock {
-        if (killmail.timestamp.isAfter(Instant.now() - Duration.ofMinutes(15))) {
-            killmail.victim?.let {
-                removeKilledCharacters(listOf(it.name))
-            }
-
-            val entities: List<SystemEntity> = killmail.attackers + killmail.ships + killmail.killmail
-            updateSystemEntities(killmail.timestamp, killmail.system, removeExisting = false, entities)
-
-            updateState()
+        killmail.victim?.let {
+            removeKilledCharacters(listOf(it.name))
         }
+
+        val entities: List<SystemEntity> = killmail.attackers + killmail.ships + killmail.killmail + listOfNotNull(killmail.celestial)
+        updateSystemEntities(killmail.timestamp, killmail.system, removeExisting = false, entities)
+
+        updateState()
     }
 
     suspend fun submitMessage(
         message: ParsedChannelChatMessage,
         context: List<ParsedChannelChatMessage>,
+        isFresh: Boolean,
     ) = mutex.withLock {
         if (!isIntelChannel(message.metadata.channelName)) return
 
         val timestamp = message.chatMessage.timestamp
-        val understanding = understandMessageUseCase(message.parsed)
-        if (Duration.between(timestamp, Instant.now()) < Duration.ofMinutes(2)) {
+        val understanding = intelConversationMerger.merge(message, context)
+        if (isFresh) {
             alertsTriggerController.onNewIntel(message, understanding)
             alertsTriggerController.onNewIntelMessage(message)
         }
@@ -110,14 +111,11 @@ class IntelStateController(
                 updateSystemEntities(timestamp, system, removeExisting = isSystemExplicit, entities)
                 removeMovedCharacters(system, entities.filterIsInstance<Character>())
             }
-        } else { // No system in message or context
+        } else { // No system in message or context, or this was a question
             // TODO: Could be a continuation of a previous message or answer to a question
         }
         if (understanding.kills.isNotEmpty()) {
             removeKilledCharacters(understanding.kills.map { it.name })
-        }
-        if (understanding.questions.isNotEmpty()) {
-            // TODO: Remember questions
         }
         removeEmptyEntities()
         removeEmptySystems()
@@ -131,8 +129,8 @@ class IntelStateController(
     ): List<ParsedChannelChatMessage> {
         return context.filter { previousMessage ->
             val characterIdsInPreviousMessage = previousMessage.parsed
-                .flatMap { it.types }
-                .filterIsInstance<ChatMessageParser.TokenType.Player>()
+                .map { it.type }
+                .filterIsInstance<ChatMessageParser.TokenType.Character>()
                 .map { it.characterId }
             characterIds.all { it in characterIdsInPreviousMessage }
         }
@@ -140,15 +138,15 @@ class IntelStateController(
 
     private fun findSystemInMessages(
         messages: List<ParsedChannelChatMessage>,
-    ): String? {
+    ): MapSolarSystem? {
         return messages.firstNotNullOfOrNull { message ->
-            message.parsed.flatMap { it.types }.filterIsInstance<ChatMessageParser.TokenType.System>().lastOrNull()?.name
+            message.parsed.map { it.type }.filterIsInstance<ChatMessageParser.TokenType.System>().lastOrNull()?.system
         }
     }
 
     private fun updateSystemEntities(
         timestamp: Instant,
-        system: String,
+        system: MapSolarSystem,
         removeExisting: Boolean,
         entities: List<SystemEntity>,
     ) {
@@ -167,7 +165,7 @@ class IntelStateController(
     }
 
     private fun removeSystemEntities(
-        system: String,
+        system: MapSolarSystem,
         entities: List<SystemEntity>,
     ) {
         val existingContents = systemContents[system] ?: emptyList()
@@ -175,7 +173,7 @@ class IntelStateController(
         systemContents[system] = newContents
     }
 
-    private fun updateSystemToClear(system: String) {
+    private fun updateSystemToClear(system: MapSolarSystem) {
         val existingContents = systemContents[system] ?: emptyList()
         val remainingContents = existingContents.filter { it.item !is Clearable }
         systemContents[system] = remainingContents
@@ -185,7 +183,7 @@ class IntelStateController(
      * Remove these characters from anywhere except this system, and move their ships if needed
      */
     private fun removeMovedCharacters(
-        systemTo: String,
+        systemTo: MapSolarSystem,
         characters: List<Character>,
     ) {
         if (characters.isEmpty()) return
@@ -213,13 +211,13 @@ class IntelStateController(
      * Add these ships that moved into a system with their characters, unless they are already in that system
      */
     private fun addMovedShips(
-        systemTo: String,
+        systemTo: MapSolarSystem,
         ships: List<Dated<SystemEntity>>,
     ) {
         val current = systemContents[systemTo] ?: emptyList()
-        val currentShips = current.filter { it.item is Ship }.map { (it.item as Ship).name }
+        val currentShips = current.filter { it.item is Ship }.map { (it.item as Ship).type.id }
         val missingShips = ships.filter { ship ->
-            (ship.item as Ship).name !in currentShips
+            (ship.item as Ship).type.id !in currentShips
         }
         systemContents[systemTo] = current + missingShips
     }
@@ -276,7 +274,7 @@ class IntelStateController(
             .map { (id, list) -> list.maxBy { it.timestamp } }
         val ships = entities
             .filter { it.item is Ship }
-            .groupBy { (it.item as Ship).name }
+            .groupBy { (it.item as Ship).type.id }
             .map { (id, list) -> list.maxBy { it.timestamp } }
         val killmails = entities
             .filter { it.item is Killmail }

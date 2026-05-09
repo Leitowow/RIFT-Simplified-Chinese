@@ -5,6 +5,7 @@ import dev.nohus.rift.network.Result.Failure
 import dev.nohus.rift.network.Result.Success
 import dev.nohus.rift.network.adashboardinfo.AdashboardInfoApi
 import dev.nohus.rift.network.dscaninfo.DscanInfoApi
+import dev.nohus.rift.network.requests.Originator
 import dev.nohus.rift.repositories.ShipTypesRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jsoup.Jsoup
@@ -26,7 +27,7 @@ class UnderstandRemoteDscanUseCase(
      */
     suspend operator fun invoke(tokens: List<ChatMessageParser.Token>): List<SystemEntity> {
         val urls = tokens
-            .filter { it.types.any { it is ChatMessageParser.TokenType.Url } }
+            .filter { it.type is ChatMessageParser.TokenType.Url }
             .mapNotNull { it.words.singleOrNull() }
 
         val aDashboardId = urls.firstNotNullOfOrNull {
@@ -48,12 +49,12 @@ class UnderstandRemoteDscanUseCase(
     }
 
     private suspend fun getDscanInfoScan(id: String): List<SystemEntity> {
-        return when (val response = dscanInfoApi.getScan(id)) {
+        return when (val response = dscanInfoApi.getScan(Originator.ChatLogs, id)) {
             is Success -> {
                 response.data.ships?.mapNotNull { ship ->
-                    shipTypesRepository.getShip(ship.name)?.let { name ->
+                    shipTypesRepository.getFuzzyShip(ship.name)?.let { type ->
                         SystemEntity.Ship(
-                            name = name,
+                            type = type,
                             count = ship.count,
                         )
                     }
@@ -67,7 +68,7 @@ class UnderstandRemoteDscanUseCase(
     }
 
     private suspend fun getAdashboardInfoScan(id: String): List<SystemEntity> {
-        return when (val response = adashboardInfoApi.getScan(id)) {
+        return when (val response = adashboardInfoApi.getScan(Originator.ChatLogs, id)) {
             is Success -> {
                 val document = Jsoup.parse(response.data)
                 val allShipsTitle = document.getElementsContainingOwnText("All ships").singleOrNull()
@@ -77,8 +78,8 @@ class UnderstandRemoteDscanUseCase(
                     if (elements.size == 2) {
                         val shipName = elements[0].text()
                         val count = elements[1].text().toIntOrNull() ?: return@mapNotNull null
-                        shipTypesRepository.getShip(shipName)?.let { name ->
-                            SystemEntity.Ship(name, count)
+                        shipTypesRepository.getFuzzyShip(shipName)?.let { type ->
+                            SystemEntity.Ship(type, count)
                         }
                     } else {
                         null

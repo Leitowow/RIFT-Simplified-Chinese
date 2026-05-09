@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.onClick
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerIcon
@@ -43,7 +46,6 @@ import dev.nohus.rift.compose.theme.RiftTheme
 import dev.nohus.rift.compose.theme.Spacing
 import dev.nohus.rift.generated.resources.Res
 import dev.nohus.rift.generated.resources.dropdown_chevron
-import dev.nohus.rift.generated.resources.menu_close
 import dev.nohus.rift.generated.resources.window_buttonglow
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -53,6 +55,7 @@ data class Tab(
     val title: String,
     val isCloseable: Boolean,
     val icon: DrawableResource? = null,
+    val badge: String? = null,
     val isNotified: Boolean = false,
     val payload: Any? = null,
 )
@@ -91,7 +94,8 @@ fun RiftTabBar(
             val tabsIntrinsicWidth = intrinsicSizePlaceableTabs.sumOf { it.width }
 
             val height = intrinsicSizePlaceableTabs.maxOf { it.height }
-            layout(constraints.maxWidth, height) {
+            val maxWidth = intrinsicSizePlaceableTabs.sumOf { it.width }.coerceAtMost(constraints.maxWidth)
+            layout(maxWidth, height) {
                 if (tabsIntrinsicWidth <= constraints.maxWidth) { // All tabs fit at natural size
                     var x = 0
                     intrinsicSizePlaceableTabs.forEach { placeable ->
@@ -116,9 +120,19 @@ fun RiftTabBar(
                             )
                         }
                     }.map { it.measure(constraints) }
+
+                    // May need to start at a further along tab in order for the selected tab to always be visible
+                    var firstTabIndex = 0
+                    while (true) {
+                        val tabsWidthToFitSelectedTab = overflowPlaceableTabs.drop(firstTabIndex).take(selectedTab - firstTabIndex + 1).sumOf { it.width }
+                        if (tabsWidthToFitSelectedTab <= widthForTabs) break
+                        firstTabIndex++
+                        if (firstTabIndex >= tabs.lastIndex) break
+                    }
+
                     var x = 0
                     var placedTabs = 0
-                    for (placeable in overflowPlaceableTabs) {
+                    for (placeable in overflowPlaceableTabs.drop(firstTabIndex)) {
                         if (x + placeable.width <= widthForTabs) {
                             placeable.placeRelative(x, 0)
                             x += placeable.width
@@ -129,7 +143,8 @@ fun RiftTabBar(
                     }
                     val overflowDropdownPlaceable = subcompose("overflowDropdown") {
                         TabOverflowDropdown(
-                            tabs = tabs.drop(placedTabs),
+                            tabs = tabs,
+                            selectedTab = selectedTab,
                             onTabSelected = onTabSelected,
                         )
                     }.map { it.measure(constraints) }
@@ -154,13 +169,14 @@ fun RiftTabBar(
 @Composable
 private fun TabOverflowDropdown(
     tabs: List<Tab>,
+    selectedTab: Int,
     onTabSelected: (Int) -> Unit,
 ) {
     val pointerInteractionStateHolder = remember { PointerInteractionStateHolder() }
     val transition = updateTransition(pointerInteractionStateHolder.current)
     RiftContextMenuArea(
-        items = tabs.map { tab ->
-            ContextMenuItem.TextItem(tab.title, onClick = { onTabSelected(tab.id) })
+        items = tabs.mapIndexed { index, tab ->
+            ContextMenuItem.TextItem(tab.title, isHighlighted = index == selectedTab, onClick = { onTabSelected(tab.id) })
         },
         acceptsLeftClick = true,
         modifier = Modifier
@@ -168,7 +184,7 @@ private fun TabOverflowDropdown(
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.Companion
+            modifier = Modifier
                 .pointerInteraction(pointerInteractionStateHolder)
                 .pointerHoverIcon(PointerIcon(Cursors.pointerDropdown))
                 .size(22.dp)
@@ -227,7 +243,7 @@ private fun TabBarTab(
         }
     }
     val items = if (tab.isCloseable) {
-        listOf(ContextMenuItem.TextItem("Close", Res.drawable.menu_close, onClick = { onTabClosed(tab.id) }))
+        listOf(ContextMenuItem.TextItem("Close", iconContent = { RiftMulticolorIcon(MulticolorIconType.Warning, it) }, onClick = { onTabClosed(tab.id) }))
     } else {
         emptyList()
     }
@@ -255,20 +271,38 @@ private fun TabBarTab(
                 Image(
                     painter = painterResource(tab.icon),
                     contentDescription = null,
+                    colorFilter = ColorFilter.tint(effectiveTextColor),
                     modifier = Modifier
                         .padding(horizontal = Spacing.medium)
                         .size(16.dp),
                 )
             } else {
-                Text(
-                    text = tab.title,
-                    style = RiftTheme.typography.bodyPrimary.copy(color = effectiveTextColor),
-                    overflow = TextOverflow.Ellipsis,
-                    maxLines = 1,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .modifyIf(fixedHeight == null) { padding(vertical = Spacing.medium) }
                         .padding(horizontal = Spacing.medium),
-                )
+                ) {
+                    Text(
+                        text = tab.title,
+                        style = RiftTheme.typography.bodyPrimary.copy(color = effectiveTextColor),
+                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 1,
+                    )
+                    if (tab.badge != null) {
+                        Box(
+                            modifier = Modifier
+                                .padding(start = Spacing.small)
+                                .background(RiftTheme.colors.backgroundPrimaryLight, shape = RoundedCornerShape(4.dp))
+                                .padding(horizontal = 6.dp),
+                        ) {
+                            Text(
+                                text = tab.badge,
+                                style = RiftTheme.typography.bodyPrimary,
+                            )
+                        }
+                    }
+                }
             }
             if (fixedHeight != null) Spacer(Modifier.weight(1f))
             val underlineAlpha by animateFloatAsState(if (isSelected || isNotified) 1f else 0f)

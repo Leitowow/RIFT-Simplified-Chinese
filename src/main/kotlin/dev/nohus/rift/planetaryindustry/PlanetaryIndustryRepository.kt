@@ -4,24 +4,30 @@ import dev.nohus.rift.characters.repositories.LocalCharactersRepository
 import dev.nohus.rift.location.CharacterLocationRepository
 import dev.nohus.rift.network.AsyncResource
 import dev.nohus.rift.network.esi.EsiApi
-import dev.nohus.rift.network.esi.PlanetaryPin
+import dev.nohus.rift.network.esi.models.PlanetaryPin
+import dev.nohus.rift.network.requests.Originator
 import dev.nohus.rift.planetaryindustry.models.Colony
 import dev.nohus.rift.planetaryindustry.models.Link
 import dev.nohus.rift.planetaryindustry.models.Pin
 import dev.nohus.rift.planetaryindustry.models.PinStatus
 import dev.nohus.rift.planetaryindustry.models.Route
 import dev.nohus.rift.planetaryindustry.models.Usage
+import dev.nohus.rift.planetaryindustry.models.getColonyOverview
 import dev.nohus.rift.planetaryindustry.models.getColonyStatus
 import dev.nohus.rift.planetaryindustry.models.getCpuPowerSupply
 import dev.nohus.rift.planetaryindustry.models.getCpuPowerUsage
 import dev.nohus.rift.planetaryindustry.models.getStatus
 import dev.nohus.rift.planetaryindustry.simulation.ColonySimulation
 import dev.nohus.rift.planetaryindustry.simulation.ColonySimulation.SimulationEndCondition.UntilNow
+import dev.nohus.rift.planetaryindustry.simulation.ColonySimulation.SimulationEndCondition.UntilTimestamp
 import dev.nohus.rift.planetaryindustry.simulation.ColonySimulation.SimulationEndCondition.UntilWorkEnds
-import dev.nohus.rift.repositories.GetSystemDistanceFromCharacterUseCase
+import dev.nohus.rift.repositories.GetSolarSystemChipStateUseCase
 import dev.nohus.rift.repositories.PlanetsRepository
+import dev.nohus.rift.repositories.SolarSystemChipLocation
+import dev.nohus.rift.repositories.SolarSystemChipState
 import dev.nohus.rift.repositories.SolarSystemsRepository
 import dev.nohus.rift.repositories.TypesRepository
+import dev.nohus.rift.sso.scopes.ScopeGroups
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -54,15 +60,21 @@ class PlanetaryIndustryRepository(
     private val planetsRepository: PlanetsRepository,
     private val planetaryIndustrySchematicsRepository: PlanetaryIndustrySchematicsRepository,
     private val typesRepository: TypesRepository,
-    private val getSystemDistanceFromCharacterUseCase: GetSystemDistanceFromCharacterUseCase,
     private val characterLocationRepository: CharacterLocationRepository,
+    private val getSolarSystemChipStateUseCase: GetSolarSystemChipStateUseCase,
 ) {
 
     data class ColonyItem(
         val colony: Colony,
+        val seekColony: Colony?,
         val ffwdColony: Colony,
         val characterName: String?,
-        val distance: Int?,
+        val location: SolarSystemChipState,
+    )
+
+    data class SeekingColony(
+        val colonyId: String,
+        val seekTimestamp: Instant,
     )
 
     private val _colonies = MutableStateFlow<AsyncResource<Map<String, ColonyItem>>>(AsyncResource.Loading)
@@ -73,6 +85,7 @@ class PlanetaryIndustryRepository(
     private val loadingMutex = Mutex()
     private val simulatingMutex = Mutex()
     private var isRealtime = false
+    private var seekingColony: SeekingColony? = null
 
     @OptIn(FlowPreview::class)
     suspend fun start() = coroutineScope {
@@ -113,14 +126,14 @@ class PlanetaryIndustryRepository(
             localCharactersRepository.characters.collect { characters ->
                 updateItems {
                     val character = characters.firstOrNull { it.characterId == colony.characterId }
-                    copy(characterName = character?.info?.success?.name)
+                    copy(characterName = character?.info?.name)
                 }
             }
         }
         launch {
             characterLocationRepository.locations.collect {
                 updateItems {
-                    copy(distance = getDistance(colony))
+                    copy(location = getLocation(colony))
                 }
             }
         }
@@ -141,6 +154,11 @@ class PlanetaryIndustryRepository(
         this.isRealtime = isRealtime
     }
 
+    suspend fun setSeekingColony(seekingColony: SeekingColony?) {
+        this.seekingColony = seekingColony
+        requestSimulation()
+    }
+
     private suspend fun simulateColonies() {
         simulatingMutex.withLock {
             val entries = _colonies.value.success ?: return
@@ -152,12 +170,23 @@ class PlanetaryIndustryRepository(
                         val ffwdColony = if (!colony.status.isWorking) {
                             colony // Colony is not working, nothing to fast-forward
                         } else if (item.ffwdColony.status.isWorking || item.ffwdColony.currentSimTime.isBefore(colony.currentSimTime)) {
-                            ColonySimulation(colony).simulate(UntilWorkEnds) // Fast-forwarded colony is not simulated yet
+                            // Fast-forwarded colony is not simulated yet
+                            ColonySimulation(colony).simulate(UntilWorkEnds)
                         } else {
                             item.ffwdColony // Fast-forwarded colony already simulated
                         }
 
-                        colony.id to item.copy(colony = colony, ffwdColony = ffwdColony)
+                        val seekColony = seekingColony?.let {
+                            if (item.colony.id != it.colonyId) return@let null
+                            if (item.seekColony?.currentSimTime != it.seekTimestamp) {
+                                // Seeked colony is not simulated yet
+                                ColonySimulation(colony).simulate(UntilTimestamp(it.seekTimestamp))
+                            } else {
+                                item.seekColony // Seeked colony already simulated
+                            }
+                        }
+
+                        colony.id to item.copy(colony = colony, seekColony = seekColony, ffwdColony = ffwdColony)
                     }
                 }.awaitAll().toMap()
             }
@@ -174,10 +203,10 @@ class PlanetaryIndustryRepository(
                         val existing = _colonies.value.success ?: emptyMap()
                         val updatedColonies = result.value.map { new ->
                             val old = existing[new.id]
-                            if (old != null && old.colony.checkpointSimTime >= new.checkpointSimTime) {
+                            if (old != null && old.colony.checkpointSimTime >= new.checkpointSimTime && old.characterName != null) {
                                 new.id to old
                             } else {
-                                new.id to toItem(new, new)
+                                new.id to toItem(new)
                             }
                         }.toMap()
                         _colonies.value = AsyncResource.Ready(updatedColonies)
@@ -194,13 +223,14 @@ class PlanetaryIndustryRepository(
         }
     }
 
-    private fun toItem(colony: Colony, ffwdColony: Colony): ColonyItem {
+    private fun toItem(colony: Colony): ColonyItem {
         val character = localCharactersRepository.characters.value.firstOrNull { it.characterId == colony.characterId }
         return ColonyItem(
             colony = colony,
-            ffwdColony = ffwdColony,
-            characterName = character?.info?.success?.name,
-            distance = getDistance(colony),
+            seekColony = null,
+            ffwdColony = colony,
+            characterName = character?.info?.name,
+            location = getLocation(colony),
         )
     }
 
@@ -211,25 +241,24 @@ class PlanetaryIndustryRepository(
         _colonies.update { resource }
     }
 
-    private fun getDistance(colony: Colony): Int {
-        return getSystemDistanceFromCharacterUseCase(
-            systemId = colony.system.id,
-            maxDistance = 9,
-            withJumpBridges = true,
+    private fun getLocation(colony: Colony): SolarSystemChipState {
+        return getSolarSystemChipStateUseCase(
+            location = SolarSystemChipLocation.SolarSystem(colony.system.id),
+            nameOverride = colony.planet.name,
             characterId = colony.characterId,
-        )?.distance ?: Int.MAX_VALUE
+        )
     }
 
     private suspend fun loadColonies(): AsyncResource<List<Colony>> = coroutineScope {
         val characters = localCharactersRepository.characters.value
-            .filter { it.isAuthenticated }.map { it.characterId }
+            .filter { ScopeGroups.readPlanetaryIndustryColonies in it.scopes }.map { it.characterId }
 
         val colonies = characters.map { characterId ->
-            async { esiApi.getCharactersIdPlanets(characterId) }
+            async { esiApi.getCharactersIdPlanets(Originator.PlanetaryIndustry, characterId) }
         }.awaitAll().flatMap { it.success ?: return@coroutineScope AsyncResource.Error(null) }
 
         val details = colonies.map { colony ->
-            async { colony to esiApi.getCharactersIdPlanetsId(colony.ownerId, colony.planetId) }
+            async { colony to esiApi.getCharactersIdPlanetsId(Originator.PlanetaryIndustry, colony.ownerId, colony.planetId) }
         }.awaitAll()
             .map { (colony, result) -> colony to (result.success ?: return@coroutineScope AsyncResource.Error(null)) }
 
@@ -273,6 +302,7 @@ class PlanetaryIndustryRepository(
                 pins = pins,
                 routes = routes,
                 status = getColonyStatus(pins),
+                overview = getColonyOverview(routes, pins),
             )
         }
         AsyncResource.Ready(coloniesWithDetails)

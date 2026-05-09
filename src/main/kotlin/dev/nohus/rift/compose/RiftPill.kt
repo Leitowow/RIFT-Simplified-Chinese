@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.onClick
@@ -17,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
@@ -27,11 +29,54 @@ import dev.nohus.rift.generated.resources.settings_16px
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 
+@Composable
+fun RiftPill(
+    text: String,
+    isSelected: Boolean = false,
+    onClick: () -> Unit = {},
+    onEditClick: (() -> Unit)? = null,
+    onHoverChange: (Boolean) -> Unit = {},
+    modifier: Modifier = Modifier,
+) {
+    RiftPill(
+        text = text,
+        icon = null,
+        isIconColor = false,
+        isSelected = isSelected,
+        onClick = onClick,
+        onEditClick = onEditClick,
+        onHoverChange = onHoverChange,
+        modifier = modifier,
+    )
+}
+
+@Composable
+fun RiftPill(
+    text: String,
+    icon: DrawableResource?,
+    isIconColor: Boolean,
+    isSelected: Boolean = false,
+    onClick: () -> Unit = {},
+    onEditClick: (() -> Unit)? = null,
+    onHoverChange: (Boolean) -> Unit = {},
+    modifier: Modifier = Modifier,
+) {
+    RiftPill(
+        text = text,
+        icon = { Icon(icon, isIconColor) },
+        isSelected = isSelected,
+        onClick = onClick,
+        onEditClick = onEditClick,
+        onHoverChange = onHoverChange,
+        modifier = modifier,
+    )
+}
+
 @OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
 @Composable
 fun RiftPill(
     text: String,
-    icon: DrawableResource? = null,
+    icon: @Composable () -> Unit = {},
     isSelected: Boolean = false,
     onClick: () -> Unit = {},
     onEditClick: (() -> Unit)? = null,
@@ -64,7 +109,7 @@ fun RiftPill(
                         )
                         .padding(start = Spacing.medium, top = Spacing.small, bottom = Spacing.small, end = Spacing.small),
                 ) {
-                    Icon(icon)
+                    icon()
                     Text(
                         text = text,
                         style = RiftTheme.typography.bodyPrimary,
@@ -90,6 +135,7 @@ fun RiftPill(
             }
         } else {
             Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .onClick { onClick() }
                     .hoverBackground(
@@ -99,7 +145,7 @@ fun RiftPill(
                     )
                     .padding(horizontal = Spacing.medium, vertical = Spacing.small),
             ) {
-                Icon(icon)
+                icon()
                 Text(
                     text = text,
                     style = RiftTheme.typography.bodyPrimary,
@@ -110,12 +156,14 @@ fun RiftPill(
 }
 
 @Composable
-private fun Icon(icon: DrawableResource?) {
+private fun Icon(icon: DrawableResource?, isColor: Boolean) {
     if (icon != null) {
         Image(
             painter = painterResource(icon),
             contentDescription = null,
+            colorFilter = if (isColor) null else ColorFilter.tint(RiftTheme.colors.textPrimary),
             modifier = Modifier
+                .offset(y = (-1).dp)
                 .padding(end = Spacing.small)
                 .size(16.dp),
         )

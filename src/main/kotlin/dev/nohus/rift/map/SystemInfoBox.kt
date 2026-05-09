@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -23,10 +22,13 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.movableContentOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.SpanStyle
@@ -34,11 +36,12 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import dev.nohus.rift.characters.repositories.LocalCharactersRepository
 import dev.nohus.rift.compose.AsyncAllianceLogo
+import dev.nohus.rift.compose.AsyncCharacterPortrait
 import dev.nohus.rift.compose.AsyncCorporationLogo
-import dev.nohus.rift.compose.AsyncPlayerPortrait
-import dev.nohus.rift.compose.ClickablePlayer
+import dev.nohus.rift.compose.AsyncTypeIcon
+import dev.nohus.rift.compose.ClickableCharacter
 import dev.nohus.rift.compose.IntelTimer
 import dev.nohus.rift.compose.LocalNow
 import dev.nohus.rift.compose.RiftTooltipArea
@@ -51,10 +54,13 @@ import dev.nohus.rift.compose.theme.Cursors
 import dev.nohus.rift.compose.theme.RiftTheme
 import dev.nohus.rift.compose.theme.Spacing
 import dev.nohus.rift.di.koin
+import dev.nohus.rift.dynamicportraits.DynamicCharacterPortraitParallax
 import dev.nohus.rift.generated.resources.Res
 import dev.nohus.rift.generated.resources.indicator_assets
+import dev.nohus.rift.generated.resources.indicator_asteroid_belt
 import dev.nohus.rift.generated.resources.indicator_clones
 import dev.nohus.rift.generated.resources.indicator_colony
+import dev.nohus.rift.generated.resources.indicator_ice_field
 import dev.nohus.rift.generated.resources.indicator_incursion
 import dev.nohus.rift.generated.resources.indicator_jove
 import dev.nohus.rift.generated.resources.indicator_jump_drive
@@ -65,21 +71,25 @@ import dev.nohus.rift.generated.resources.indicator_npc_kills
 import dev.nohus.rift.generated.resources.indicator_pod
 import dev.nohus.rift.generated.resources.indicator_stations
 import dev.nohus.rift.generated.resources.indicator_storm
+import dev.nohus.rift.generated.resources.indicator_wormhole
 import dev.nohus.rift.intel.state.IntelStateController.Dated
 import dev.nohus.rift.intel.state.SystemEntity
 import dev.nohus.rift.location.GetOnlineCharactersLocationUseCase
-import dev.nohus.rift.network.esi.IndustryActivity
-import dev.nohus.rift.network.esi.SovereigntySystem
+import dev.nohus.rift.network.esi.models.IndustryActivity
+import dev.nohus.rift.network.esi.models.SovereigntySystem
+import dev.nohus.rift.network.evescout.GetPublicWormholesUseCase.WormholeSize
 import dev.nohus.rift.repositories.MapStatusRepository.SolarSystemStatus
 import dev.nohus.rift.repositories.NamesRepository
 import dev.nohus.rift.repositories.RatsRepository.RatType
 import dev.nohus.rift.repositories.SolarSystemsRepository.MapSolarSystem
 import dev.nohus.rift.settings.persistence.MapSystemInfoType
+import dev.nohus.rift.sovupgrades.MapSovereigntyUpgradesController.SovereigntyUpgrade
 import dev.nohus.rift.standings.Standing
 import dev.nohus.rift.standings.StandingsRepository
 import dev.nohus.rift.standings.getSystemColor
 import dev.nohus.rift.utils.plural
 import dev.nohus.rift.utils.roundSecurity
+import dev.nohus.rift.utils.withColor
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import java.time.Duration
@@ -89,7 +99,7 @@ import java.time.Instant
 @Composable
 fun SystemInfoBox(
     system: MapSolarSystem,
-    regionName: String?,
+    isRegionNameForced: Boolean,
     isHighlightedOrHovered: Boolean,
     intel: List<Dated<SystemEntity>>?,
     hasIntelPopup: Boolean,
@@ -135,9 +145,8 @@ fun SystemInfoBox(
                                 }
                             }
                         }
-                        val systemNameStyle = RiftTheme.typography.captionBoldPrimary
-                        val highlightedSystemNameStyle =
-                            RiftTheme.typography.bodyHighlighted.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        val systemNameStyle = RiftTheme.typography.detailPrimary.copy(fontWeight = FontWeight.Bold)
+                        val highlightedSystemNameStyle = RiftTheme.typography.detailHighlighted.copy(fontWeight = FontWeight.Bold)
                         val style = if (isHighlightedOrHovered) highlightedSystemNameStyle else systemNameStyle
                         Text(
                             text = systemNameText,
@@ -150,14 +159,25 @@ fun SystemInfoBox(
                         }
                     }
 
-                    if (regionName != null) {
-                        Text(
-                            text = regionName,
-                            style = RiftTheme.typography.captionSecondary,
-                            modifier = Modifier
-                                .pointerHoverIcon(PointerIcon(Cursors.pointerInteractive))
-                                .onClick { onRegionClick() },
-                        )
+                    if (isRegionNameForced || isExpanded && MapSystemInfoType.Region in infoTypes || !isExpanded && MapSystemInfoType.Region in indicatorsInfoTypes) {
+                        systemStatus?.regionName?.let { name ->
+                            Text(
+                                text = name,
+                                style = RiftTheme.typography.detailSecondary,
+                                modifier = Modifier
+                                    .pointerHoverIcon(PointerIcon(Cursors.pointerInteractive))
+                                    .onClick { onRegionClick() },
+                            )
+                        }
+                    }
+
+                    if (isExpanded && MapSystemInfoType.Constellation in infoTypes || !isExpanded && MapSystemInfoType.Constellation in indicatorsInfoTypes) {
+                        systemStatus?.constellationName?.let { name ->
+                            Text(
+                                text = name,
+                                style = RiftTheme.typography.detailSecondary,
+                            )
+                        }
                     }
 
                     if (isExpanded) {
@@ -166,20 +186,47 @@ fun SystemInfoBox(
                             modifier = Modifier.modifyIf(intelGroups != null) { padding(bottom = 1.dp) },
                         ) {
                             SystemInfoTypes(system, infoTypes, systemStatus)
-                            onlineCharacters.forEach { onlineCharacterLocation ->
-                                ClickablePlayer(onlineCharacterLocation.id) {
+                            onlineCharacters.singleOrNull()?.let { onlineCharacterLocation ->
+                                ClickableCharacter(onlineCharacterLocation.id) {
                                     SystemEntityInfoRow(32.dp, hasBorder = false) {
-                                        AsyncPlayerPortrait(
+                                        DynamicCharacterPortraitParallax(
                                             characterId = onlineCharacterLocation.id,
-                                            size = 32,
-                                            modifier = Modifier.size(32.dp),
+                                            size = 32.dp,
+                                            enterTimestamp = null,
+                                            pointerInteractionStateHolder = null,
                                         )
                                         Text(
                                             text = onlineCharacterLocation.name,
-                                            style = RiftTheme.typography.bodyPrimary.copy(color = RiftTheme.colors.onlineGreen),
+                                            style = RiftTheme.typography.bodyPrimary.copy(color = RiftTheme.colors.successGreen),
                                             modifier = Modifier.padding(4.dp),
                                         )
                                     }
+                                }
+                            }
+                            if (onlineCharacters.size > 1) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(Spacing.small),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    onlineCharacters.forEach { onlineCharacterLocation ->
+                                        RiftTooltipArea(
+                                            text = onlineCharacterLocation.name,
+                                        ) {
+                                            ClickableCharacter(onlineCharacterLocation.id) {
+                                                DynamicCharacterPortraitParallax(
+                                                    characterId = onlineCharacterLocation.id,
+                                                    size = 32.dp,
+                                                    enterTimestamp = null,
+                                                    pointerInteractionStateHolder = null,
+                                                )
+                                            }
+                                        }
+                                    }
+                                    Text(
+                                        text = "${onlineCharacters.size} characters",
+                                        style = RiftTheme.typography.bodyPrimary.copy(color = RiftTheme.colors.successGreen),
+                                        modifier = Modifier.padding(end = 4.dp),
+                                    )
                                 }
                             }
                         }
@@ -199,7 +246,7 @@ fun SystemInfoBox(
             modifier = Modifier.padding(start = 2.dp, top = Spacing.verySmall),
         ) {
             val shownIndicatorsInfoTypes = if (isExpanded) indicatorsInfoTypes - infoTypes.toSet() else indicatorsInfoTypes
-            SystemInfoTypesIndicators(system, shownIndicatorsInfoTypes, systemStatus)
+            SystemInfoTypesIndicators(system, shownIndicatorsInfoTypes, systemStatus, isExpanded)
         }
     }
 }
@@ -207,20 +254,18 @@ fun SystemInfoBox(
 /**
  * These show when the system info box is expanded
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ColumnScope.SystemInfoTypes(
     system: MapSolarSystem,
     infoTypes: List<MapSystemInfoType>,
     systemStatus: SolarSystemStatus?,
 ) {
-    val namesRepository: NamesRepository = koin.get()
+    val namesRepository: NamesRepository = remember { koin.get() }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.small),
     ) {
         infoTypes.distinct()
-            .sortedByDescending { listOf(MapSystemInfoType.Sovereignty).indexOf(it) }
             .forEach { color ->
                 when (color) {
                     MapSystemInfoType.StarColor -> {}
@@ -252,11 +297,13 @@ private fun ColumnScope.SystemInfoTypes(
                     }
                     MapSystemInfoType.FactionWarfare -> {} // In column
                     MapSystemInfoType.Sovereignty -> {} // In column
+                    MapSystemInfoType.SovereigntyUpgrades -> {} // In column
                     MapSystemInfoType.MetaliminalStorms -> {} // In column
                     MapSystemInfoType.Planets -> {} // In column
                     MapSystemInfoType.JoveObservatories -> {
                         InfoTypeIndicator("".takeIf { system.hasJoveObservatory }, Res.drawable.indicator_jove, "Jove Observatory")
                     }
+                    MapSystemInfoType.Wormholes -> {} // In column
                     MapSystemInfoType.JumpRange -> {
                         systemStatus?.distance?.let {
                             val lightYears = String.format("%.1fly", it.distanceLy)
@@ -274,6 +321,22 @@ private fun ColumnScope.SystemInfoTypes(
                     MapSystemInfoType.Clones -> {} // In column
                     MapSystemInfoType.Standings -> {} // In system name row
                     MapSystemInfoType.RatsType -> {} // In column
+                    MapSystemInfoType.AsteroidBelts -> {
+                        InfoTypeIndicator(
+                            text = system.asteroidBeltCount.takeIf { it > 0 }?.toString(),
+                            icon = Res.drawable.indicator_asteroid_belt,
+                            tooltip = "Asteroid belt${system.asteroidBeltCount.plural}: ${system.asteroidBeltCount}",
+                        )
+                    }
+                    MapSystemInfoType.IceFields -> {
+                        InfoTypeIndicator(
+                            text = "".takeIf { system.iceFieldCount > 0 },
+                            icon = Res.drawable.indicator_ice_field,
+                            tooltip = "Ice field system",
+                        )
+                    }
+                    MapSystemInfoType.Region -> {} // With system name
+                    MapSystemInfoType.Constellation -> {} // With system name
                     MapSystemInfoType.IndustryIndexCopying -> {} // In column
                     MapSystemInfoType.IndustryIndexInvention -> {} // In column
                     MapSystemInfoType.IndustryIndexManufacturing -> {} // In column
@@ -342,6 +405,11 @@ private fun ColumnScope.SystemInfoTypes(
                         }
                     }
                 }
+                MapSystemInfoType.SovereigntyUpgrades -> {
+                    systemStatus?.sovereigntyUpgrades?.takeIf { it.isNotEmpty() }?.let {
+                        SovereigntyUpgradesIndicators(it, isExpanded = true)
+                    }
+                }
                 MapSystemInfoType.MetaliminalStorms -> {
                     systemStatus?.storms?.let {
                         it.forEach { storm ->
@@ -373,6 +441,9 @@ private fun ColumnScope.SystemInfoTypes(
                     }
                 }
                 MapSystemInfoType.JoveObservatories -> {} // In icon row
+                MapSystemInfoType.Wormholes -> {
+                    WormholesInfo(systemStatus, isFull = true)
+                }
                 MapSystemInfoType.Colonies -> {} // In icon row
                 MapSystemInfoType.Clones -> {
                     val clones = systemStatus?.clones?.takeIf { it.isNotEmpty() }
@@ -399,6 +470,10 @@ private fun ColumnScope.SystemInfoTypes(
                         )
                     }
                 }
+                MapSystemInfoType.AsteroidBelts -> {} // In icon row
+                MapSystemInfoType.IceFields -> {} // In icon row
+                MapSystemInfoType.Region -> {} // With system name
+                MapSystemInfoType.Constellation -> {} // With system name
                 MapSystemInfoType.IndustryIndexCopying -> IndustryActivityIndex(systemStatus, IndustryActivity.Copying, "Copying")
                 MapSystemInfoType.IndustryIndexInvention -> IndustryActivityIndex(systemStatus, IndustryActivity.Invention, "Invention")
                 MapSystemInfoType.IndustryIndexManufacturing -> IndustryActivityIndex(systemStatus, IndustryActivity.Manufacturing, "Manufacturing")
@@ -407,18 +482,22 @@ private fun ColumnScope.SystemInfoTypes(
                 MapSystemInfoType.IndustryIndexTimeEfficiency -> IndustryActivityIndex(systemStatus, IndustryActivity.ResearchingTimeEfficiency, "Time Efficiency")
             }
         }
+    systemStatus?.markers?.forEach { marker ->
+        InfoTypeIndicator(marker.label, marker.icon, tint = marker.color)
+    }
 }
 
 /**
  * These show when the system info box is collapsed
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SystemInfoTypesIndicators(
     system: MapSolarSystem,
     infoTypes: List<MapSystemInfoType>,
     systemStatus: SolarSystemStatus?,
+    isExpanded: Boolean,
 ) {
+    val namesRepository: NamesRepository = remember { koin.get() }
     infoTypes.distinct()
         .sortedBy { listOf(MapSystemInfoType.Incursions, MapSystemInfoType.Sovereignty).indexOf(it) }
         .forEach { color ->
@@ -459,12 +538,33 @@ private fun SystemInfoTypesIndicators(
                 MapSystemInfoType.FactionWarfare -> {}
                 MapSystemInfoType.Sovereignty -> {
                     systemStatus?.sovereignty?.let {
-                        SovereigntyLogo(it)
+                        val id = it.allianceId ?: it.factionId ?: it.corporationId
+                        if (id != null) {
+                            val name = namesRepository.getName(id) ?: "Unknown"
+                            RiftTooltipArea(
+                                text = name,
+                            ) {
+                                SovereigntyLogo(it)
+                            }
+                        }
+                    }
+                }
+                MapSystemInfoType.SovereigntyUpgrades -> {
+                    systemStatus?.sovereigntyUpgrades?.takeIf { it.isNotEmpty() }?.let {
+                        SovereigntyUpgradesIndicators(it, isExpanded = false)
                     }
                 }
                 MapSystemInfoType.MetaliminalStorms -> {
-                    systemStatus?.storms?.takeIf { it.isNotEmpty() }?.let {
-                        InfoTypeIndicator("", Res.drawable.indicator_storm)
+                    systemStatus?.storms?.takeIf { it.isNotEmpty() }?.let { storms ->
+                        InfoTypeIndicator(
+                            text = "",
+                            icon = Res.drawable.indicator_storm,
+                            tooltip = buildString {
+                                storms.forEach { storm ->
+                                    appendLine("Storm: ${storm.strength.name} ${storm.type.name}")
+                                }
+                            }.trim(),
+                        )
                     }
                 }
                 MapSystemInfoType.JumpRange ->
@@ -498,6 +598,9 @@ private fun SystemInfoTypesIndicators(
                         InfoTypeIndicator("", Res.drawable.indicator_jove)
                     }
                 }
+                MapSystemInfoType.Wormholes -> {
+                    WormholesInfo(systemStatus, isFull = false)
+                }
                 MapSystemInfoType.Colonies -> {
                     val colonies = systemStatus?.colonies?.takeIf { it > 0 }
                     if (colonies != null) {
@@ -512,6 +615,22 @@ private fun SystemInfoTypesIndicators(
                 }
                 MapSystemInfoType.Standings -> {} // In system name row
                 MapSystemInfoType.RatsType -> {}
+                MapSystemInfoType.AsteroidBelts -> {
+                    InfoTypeIndicator(
+                        text = "".takeIf { system.asteroidBeltCount > 0 },
+                        icon = Res.drawable.indicator_asteroid_belt,
+                        tooltip = "Asteroid belt${system.asteroidBeltCount.plural}: ${system.asteroidBeltCount}",
+                    )
+                }
+                MapSystemInfoType.IceFields -> {
+                    InfoTypeIndicator(
+                        text = "".takeIf { system.iceFieldCount > 0 },
+                        icon = Res.drawable.indicator_ice_field,
+                        tooltip = "Ice field system",
+                    )
+                }
+                MapSystemInfoType.Region -> {} // With system name
+                MapSystemInfoType.Constellation -> {} // With system name
                 MapSystemInfoType.IndustryIndexCopying -> IndustryActivityIndex(systemStatus, IndustryActivity.Copying, "Copying")
                 MapSystemInfoType.IndustryIndexInvention -> IndustryActivityIndex(systemStatus, IndustryActivity.Invention, "Invention")
                 MapSystemInfoType.IndustryIndexManufacturing -> IndustryActivityIndex(systemStatus, IndustryActivity.Manufacturing, "Manufacturing")
@@ -520,6 +639,83 @@ private fun SystemInfoTypesIndicators(
                 MapSystemInfoType.IndustryIndexTimeEfficiency -> IndustryActivityIndex(systemStatus, IndustryActivity.ResearchingTimeEfficiency, "Time Efficiency")
             }
         }
+    if (!isExpanded) {
+        systemStatus?.markers?.forEach { marker ->
+            InfoTypeIndicator(marker.label, marker.icon, tint = marker.color)
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun WormholesInfo(systemStatus: SolarSystemStatus?, isFull: Boolean) {
+    val wormholes = systemStatus?.wormholes ?: emptyList()
+    for (wormhole in wormholes.sortedBy { it.outRegionName == null }) {
+        val (sizeCode, size) = when (wormhole.maxShipSize) {
+            WormholeSize.Small -> "S" to "Small"
+            WormholeSize.Medium -> "M" to "Medium"
+            WormholeSize.Large -> "L" to "Large"
+            WormholeSize.XLarge -> "XL" to "Very large"
+            WormholeSize.Capital -> "C" to "Capital"
+            null -> "?" to null
+        }
+        RiftTooltipArea(
+            text = buildAnnotatedString {
+                withColor(RiftTheme.colors.textHighlighted) {
+                    append(wormhole.inType)
+                }
+                append(" wormhole")
+                if (wormhole.inType == "K162") appendLine(" (${wormhole.outType})") else appendLine()
+                if (size != null) {
+                    withColor(RiftTheme.colors.textHighlighted) {
+                        append(size)
+                    }
+                    appendLine(" ships can pass through")
+                } else {
+                    appendLine("Unknown max ship size")
+                }
+                withColor(RiftTheme.colors.textHighlighted) {
+                    append(wormhole.inSignature)
+                }
+                appendLine(" in ${wormhole.inSystemName} (${wormhole.inRegionName})")
+                withColor(RiftTheme.colors.textHighlighted) {
+                    append(wormhole.outSignature)
+                }
+                append(" in ${wormhole.outSystemName}")
+                if (wormhole.outRegionName != null) {
+                    append(" (${wormhole.outRegionName})")
+                }
+            },
+        ) {
+            val mapExternalControl: MapExternalControl = remember { koin.get() }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.verySmall),
+                modifier = Modifier
+                    .pointerHoverIcon(PointerIcon(Cursors.pointerInteractive))
+                    .onClick { mapExternalControl.showSystemOnMap(wormhole.outSystemId) },
+            ) {
+                Image(
+                    painter = painterResource(Res.drawable.indicator_wormhole),
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                )
+                val text = buildString {
+                    append(wormhole.outSystemName)
+                    if (wormhole.outRegionName != null) {
+                        append(" (${wormhole.outRegionName})")
+                    }
+                    if (isFull) {
+                        append(" ${wormhole.inSignature}")
+                    }
+                }
+                Text(
+                    text = text,
+                    style = RiftTheme.typography.bodyPrimary,
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -551,6 +747,7 @@ private fun StandingsIndicator(security: Double, systemStatus: SolarSystemStatus
             Standing.Neutral -> "Neutral standing" to standing.getSystemColor()
             Standing.Good -> "Good standing" to standing.getSystemColor()
             Standing.Excellent -> "Excellent standing" to standing.getSystemColor()
+            Standing.Self, Standing.Corporation, Standing.Alliance -> "Excellent standing" to standing.getSystemColor()
         }
     }
 
@@ -576,16 +773,23 @@ private fun ClonesIndicators(clones: Map<Int, Int>, withDetails: Boolean) {
             contentDescription = null,
             modifier = Modifier.size(16.dp),
         )
-        clones?.forEach { (characterId, count) ->
+        val localCharactersRepository: LocalCharactersRepository = remember { koin.get() }
+        clones.forEach { (characterId, count) ->
+            val characterName = localCharactersRepository.characters.value
+                .find { it.characterId == characterId }
+                ?.info?.name
             RiftTooltipArea(
-                text = "$count clone${count.plural}".takeIf { withDetails },
+                text = buildString {
+                    if (characterName != null) appendLine(characterName)
+                    append("$count clone${count.plural}")
+                },
             ) {
                 Box(
                     modifier = Modifier
                         .clip(CircleShape)
                         .background(RiftTheme.colors.windowBackgroundActive.copy(alpha = 0.3f)),
                 ) {
-                    AsyncPlayerPortrait(
+                    AsyncCharacterPortrait(
                         characterId = characterId,
                         size = 32,
                         modifier = Modifier.size(16.dp),
@@ -594,11 +798,48 @@ private fun ClonesIndicators(clones: Map<Int, Int>, withDetails: Boolean) {
             }
         }
         if (withDetails) {
-            val totalCount = clones?.entries?.sumOf { it.value } ?: 0
+            val totalCount = clones.entries.sumOf { it.value }
             Text(
-                text = "$totalCount jump clone${totalCount.plural}",
+                text = "$totalCount clone${totalCount.plural}",
                 style = RiftTheme.typography.bodyPrimary,
             )
+        }
+    }
+}
+
+@Composable
+private fun SovereigntyUpgradesIndicators(upgrades: List<SovereigntyUpgrade>, isExpanded: Boolean) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.verySmall),
+    ) {
+        for ((upgrade, grouped) in upgrades.groupBy { it }) {
+            val count = grouped.size
+            RiftTooltipArea(
+                text = buildString {
+                    if (upgrade.isEffect) append("Affected by ")
+                    if (count > 1) append("${count}x ")
+                    append(upgrade.type.name)
+                },
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (count > 1) {
+                        Text(
+                            text = "${count}x ",
+                            style = RiftTheme.typography.bodyPrimary,
+                        )
+                    }
+                    val size = if (isExpanded) 32.dp else 24.dp
+                    AsyncTypeIcon(
+                        type = upgrade.type,
+                        modifier = Modifier
+                            .alpha(if (upgrade.isEffect) 0.5f else 1f)
+                            .size(size),
+                    )
+                }
+            }
         }
     }
 }
@@ -627,6 +868,7 @@ private fun InfoTypeIndicator(
     text: String?,
     icon: DrawableResource,
     tooltip: String? = null,
+    tint: Color? = null,
 ) {
     if (text == null) return
     val content = movableContentOf {
@@ -637,6 +879,7 @@ private fun InfoTypeIndicator(
             Image(
                 painter = painterResource(icon),
                 contentDescription = null,
+                colorFilter = tint?.let { ColorFilter.tint(it) },
                 modifier = Modifier.size(16.dp),
             )
             Text(
@@ -678,12 +921,12 @@ private fun Intel(
                     val entities = group.value
                     IntelTimer(
                         timestamp = group.key,
-                        style = RiftTheme.typography.captionBoldPrimary,
+                        style = RiftTheme.typography.detailBoldPrimary,
                         modifier = Modifier.align(Alignment.CenterHorizontally),
                     )
                     SystemEntities(
                         entities = entities,
-                        system = system.name,
+                        system = system,
                         rowHeight = if (isCompact) 24.dp else 32.dp,
                         isGroupingCharacters = isCompact,
                     )
@@ -706,7 +949,7 @@ fun groupIntelByTime(intel: List<Dated<SystemEntity>>): Map<Instant, List<System
     // Group entities by when they were reported, so they can be displayed with a single timer by group
     val groups = mutableMapOf<Instant, List<SystemEntity>>()
     intel.forEach { item ->
-        val group = groups.keys.firstOrNull { Duration.between(item.timestamp, it).abs() < Duration.ofSeconds(10) }
+        val group = groups.keys.firstOrNull { Duration.between(item.timestamp, it).abs() < Duration.ofSeconds(30) }
         if (group != null) {
             groups[group] = groups.getValue(group) + item.item
         } else {

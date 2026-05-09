@@ -1,5 +1,6 @@
 package dev.nohus.rift.alerts.create
 
+import dev.nohus.rift.contacts.ContactsRepository.Label
 import dev.nohus.rift.utils.sound.Sound
 
 sealed class FormQuestion(
@@ -55,6 +56,11 @@ sealed class FormQuestion(
         override val title: String,
         val placeholder: String,
         val allowEmpty: Boolean,
+        val isRegexAllowed: Boolean = false,
+    ) : FormQuestion(title)
+
+    data class ContactsLabelQuestion(
+        override val title: String,
     ) : FormQuestion(title)
 }
 
@@ -112,5 +118,10 @@ sealed interface FormAnswer {
 
     data class FreeformTextAnswer(
         val text: String,
+        val isRegex: Boolean = false,
+    ) : FormAnswer
+
+    data class ContactsLabelAnswer(
+        val labels: List<Label>,
     ) : FormAnswer
 }

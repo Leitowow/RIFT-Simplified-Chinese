@@ -15,7 +15,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
@@ -39,6 +43,7 @@ fun RiftTextField(
     onDeleteClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
+    val focusManager = LocalFocusManager.current
     BasicTextField(
         value = text,
         onValueChange = { onTextChanged(it) },
@@ -87,7 +92,15 @@ fun RiftTextField(
                 }
             }
         },
-        modifier = modifier,
+        modifier = modifier.onKeyEvent {
+            when (it.key) {
+                Key.Escape -> {
+                    focusManager.clearFocus()
+                    true
+                }
+                else -> false
+            }
+        },
     )
 }
 

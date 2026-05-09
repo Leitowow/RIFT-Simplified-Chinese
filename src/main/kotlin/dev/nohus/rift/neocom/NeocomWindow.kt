@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import dev.nohus.rift.BuildConfig
 import dev.nohus.rift.compose.PointerInteractionState
 import dev.nohus.rift.compose.PointerInteractionStateHolder
 import dev.nohus.rift.compose.RiftWindow
@@ -44,15 +45,18 @@ import dev.nohus.rift.generated.resources.window_characters
 import dev.nohus.rift.generated.resources.window_chatchannels
 import dev.nohus.rift.generated.resources.window_contacts
 import dev.nohus.rift.generated.resources.window_evemailtag
+import dev.nohus.rift.generated.resources.window_jukebox
 import dev.nohus.rift.generated.resources.window_loudspeaker_icon
 import dev.nohus.rift.generated.resources.window_map
+import dev.nohus.rift.generated.resources.window_opportunities
 import dev.nohus.rift.generated.resources.window_planets
 import dev.nohus.rift.generated.resources.window_quitgame
 import dev.nohus.rift.generated.resources.window_rift_64
 import dev.nohus.rift.generated.resources.window_satellite
 import dev.nohus.rift.generated.resources.window_settings
 import dev.nohus.rift.generated.resources.window_sovereignty
-import dev.nohus.rift.utils.viewModel
+import dev.nohus.rift.generated.resources.window_wallet
+import dev.nohus.rift.viewModel
 import dev.nohus.rift.windowing.WindowManager
 import dev.nohus.rift.windowing.WindowManager.RiftWindow
 import org.jetbrains.compose.resources.DrawableResource
@@ -74,7 +78,6 @@ fun NeocomWindow(
         icon = Res.drawable.window_rift_64,
         state = windowState,
         onCloseClick = {
-            viewModel.onClose()
             onCloseRequest()
         },
         titleBarStyle = TitleBarStyle.Small,
@@ -88,12 +91,18 @@ fun NeocomWindow(
             add(ButtonModel(icon = Res.drawable.window_bleedchannel, name = "Intel Reports", shortName = "Reports") { viewModel.onButtonClick(RiftWindow.IntelReports) })
             add(ButtonModel(icon = Res.drawable.window_characters, name = "Characters", "Chars") { viewModel.onButtonClick(RiftWindow.Characters) })
             add(ButtonModel(icon = Res.drawable.window_assets, name = "Assets") { viewModel.onButtonClick(RiftWindow.Assets) })
+            add(ButtonModel(icon = Res.drawable.window_wallet, name = "Wallets") { viewModel.onButtonClick(RiftWindow.Wallet) })
             add(ButtonModel(icon = Res.drawable.window_planets, name = "Planetary Industry", "Planets") { viewModel.onButtonClick(RiftWindow.PlanetaryIndustry) })
+            add(ButtonModel(icon = Res.drawable.window_opportunities, name = "Opportunities") { viewModel.onButtonClick(RiftWindow.Opportunities) })
             add(ButtonModel(icon = Res.drawable.window_contacts, name = "Contacts") { viewModel.onButtonClick(RiftWindow.Contacts) })
+            if (BuildConfig.isDevEnvironment) {
+                add(ButtonModel(icon = Res.drawable.window_chatchannels, name = "Chat") { viewModel.onButtonClick(RiftWindow.Chat) })
+            }
             if (state.isJabberEnabled) {
                 add(ButtonModel(icon = Res.drawable.window_sovereignty, name = "Pings") { viewModel.onButtonClick(RiftWindow.Pings) })
                 add(ButtonModel(icon = Res.drawable.window_chatchannels, name = "Jabber") { viewModel.onButtonClick(RiftWindow.Jabber) })
             }
+            add(ButtonModel(icon = Res.drawable.window_jukebox, name = "Jukebox") { viewModel.onButtonClick(RiftWindow.Jukebox) })
             add(ButtonModel(icon = Res.drawable.window_settings, name = "Settings") { viewModel.onButtonClick(RiftWindow.Settings) })
             add(ButtonModel(icon = Res.drawable.window_evemailtag, name = "About") { viewModel.onButtonClick(RiftWindow.About) })
             add(ButtonModel(icon = Res.drawable.window_quitgame, name = "Quit") { viewModel.onQuitClick() })
@@ -184,7 +193,7 @@ private fun NeocomRowButton(
         }
         BoxWithConstraints {
             val textMeasurer = rememberTextMeasurer()
-            val style = RiftTheme.typography.titlePrimary.copy(color = textColor)
+            val style = RiftTheme.typography.headerPrimary.copy(color = textColor)
             val measured = textMeasurer.measure(name, style)
             if (measured.size.width > constraints.maxWidth) {
                 Text(

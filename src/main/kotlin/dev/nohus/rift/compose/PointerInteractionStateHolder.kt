@@ -31,9 +31,10 @@ import java.time.Instant
 class PointerInteractionStateHolder {
     var isHovered by mutableStateOf(false)
     var isPressed by mutableStateOf(false)
+    var isSelected by mutableStateOf(false)
     val current
         @Composable get() = when {
-            isPressed -> PointerInteractionState.Press
+            isPressed || isSelected -> PointerInteractionState.Press
             isHovered -> PointerInteractionState.Hover
             else -> PointerInteractionState.Normal
         }
@@ -43,7 +44,9 @@ class PointerInteractionStateHolder {
 fun rememberPointerInteractionStateHolder() = remember { PointerInteractionStateHolder() }
 
 enum class PointerInteractionState {
-    Normal, Hover, Press
+    Normal,
+    Hover,
+    Press,
 }
 
 private val IGNORE_HOVER_ON_LOST_FOCUS_DURATION = Duration.ofMillis(100)
@@ -91,8 +94,10 @@ fun Modifier.hoverBackground(
     normalColor: Color? = null,
     shape: Shape = RectangleShape,
     pointerInteractionStateHolder: PointerInteractionStateHolder? = null,
+    isSelected: Boolean = false,
 ): Modifier = composed {
     val pointerInteractionStateHolder = pointerInteractionStateHolder ?: remember { PointerInteractionStateHolder() }
+    pointerInteractionStateHolder.isSelected = isSelected
     val colorTransitionSpec = getStandardTransitionSpec<Color>()
     val floatTransitionSpec = getStandardTransitionSpec<Float>()
     val transition = updateTransition(pointerInteractionStateHolder.current)
@@ -105,9 +110,9 @@ fun Modifier.hoverBackground(
     }
     val highlightAlpha by transition.animateFloat(floatTransitionSpec) {
         when (it) {
-            PointerInteractionState.Normal -> if (normalColor == null) 0f else 1f
-            PointerInteractionState.Hover -> 1f
-            PointerInteractionState.Press -> 1f
+            PointerInteractionState.Normal -> normalColor?.alpha ?: 0f
+            PointerInteractionState.Hover -> (hoverColor ?: RiftTheme.colors.backgroundHovered).alpha
+            PointerInteractionState.Press -> (pressColor ?: RiftTheme.colors.backgroundSelected).alpha
         }
     }
     return@composed this

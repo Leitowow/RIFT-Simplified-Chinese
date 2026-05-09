@@ -22,11 +22,11 @@ class PushNotificationController(
     private val settings: Settings,
 ) {
 
-    suspend fun sendPushNotification(title: String, message: String) {
+    suspend fun sendPushNotification(title: String, message: String, iconUrl: String?) {
         var wasAttempted = false
         if (settings.ntfy.topic != null) {
             wasAttempted = true
-            sendNtfyNotification(title, message).map { }
+            sendNtfyNotification(title, message, iconUrl).map { }
         }
         if (settings.pushover.apiToken != null && settings.pushover.userKey != null) {
             wasAttempted = true
@@ -40,6 +40,7 @@ class PushNotificationController(
     suspend fun sendNtfyNotification(
         title: String,
         message: String,
+        iconUrl: String?,
     ): Result<Unit> {
         val topic = settings.ntfy.topic
         if (topic == null) {
@@ -52,7 +53,7 @@ class PushNotificationController(
                     topic = topic,
                     title = title,
                     message = message,
-                    icon = "https://riftforeve.online/download/icon.png",
+                    icon = iconUrl ?: "https://riftforeve.online/download/icon.png",
                 ),
             ).also {
                 if (it.isSuccess) {

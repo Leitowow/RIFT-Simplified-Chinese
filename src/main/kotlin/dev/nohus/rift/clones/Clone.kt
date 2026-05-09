@@ -6,7 +6,9 @@ import dev.nohus.rift.repositories.TypesRepository.Type
 
 data class Clone(
     val id: Int,
+    val characterId: Int,
     val implants: List<Type>,
+    val solarSystemId: Int?,
     val station: Station?,
     val structure: Structure?,
     val isActive: Boolean,

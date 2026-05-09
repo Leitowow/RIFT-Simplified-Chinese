@@ -14,7 +14,7 @@ class MacDirectories : OperatingSystemDirectories {
         return getUserDirectory().resolve("Library/Preferences/$applicationName").also { it.createDirectories() }
     }
 
-    override fun getCacheDirectory(applicationName: String): Path {
+    override fun getAppCacheDirectory(applicationName: String): Path {
         return getUserDirectory().resolve("Library/Caches/$applicationName").also { it.createDirectories() }
     }
 }

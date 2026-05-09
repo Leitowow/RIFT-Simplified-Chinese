@@ -4,7 +4,6 @@ import dev.nohus.rift.ViewModel
 import dev.nohus.rift.characters.repositories.OnlineCharactersRepository
 import dev.nohus.rift.intel.ChatLogWatcher
 import dev.nohus.rift.intel.ParsedChannelChatMessage
-import dev.nohus.rift.intel.reports.settings.IntelReportsSettings
 import dev.nohus.rift.intel.state.AlertTriggeringMessagesRepository
 import dev.nohus.rift.intel.state.AlertTriggeringMessagesRepository.AlertTriggeringMessage
 import dev.nohus.rift.logs.parse.ChatMessageParser
@@ -15,9 +14,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.koin.core.annotation.Single
+import org.koin.core.annotation.Factory
 
-@Single
+@Factory
 class IntelReportsViewModel(
     private val logWatcher: ChatLogWatcher,
     private val settings: Settings,
@@ -69,6 +68,27 @@ class IntelReportsViewModel(
         }
     }
 
+    fun onIsUsingCompactModeChange(enabled: Boolean) {
+        settings.intelReports = settings.intelReports.copy(isUsingCompactMode = enabled)
+    }
+
+    fun onIsUsingReverseOrderChange(enabled: Boolean) {
+        settings.intelReports = settings.intelReports.copy(isUsingReverseOrder = enabled)
+        updateFilteredMessages()
+    }
+
+    fun onIsShowingReporterChange(enabled: Boolean) {
+        settings.intelReports = settings.intelReports.copy(isShowingReporter = enabled)
+    }
+
+    fun onIsShowingChannelChange(enabled: Boolean) {
+        settings.intelReports = settings.intelReports.copy(isShowingChannel = enabled)
+    }
+
+    fun onIsShowingRegionChange(enabled: Boolean) {
+        settings.intelReports = settings.intelReports.copy(isShowingRegion = enabled)
+    }
+
     fun onIntelChannelFilterSelect(channelName: String) {
         val channel = _state.value.intelChannels.firstOrNull { it.name == channelName }
         _state.update { it.copy(filteredChannel = channel) }
@@ -90,6 +110,7 @@ class IntelReportsViewModel(
         return IntelReportsSettings(
             displayTimezone = settings.displayTimeZone,
             isUsingCompactMode = settings.intelReports.isUsingCompactMode,
+            isUsingReverseOrder = settings.intelReports.isUsingReverseOrder,
             isShowingReporter = settings.intelReports.isShowingReporter,
             isShowingChannel = settings.intelReports.isShowingChannel,
             isShowingRegion = settings.intelReports.isShowingRegion,
@@ -107,22 +128,25 @@ class IntelReportsViewModel(
                 val matchesSearchFilter = search == null || search in message
                 matchesChannelFilter && matchesSearchFilter
             }
+            .let {
+                if (settings.intelReports.isUsingReverseOrder) it.reversed() else it
+            }
     }
 
     private operator fun ParsedChannelChatMessage.contains(term: String): Boolean {
         if (term in chatMessage.message.lowercase()) return true
-        return parsed.flatMap { it.types }.any { token ->
+        return parsed.mapNotNull { it.type }.any { token ->
             when (token) {
                 is ChatMessageParser.TokenType.Count -> false
-                is ChatMessageParser.TokenType.Gate -> term in token.system.lowercase()
+                is ChatMessageParser.TokenType.Gate -> term in token.system.name.lowercase()
                 is ChatMessageParser.TokenType.Keyword -> term in token.type.name.lowercase()
                 is ChatMessageParser.TokenType.Kill -> term in token.name.lowercase() || term in token.target.lowercase()
                 ChatMessageParser.TokenType.Link -> false
-                is ChatMessageParser.TokenType.Movement -> term in token.toSystem.lowercase() || term in token.verb.lowercase()
-                is ChatMessageParser.TokenType.Player -> false
+                is ChatMessageParser.TokenType.Movement -> term in token.toSystem.name.lowercase() || term in token.verb.lowercase()
+                is ChatMessageParser.TokenType.Character -> false
                 is ChatMessageParser.TokenType.Question -> term in token.type.name.lowercase()
-                is ChatMessageParser.TokenType.Ship -> term in token.name.lowercase()
-                is ChatMessageParser.TokenType.System -> term in token.name.lowercase()
+                is ChatMessageParser.TokenType.Ship -> term in token.type.name.lowercase()
+                is ChatMessageParser.TokenType.System -> term in token.system.name.lowercase()
                 ChatMessageParser.TokenType.Url -> false
             }
         }

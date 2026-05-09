@@ -15,11 +15,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.chat2.Chat
 import org.jivesoftware.smackx.muc.MultiUserChat
 import org.jxmpp.jid.EntityBareJid
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.InjectedParam
+import java.security.cert.CertificateException
 import java.time.Instant
 
 @Factory
@@ -75,6 +77,9 @@ class JabberViewModel(
         viewModelScope.launch {
             jabberClient.state.collect { jabberState ->
                 val state = _state.value
+                if (!jabberState.isConnected && jabberState.loginResult != null) {
+                    handleLoginResult(jabberState.loginResult)
+                }
                 if (state is UiState.Connecting && jabberState.isConnected) {
                     setLoggedInState(jabberState)
                 }
@@ -94,7 +99,9 @@ class JabberViewModel(
             }
         }
         when (jabberAccountRepository.getAccount()) {
-            JabberAccountResult.NoAccount -> { _state.update { UiState.NoAccount(canImport = detectJabberAccountUseCase() != null) } }
+            JabberAccountResult.NoAccount -> {
+                _state.update { UiState.NoAccount(canImport = detectJabberAccountUseCase() != null) }
+            }
             is JabberAccountResult.JabberAccount -> if (jabberClient.state.value.isConnected) {
                 setLoggedInState(jabberClient.state.value)
             } else {
@@ -261,6 +268,10 @@ class JabberViewModel(
 
     private fun connect() = viewModelScope.launch {
         val result = startJabberUseCase()
+        handleLoginResult(result)
+    }
+
+    private fun handleLoginResult(result: LoginResult) {
         when (result) {
             LoginResult.Success -> {
                 setLoggedInState(jabberClient.state.value)
@@ -276,9 +287,19 @@ class JabberViewModel(
                 _state.update { UiState.Login(errorMessage = "Couldn't connect to the server") }
             }
             is LoginResult.Error -> {
-                _state.update { UiState.Login(errorMessage = "Couldn't connect") }
+                val cause = result.cause
+                if (cause is SmackException) {
+                    val detailsCause = cause.cause
+                    if (detailsCause is CertificateException) {
+                        _state.update { UiState.Login(errorMessage = "Secure connection failed, because the Jabber server presented an invalid certificate. This typically happens when the certificate is expired or misconfigured.\n\nCheck forums or with your corp, as the server may be undergoing maintenance.") }
+                    } else {
+                        _state.update { UiState.Login(errorMessage = "Couldn't connect") }
+                    }
+                } else {
+                    _state.update { UiState.Login(errorMessage = "Couldn't connect") }
+                }
             }
-            null -> { // No account
+            LoginResult.NoAccount -> {
                 _state.update { UiState.Login(errorMessage = null) }
             }
         }

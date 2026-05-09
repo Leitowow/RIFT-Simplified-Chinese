@@ -17,7 +17,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.koin.core.annotation.Named
 import org.koin.core.annotation.Single
@@ -71,10 +70,12 @@ class PingsRepository(
     }
 
     private suspend fun onNewPingMessage(message: UserChatController.UserMessage) {
-        val ping = parsePingUseCase(message.timestamp, message.text) ?: return
-        _pings.update { (it + ping).sortedBy { it.timestamp } }
-        alertsTriggerController.onNewJabberPing(ping)
-        save(_pings.value)
+        val pings = parsePingUseCase(message.timestamp, message.text)
+        pings.forEach { ping ->
+            _pings.update { (it + ping).sortedBy { it.timestamp } }
+            alertsTriggerController.onNewJabberPing(ping)
+            save(_pings.value)
+        }
     }
 
     private fun load(): List<PingModel> {

@@ -1,28 +1,45 @@
 package dev.nohus.rift.assets
 
 import dev.nohus.rift.ViewModel
+import dev.nohus.rift.assets.AssetsRepository.AssetBalance
+import dev.nohus.rift.assets.AssetsRepository.AssetOwner
 import dev.nohus.rift.assets.AssetsRepository.AssetWithLocation
 import dev.nohus.rift.assets.FittingController.Fitting
 import dev.nohus.rift.characters.repositories.ActiveCharacterRepository
 import dev.nohus.rift.characters.repositories.LocalCharactersRepository
 import dev.nohus.rift.characters.repositories.LocalCharactersRepository.LocalCharacter
+import dev.nohus.rift.clipboard.Clipboard
 import dev.nohus.rift.location.CharacterLocationRepository
-import dev.nohus.rift.network.esi.CharactersIdAsset
+import dev.nohus.rift.network.Result
+import dev.nohus.rift.network.requests.Originator
 import dev.nohus.rift.repositories.GetSystemDistanceUseCase
+import dev.nohus.rift.repositories.IdRanges
 import dev.nohus.rift.repositories.PricesRepository
 import dev.nohus.rift.repositories.SolarSystemsRepository
 import dev.nohus.rift.repositories.TypesRepository
 import dev.nohus.rift.repositories.TypesRepository.Type
-import dev.nohus.rift.utils.Clipboard
+import dev.nohus.rift.settings.persistence.LocationPinStatus
+import dev.nohus.rift.settings.persistence.Settings
+import dev.nohus.rift.sso.scopes.ScopeGroups
 import dev.nohus.rift.utils.openBrowser
+import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.koin.core.annotation.Single
+import kotlinx.coroutines.withContext
+import org.koin.core.annotation.Factory
 
-@Single
+private val logger = KotlinLogging.logger {}
+
+@OptIn(FlowPreview::class)
+@Factory
 class AssetsViewModel(
     private val assetsRepository: AssetsRepository,
     private val solarSystemsRepository: SolarSystemsRepository,
@@ -30,72 +47,125 @@ class AssetsViewModel(
     private val characterLocationRepository: CharacterLocationRepository,
     private val activeCharacterRepository: ActiveCharacterRepository,
     private val localCharactersRepository: LocalCharactersRepository,
-    private val typesRepository: TypesRepository,
     private val fittingController: FittingController,
     private val pricesRepository: PricesRepository,
+    private val settings: Settings,
+    private val typesRepository: TypesRepository,
 ) : ViewModel() {
 
     data class AssetLocation(
         val locationId: Long,
+        val locationTypeId: Int?,
         val security: Double?,
         val name: String,
+        val isNameAuthoritative: Boolean,
+        val customName: String?,
         val systemId: Int?,
         val distance: Int?,
     )
 
     data class Asset(
-        val asset: CharactersIdAsset,
-        val characterId: Int,
-        val type: Type?,
+        val owner: AssetOwner,
+        val type: Type,
         val name: String?,
-        val typeName: String,
+        val quantity: Int,
+        val itemId: Long,
+        val locationFlag: String,
         val children: List<Asset>,
         val price: Double? = null,
         val fitting: Fitting? = null,
     )
 
     enum class SortType {
-        Distance, Name, Count, Price
+        Distance,
+        Name,
+        Count,
+        Price,
     }
 
+    data class AssetTotals(
+        val locations: Int,
+        val items: Int,
+        val price: Double,
+        val volume: Double,
+    )
+
     data class UiState(
-        val assets: List<Pair<AssetLocation, List<Asset>>> = emptyList(),
+        val loadedData: Result<LoadedData>? = null,
+        val filters: AssetsFilters = AssetsFilters(),
         val characters: List<LocalCharacter> = emptyList(),
-        val filterCharacter: LocalCharacter? = null,
-        val search: String = "",
-        val sort: SortType = SortType.Distance,
+        val pins: Map<Long, LocationPinStatus> = emptyMap(),
         val isLoading: Boolean = false,
+        val tab: AssetsTab = AssetsTab.Owners,
+        val renameLocationDialog: RenameLocationDialog? = null,
+    )
+
+    data class RenameLocationDialog(
+        val location: AssetLocation,
+    )
+
+    data class LoadedData(
+        val assets: List<AssetWithLocation>,
+        val filteredAssets: List<Pair<AssetLocation, List<Asset>>>,
+        val balances: List<AssetBalance>,
+        val owners: List<AssetOwner>,
+        val assetTotals: AssetTotals? = null,
     )
 
     enum class FitAction {
-        Copy, CopyWithCargo, Open
+        Copy,
+        CopyWithCargo,
+        Open,
     }
 
-    private var allAssets: List<Pair<AssetLocation, List<Asset>>> = emptyList()
-    private val _state = MutableStateFlow(UiState())
+    enum class AssetsTab {
+        Owners,
+        Assets,
+    }
+
+    private val _state = MutableStateFlow(
+        UiState(
+            pins = settings.assetLocationPins,
+        ),
+    )
     val state = _state.asStateFlow()
 
     init {
         viewModelScope.launch {
+            data class UpdateParams(
+                val loadedState: Result<AssetsRepository.LoadedState>?,
+                val isLoading: Boolean,
+                val activeCharacter: Int?,
+                val characterLocations: Map<Int, CharacterLocationRepository.Location>,
+                val filters: AssetsFilters,
+            )
+
             combine(
-                characterLocationRepository.locations,
+                assetsRepository.state.map { it.loadedState },
+                assetsRepository.state.map { it.isLoading },
                 activeCharacterRepository.activeCharacter,
-                assetsRepository.assets,
-            ) { locations, activeCharacter, (assets, isLoading) ->
-                val activeCharacterLocation = locations[activeCharacter]?.solarSystemId
-                pricesRepository.refreshPrices()
-                val processedAssets = getAssetsByLocation(assets, activeCharacterLocation)
-                processedAssets to isLoading
-            }.collect { (assets, isLoading) ->
-                allAssets = assets
-                val filteredAssets = getFilteredAssets()
-                _state.value = _state.value.copy(assets = filteredAssets, isLoading = isLoading)
+                characterLocationRepository.locations,
+                _state.map { it.filters },
+            ) { loadedState, isLoading, activeCharacter, characterLocations, filters ->
+                UpdateParams(loadedState, isLoading, activeCharacter, characterLocations, filters)
             }
+                .debounce(100)
+                .collectLatest { (loadedState, isLoading, activeCharacter, characterLocations, filters) ->
+                    _state.update { it.copy(isLoading = isLoading) }
+                    updateAssets(loadedState, activeCharacter, characterLocations, filters)
+                }
         }
+
         viewModelScope.launch {
             localCharactersRepository.characters.collect { characters ->
-                _state.update { it.copy(characters = characters.filter { it.isAuthenticated }) }
+                _state.update { it.copy(characters = characters.filter { ScopeGroups.readAssets in it.scopes }) }
             }
+        }
+    }
+
+    fun onVisibilityChange(visible: Boolean) {
+        viewModelScope.launch {
+            assetsRepository.setNeedsRealtimeUpdates(visible)
         }
     }
 
@@ -105,19 +175,12 @@ class AssetsViewModel(
         }
     }
 
-    fun onCharacterSelected(character: LocalCharacter?) {
-        _state.update { it.copy(filterCharacter = character) }
-        _state.update { it.copy(assets = getFilteredAssets()) }
+    fun onTabClick(tab: AssetsTab) {
+        _state.update { it.copy(tab = tab) }
     }
 
-    fun onSortSelected(sort: SortType) {
-        _state.update { it.copy(sort = sort) }
-        _state.update { it.copy(assets = getFilteredAssets()) }
-    }
-
-    fun onSearchChange(text: String) {
-        _state.update { it.copy(search = text) }
-        _state.update { it.copy(assets = getFilteredAssets()) }
+    fun onFiltersUpdate(filters: AssetsFilters) {
+        _state.update { it.copy(filters = filters) }
     }
 
     fun onFitAction(fitting: Fitting, action: FitAction) {
@@ -128,22 +191,92 @@ class AssetsViewModel(
         }
     }
 
-    private fun getFilteredAssets(): List<Pair<AssetLocation, List<Asset>>> {
-        var filtered = allAssets
-        val characterId = _state.value.filterCharacter?.characterId
-        if (characterId != null) {
+    fun onPinChange(locationId: Long, pinStatus: LocationPinStatus) {
+        settings.assetLocationPins += locationId to pinStatus
+        _state.update { it.copy(pins = it.pins + (locationId to pinStatus)) }
+    }
+
+    fun onRenameClick(locationId: Long) {
+        val location = _state.value.loadedData?.success?.filteredAssets
+            ?.firstOrNull { it.first.locationId == locationId }?.first ?: return
+        _state.update { it.copy(renameLocationDialog = RenameLocationDialog(location)) }
+    }
+
+    fun onRenameConfirm(name: String?) {
+        val location = _state.value.renameLocationDialog?.location ?: return
+        if (!name.isNullOrBlank()) {
+            settings.assetLocationCustomNames += (location.locationId to name)
+        } else {
+            settings.assetLocationCustomNames -= location.locationId
+        }
+        _state.update { it.copy(renameLocationDialog = null) }
+    }
+
+    fun onRenameClose() {
+        _state.update { it.copy(renameLocationDialog = null) }
+    }
+
+    private suspend fun updateAssets(
+        loadedState: Result<AssetsRepository.LoadedState>?,
+        activeCharacter: Int?,
+        characterLocations: Map<Int, CharacterLocationRepository.Location>,
+        filters: AssetsFilters,
+    ) {
+        val loaded = loadedState ?: return
+        val activeCharacterSolarSystemId = characterLocations[activeCharacter]?.solarSystemId
+        val data = withContext(Dispatchers.Default) {
+            loaded.map { loaded ->
+                pricesRepository.refreshPrices(Originator.Assets)
+                val processedAssets = getAssetsByLocation(loaded.assets, activeCharacterSolarSystemId)
+                    .map { it.first to processCorporationOffices(it.second, loaded.divisionNames) }
+                val filteredAssets = getFilteredAssets(processedAssets, filters)
+                val totals = getAssetTotals(filteredAssets)
+                LoadedData(
+                    assets = loaded.assets,
+                    filteredAssets = filteredAssets,
+                    balances = loaded.balances,
+                    owners = loaded.owners,
+                    assetTotals = totals,
+                )
+            }
+        }
+        _state.update { it.copy(loadedData = data) }
+    }
+
+    private fun getAssetTotals(filteredAssets: List<Pair<AssetLocation, List<Asset>>>): AssetTotals? {
+        if (filteredAssets.isEmpty()) return null
+        val totalLocations = filteredAssets.size
+        val totalItems = filteredAssets.sumOf { (_, assets) -> assets.sumOf { asset -> asset.getTotalItems() } }
+        val totalPrice = filteredAssets.sumOf { (_, assets) -> assets.sumOf { asset -> asset.getTotalPrice() } }
+        val totalVolume = filteredAssets.sumOf { (_, assets) -> assets.sumOf { asset -> asset.getTotalVolume() } }
+        return AssetTotals(totalLocations, totalItems, totalPrice, totalVolume)
+    }
+
+    private fun getFilteredAssets(assets: List<Pair<AssetLocation, List<Asset>>>, filters: AssetsFilters): List<Pair<AssetLocation, List<Asset>>> {
+        var filtered = assets
+
+        if (filters.ownerTypes.isNotEmpty()) {
             filtered = filtered
                 .mapNotNull { (location, assets) ->
-                    val characterAssets = assets.filter { it.characterId == characterId }
+                    val characterAssets = assets.filter {
+                        filters.ownerTypes.any { ownerType ->
+                            when (ownerType) {
+                                OwnerType.Character -> it.owner is AssetOwner.Character
+                                is OwnerType.SpecificCharacter -> it.owner is AssetOwner.Character && it.owner.character.characterId == ownerType.characterId
+                                is OwnerType.SpecificCorporation -> it.owner is AssetOwner.Corporation && it.owner.corporationId == ownerType.corporationId
+                            }
+                        }
+                    }
                     if (characterAssets.isNotEmpty()) location to characterAssets else null
                 }
         }
-        val search = _state.value.search.takeIf { it.isNotBlank() }?.lowercase()
+
+        val search = filters.search?.lowercase()
         if (search != null) {
             filtered = filtered
                 .mapNotNull { (location, assets) ->
                     fun filterMatching(asset: Asset): Asset? {
-                        return if (search in (asset.name?.lowercase() ?: "") || search in asset.typeName.lowercase()) {
+                        return if (search in (asset.name?.lowercase() ?: "") || search in asset.type.name.lowercase()) {
                             asset
                         } else {
                             val matchingChildren = asset.children.mapNotNull(::filterMatching)
@@ -158,9 +291,12 @@ class AssetsViewModel(
                     if (matchingAssets.isNotEmpty()) location to matchingAssets else null
                 }
         }
-        val sorted = when (_state.value.sort) {
+        val pins = _state.value.pins
+        val sorted = when (filters.sort) {
             SortType.Distance -> filtered.sortedWith(
                 compareBy(
+                    { pins[it.first.locationId] != LocationPinStatus.Pinned },
+                    { pins[it.first.locationId] == LocationPinStatus.Hidden },
                     { it.first.systemId == null },
                     { it.first.distance ?: Int.MAX_VALUE },
                     { it.first.name },
@@ -168,30 +304,85 @@ class AssetsViewModel(
             )
             SortType.Name -> filtered.sortedWith(
                 compareBy(
+                    { pins[it.first.locationId] != LocationPinStatus.Pinned },
+                    { pins[it.first.locationId] == LocationPinStatus.Hidden },
                     { it.first.systemId == null },
                     { it.first.name },
                 ),
             )
             SortType.Count -> filtered.sortedWith(
                 compareBy(
+                    { pins[it.first.locationId] != LocationPinStatus.Pinned },
+                    { pins[it.first.locationId] == LocationPinStatus.Hidden },
                     { it.first.systemId == null },
                     { -it.second.size },
                 ),
             )
             SortType.Price -> filtered.sortedWith(
                 compareBy(
+                    { pins[it.first.locationId] != LocationPinStatus.Pinned },
+                    { pins[it.first.locationId] == LocationPinStatus.Hidden },
                     { it.first.systemId == null },
-                    { -it.second.sumOf { getTotalPrice(it) } },
+                    { -it.second.sumOf { it.getTotalPrice() } },
                 ),
             )
         }
         return sorted
     }
 
-    private fun getTotalPrice(asset: Asset): Double {
-        val price = asset.price?.let { it * asset.asset.quantity } ?: 0.0
-        val childrenPrice = asset.children.sumOf { getTotalPrice(it) }
-        return price + childrenPrice
+    private fun processCorporationOffices(assets: List<Asset>, divisionNames: Map<Int, Map<Int, String>>): List<Asset> {
+        val (deliveries, nonDeliveries) = assets.partition { it.locationFlag == "CapsuleerDeliveries" }
+
+        val processedDeliveries = deliveries.groupBy { it.owner }.entries.withIndex().map { (index, entry) ->
+            val owner = entry.key
+            val assets = entry.value
+            Asset(
+                owner = owner,
+                type = typesRepository.getTypeOrPlaceholder(IdRanges.corporationOffice),
+                name = "Capsuleer Deliveries",
+                quantity = 1,
+                itemId = 10_000_000_000_000 + index,
+                locationFlag = "CapsuleerDeliveries",
+                children = assets,
+            )
+        }
+
+        val processedOffices = nonDeliveries.flatMap { rootAsset ->
+            if (rootAsset.type.id == IdRanges.corporationOffice) {
+                rootAsset.children
+                    .groupBy { it.locationFlag }
+                    .entries
+                    .mapIndexed { index, (locationFlag, assets) ->
+                        val corporationId = (rootAsset.owner as? AssetOwner.Corporation)?.corporationId
+                        val divisionNames = divisionNames[corporationId] ?: emptyMap()
+                        var name = when (locationFlag) {
+                            "CorpSAG1" -> divisionNames[1] ?: "Corporation Hangar 1"
+                            "CorpSAG2" -> divisionNames[2] ?: "Corporation Hangar 2"
+                            "CorpSAG3" -> divisionNames[3] ?: "Corporation Hangar 3"
+                            "CorpSAG4" -> divisionNames[4] ?: "Corporation Hangar 4"
+                            "CorpSAG5" -> divisionNames[5] ?: "Corporation Hangar 5"
+                            "CorpSAG6" -> divisionNames[6] ?: "Corporation Hangar 6"
+                            "CorpSAG7" -> divisionNames[7] ?: "Corporation Hangar 7"
+                            "CorporationGoalDeliveries" -> "Projects"
+                            else -> locationFlag
+                        }
+                        if (rootAsset.locationFlag == "Impounded") {
+                            name += " (Impounded)"
+                        }
+                        rootAsset.copy(
+                            name = name,
+                            itemId = rootAsset.itemId + 20_000_000_000_000 + index,
+                            locationFlag = locationFlag,
+                            children = assets,
+                        )
+                    }
+                    .sortAssets()
+            } else {
+                listOf(rootAsset)
+            }
+        }
+
+        return processedDeliveries + processedOffices
     }
 
     private fun getAssetsByLocation(
@@ -222,33 +413,88 @@ class AssetsViewModel(
         }
         val system = systemId?.let { solarSystemsRepository.getSystem(it) }
         val distance = if (activeCharacterSolarSystem != null && systemId != null) {
-            getSystemDistanceUseCase(activeCharacterSolarSystem, systemId, 50, withJumpBridges = true)
+            getSystemDistanceUseCase(activeCharacterSolarSystem, systemId, withJumpBridges = true)
         } else {
             null
         }
+        val customName = settings.assetLocationCustomNames[location.locationId]
         return when (location) {
             is AssetsRepository.AssetLocation.Station -> {
-                AssetLocation(location.locationId, system?.security, location.name, systemId, distance)
+                AssetLocation(
+                    locationId = location.locationId,
+                    locationTypeId = location.typeId,
+                    security = system?.security,
+                    name = location.name,
+                    isNameAuthoritative = true,
+                    customName = customName,
+                    systemId = systemId,
+                    distance = distance,
+                )
             }
 
             is AssetsRepository.AssetLocation.Structure -> {
-                AssetLocation(location.locationId, system?.security, location.name, systemId, distance)
+                AssetLocation(
+                    locationId = location.locationId,
+                    locationTypeId = location.typeId,
+                    security = system?.security,
+                    name = location.name,
+                    isNameAuthoritative = true,
+                    customName = customName,
+                    systemId = systemId,
+                    distance = distance,
+                )
             }
 
             is AssetsRepository.AssetLocation.System -> {
-                AssetLocation(location.locationId, system?.security, "${system?.name}", systemId, distance)
+                AssetLocation(
+                    locationId = location.locationId,
+                    locationTypeId = null,
+                    security = system?.security,
+                    name = "${system?.name}",
+                    isNameAuthoritative = true,
+                    customName = customName,
+                    systemId = systemId,
+                    distance = distance,
+                )
             }
 
             is AssetsRepository.AssetLocation.AssetSafety -> {
-                AssetLocation(location.locationId, null, "Asset Safety", null, null)
+                AssetLocation(
+                    locationId = location.locationId,
+                    locationTypeId = null,
+                    security = null,
+                    name = "Asset Safety",
+                    isNameAuthoritative = true,
+                    customName = customName,
+                    systemId = null,
+                    distance = null,
+                )
             }
 
             is AssetsRepository.AssetLocation.Unknown -> {
-                AssetLocation(location.locationId, null, "Unknown", null, null)
+                AssetLocation(
+                    locationId = location.locationId,
+                    locationTypeId = null,
+                    security = null,
+                    name = "Unknown",
+                    isNameAuthoritative = false,
+                    customName = customName,
+                    systemId = null,
+                    distance = null,
+                )
             }
 
             is AssetsRepository.AssetLocation.CustomsOffice -> {
-                AssetLocation(location.locationId, null, "Customs Office", null, null)
+                AssetLocation(
+                    locationId = location.locationId,
+                    locationTypeId = null,
+                    security = null,
+                    name = "Customs Office / Skyhook",
+                    isNameAuthoritative = false,
+                    customName = customName,
+                    systemId = null,
+                    distance = null,
+                )
             }
         }
     }
@@ -283,15 +529,16 @@ class AssetsViewModel(
         assets: List<AssetWithLocation>,
         asset: AssetWithLocation,
     ): Asset {
-        val type = typesRepository.getType(asset.asset.typeId)
         return Asset(
-            asset = asset.asset,
-            characterId = asset.characterId,
-            type = type,
+            owner = asset.owner,
+            type = asset.type,
             name = asset.name,
-            typeName = asset.typeName,
+            quantity = asset.asset.quantity,
+            itemId = asset.asset.itemId,
+            locationFlag = asset.asset.locationFlag,
             children = getAssetTree(assets, asset.asset.itemId),
-            price = pricesRepository.getPrice(asset.asset.typeId),
+            price = pricesRepository.getPrice(asset.asset.typeId)
+                .takeIf { asset.asset.isBlueprintCopy != true },
         ).run {
             fittingController.fillFitting(this)
         }
@@ -302,8 +549,8 @@ class AssetsViewModel(
             compareBy(
                 { it.fitting == null },
                 { it.children.isEmpty() },
-                { LocationFlags.getName(it.asset.locationFlag) },
-                { it.name ?: it.typeName },
+                { LocationFlags.getName(it.locationFlag) },
+                { it.name ?: it.type.name },
             ),
         )
     }

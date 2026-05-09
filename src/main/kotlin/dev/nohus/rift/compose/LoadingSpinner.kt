@@ -49,3 +49,17 @@ fun LoadingSpinner(
         )
     }
 }
+
+@Composable
+fun LoadingSpinnerAmbient(
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier,
+    ) {
+        AnimatedImage(
+            resource = "loading.gif",
+            modifier = Modifier.size(64.dp),
+        )
+    }
+}

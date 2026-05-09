@@ -2,10 +2,14 @@ package dev.nohus.rift.map
 
 import dev.nohus.rift.characters.repositories.LocalCharactersRepository
 import dev.nohus.rift.location.CharacterLocationRepository
+import dev.nohus.rift.repositories.IdRanges
+import dev.nohus.rift.repositories.RatsRepository
+import dev.nohus.rift.repositories.RatsRepository.RatType.TriglavianCollective
 import dev.nohus.rift.repositories.SolarSystemsRepository
 import dev.nohus.rift.repositories.SolarSystemsRepository.MapSolarSystem
 import dev.nohus.rift.settings.persistence.JumpRange
 import dev.nohus.rift.settings.persistence.Settings
+import dev.nohus.rift.utils.roundSecurity
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,6 +23,7 @@ class MapJumpRangeController(
     private val localCharactersRepository: LocalCharactersRepository,
     private val solarSystemsRepository: SolarSystemsRepository,
     private val characterLocationRepository: CharacterLocationRepository,
+    private val ratsRepository: RatsRepository,
     private val settings: Settings,
 ) {
 
@@ -55,7 +60,7 @@ class MapJumpRangeController(
             localCharactersRepository.characters.collect { characters ->
                 val target = _state.value.target
                 if (target is MapJumpRangeTarget.Character) {
-                    val name = characters.find { it.characterId == target.id }?.info?.success?.name
+                    val name = characters.find { it.characterId == target.id }?.info?.name
                     if (name != null) {
                         _state.update { it.copy(target = target.copy(name = name)) }
                     }
@@ -71,7 +76,7 @@ class MapJumpRangeController(
                 MapJumpRangeTarget.System(system.name, jumpRange.fromId)
             } else {
                 val character = localCharactersRepository.characters.value.firstOrNull { it.characterId == jumpRange.fromId }
-                MapJumpRangeTarget.Character(character?.info?.success?.name ?: "${jumpRange.fromId}", jumpRange.fromId)
+                MapJumpRangeTarget.Character(character?.info?.name ?: "${jumpRange.fromId}", jumpRange.fromId)
             }
             _state.update { it.copy(target = target, distanceLy = jumpRange.distanceLy) }
         }
@@ -83,7 +88,7 @@ class MapJumpRangeController(
         if (system != null) {
             _state.update { it.copy(target = MapJumpRangeTarget.System(system.name, system.id)) }
         } else {
-            val character = localCharactersRepository.characters.value.firstOrNull { it.info.success?.name == target }
+            val character = localCharactersRepository.characters.value.firstOrNull { it.info?.name == target }
             if (character != null) {
                 _state.update { it.copy(target = MapJumpRangeTarget.Character(target, character.characterId)) }
             } else {
@@ -125,11 +130,13 @@ class MapJumpRangeController(
         }
         val lightYear = 9460000000000000.0
         val maxDistance = _state.value.distanceLy
-        val systemDistances = solarSystemsRepository.getSystems().associate {
-            val distance = fromSystem.distanceTo(it) / lightYear
-            val isInRange = distance <= maxDistance
-            it.id to SystemDistance(distance, isInRange)
-        }
+        val systemDistances = solarSystemsRepository.getSystems()
+            .filter { it.id == systemId || isSystemValidJumpTarget(it) }
+            .associate {
+                val distance = fromSystem.distanceTo(it) / lightYear
+                val isInRange = distance <= maxDistance
+                it.id to SystemDistance(distance, isInRange)
+            }
         _state.update { it.copy(systemDistances = systemDistances) }
     }
 
@@ -138,5 +145,13 @@ class MapJumpRangeController(
         val yDiff = other.y - y
         val zDiff = other.z - z
         return sqrt(xDiff * xDiff + yDiff * yDiff + zDiff * zDiff)
+    }
+
+    private fun isSystemValidJumpTarget(system: MapSolarSystem): Boolean {
+        if (system.security.roundSecurity() >= 0.5) return false
+        if (ratsRepository.getRats(system.id) == TriglavianCollective) return false
+        if (IdRanges.isZarzakh(system.id)) return false
+        if (IdRanges.isJoveRegion(system.regionId)) return false
+        return true
     }
 }

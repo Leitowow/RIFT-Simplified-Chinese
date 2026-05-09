@@ -22,14 +22,19 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.nohus.rift.compose.theme.RiftTheme
+import dev.nohus.rift.map.DistanceMapController
 import dev.nohus.rift.map.DoubleOffset
 import dev.nohus.rift.map.MapLayoutRepository
 import dev.nohus.rift.map.MapViewModel.Cluster
 import dev.nohus.rift.map.MapViewModel.MapType
+import dev.nohus.rift.map.MapViewModel.MapType.ClusterRegionsMap
+import dev.nohus.rift.map.MapViewModel.MapType.ClusterSystemsMap
+import dev.nohus.rift.map.MapViewModel.MapType.DistanceMap
 import dev.nohus.rift.map.MapViewModel.MapType.RegionMap
 import dev.nohus.rift.map.MapViewModel.VoronoiLayout
 import dev.nohus.rift.map.SOLAR_SYSTEM_NODE_BACKGROUND_CIRCLE_MAX_SCALE
 import dev.nohus.rift.map.systemcolor.SystemColorStrategy
+import dev.nohus.rift.repositories.IdRanges
 import dev.nohus.rift.repositories.MapGateConnectionsRepository
 import dev.nohus.rift.repositories.MapGateConnectionsRepository.GateConnection
 import dev.nohus.rift.repositories.SolarSystemsRepository.MapRegion
@@ -52,14 +57,17 @@ class SystemsMapPainter(
 
     private lateinit var textMeasurer: TextMeasurer
     private lateinit var regionNameStyle: TextStyle
+    private lateinit var jumpBandsStyle: TextStyle
+    private lateinit var jumpBandsSmallStyle: TextStyle
     private var mapBackground: Color = Color.Unspecified
     private var nodeSafeZoneFraction: Float = 0f
+    private var nodeSafeZoneFraction2D: Float = 0f
     private var cellGradientRadius: Float = 0f
     private var maxCellScale: Float = 0f
     private var density: Float = 1f
     private val systemsIdsInLayout = layout.keys
     private val systemsInLayout = cluster.systems.filter {
-        it.id in systemsIdsInLayout
+        it.id in systemsIdsInLayout && (isJumpBridgeNetworkShown || it.id !in jumpBridgeAdditionalSystems)
     }
     private val systemsWithGateConnections = systemsIdsInLayout - jumpBridgeAdditionalSystems
     private val connectionsInLayout = cluster.connections.filter {
@@ -80,36 +88,75 @@ class SystemsMapPainter(
     @Composable
     override fun initializeComposed() {
         textMeasurer = rememberTextMeasurer()
-        regionNameStyle = RiftTheme.typography.captionPrimary.copy(letterSpacing = 3.sp)
+        regionNameStyle = RiftTheme.typography.detailPrimary.copy(letterSpacing = 3.sp)
+        jumpBandsStyle = RiftTheme.typography.bodyPrimary.copy(fontSize = 24.sp)
+        jumpBandsSmallStyle = RiftTheme.typography.bodyPrimary.copy(fontSize = 16.sp)
         mapBackground = RiftTheme.colors.mapBackground
         maxCellScale = 6f / LocalDensity.current.density
         density = LocalDensity.current.density
-        val nodeSafeZoneRadius = if (mapType is RegionMap) {
-            LocalDensity.current.run { 20.dp.toPx() }
-        } else {
-            LocalDensity.current.run { 5.dp.toPx() }
+        val nodeSafeZoneRadius = when (mapType) {
+            ClusterRegionsMap -> throw IllegalStateException("ClusterRegionsMap doesn't draw systems")
+            is ClusterSystemsMap -> LocalDensity.current.run { 5.dp.toPx() }
+            is DistanceMap -> LocalDensity.current.run { 20.dp.toPx() }
+            is RegionMap -> LocalDensity.current.run { 20.dp.toPx() }
         }
         cellGradientRadius = LocalDensity.current.run { 100.dp.toPx() }
         nodeSafeZoneFraction = nodeSafeZoneRadius / (cellGradientRadius / (SOLAR_SYSTEM_NODE_BACKGROUND_CIRCLE_MAX_SCALE / LocalDensity.current.density))
+        nodeSafeZoneFraction2D = nodeSafeZoneRadius / ((cellGradientRadius * 0.25f) / (SOLAR_SYSTEM_NODE_BACKGROUND_CIRCLE_MAX_SCALE / LocalDensity.current.density))
     }
 
     override fun drawStatic(
         scope: DrawScope,
         center: DoubleOffset,
         scale: Float,
-        zoom: Float,
         systemColorStrategy: SystemColorStrategy,
         cellColorStrategy: SystemColorStrategy?,
+        jumpBands: Int,
     ) = with(scope) {
         drawCache.updateScale(scale)
         if (cellColorStrategy != null && scale <= maxCellScale) {
             systemsInLayout.forEach { system ->
-                drawSystemCell(system, center, scale, cellColorStrategy)
+                val is2D = mapType is ClusterSystemsMap && mapType.is2D
+                drawSystemCell(system, is2D, center, scale, cellColorStrategy)
             }
         }
-        if (mapType is MapType.ClusterSystemsMap) {
+        if (mapType is ClusterSystemsMap) {
             systemsInLayout.forEach { system ->
-                drawSystem(system, center, scale, zoom, systemColorStrategy)
+                drawSystem(system, mapType.is2D, center, scale, systemColorStrategy)
+            }
+        }
+        if (mapType is DistanceMap) {
+            val jumpBandSize = DistanceMapController.SYSTEM_DISTANCE
+            repeat(jumpBands + 1) {
+                val y = jumpBandSize * (it - 1) + (jumpBandSize / 2)
+                val centerCoordinate = getCanvasCoordinates(0, y, center, scale)
+                val textCoordinate = getCanvasCoordinates(0, y + (jumpBandSize / 2), center, scale)
+                drawLine(
+                    color = Color.White,
+                    start = Offset(0f, centerCoordinate.y),
+                    end = Offset(size.width, centerCoordinate.y),
+                    strokeWidth = 3f / scale,
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(3f / scale, 3f / scale)),
+                    alpha = 0.2f,
+                )
+
+                if (it < jumpBands) {
+                    val text = "$it"
+                    val style = if (scale < 1.5) jumpBandsStyle else jumpBandsSmallStyle
+                    val textLayoutResult = textMeasurer.measure(text, style)
+                    drawText(
+                        textLayoutResult = textLayoutResult,
+                        color = Color.White,
+                        topLeft = Offset(10f, textCoordinate.y - textLayoutResult.size.height / 2),
+                        alpha = 1f,
+                    )
+                    drawText(
+                        textLayoutResult = textLayoutResult,
+                        color = Color.White,
+                        topLeft = Offset(size.width - textLayoutResult.size.width - 10f, textCoordinate.y - textLayoutResult.size.height / 2),
+                        alpha = 1f,
+                    )
+                }
             }
         }
     }
@@ -131,15 +178,16 @@ class SystemsMapPainter(
                 drawJumpBridgeConnection(connection, mapType, center, scale, zoom, animationPercentage, systemColorStrategy)
             }
         }
-        if (mapType is MapType.ClusterSystemsMap) {
-            cluster.regions.forEach { region ->
-                drawRegion(region, center, scale)
+        if (mapType is ClusterSystemsMap) {
+            cluster.regions.filter { it.id in IdRanges.knownSpaceRegion }.forEach { region ->
+                drawRegion(region, mapType.is2D, center, scale)
             }
         }
     }
 
     private fun DrawScope.drawSystemCell(
         system: MapSolarSystem,
+        is2D: Boolean,
         center: DoubleOffset,
         scale: Float,
         cellColorStrategy: SystemColorStrategy?,
@@ -158,7 +206,7 @@ class SystemsMapPainter(
             val alphaModifier = (maxCellScale - scale).coerceIn(0f, 1f)
             val brush = drawCache.getSystemCellGradient(
                 cellColor,
-                nodeSafeZoneFraction,
+                if (is2D) nodeSafeZoneFraction2D else nodeSafeZoneFraction,
                 cellGradientRadius,
                 alphaModifier,
                 scale,
@@ -174,10 +222,20 @@ class SystemsMapPainter(
 
     private fun DrawScope.drawRegion(
         region: MapRegion,
+        is2D: Boolean,
         center: DoubleOffset,
         scale: Float,
     ) {
-        val position = MapLayoutRepository.transformNewEdenCoordinate(region.x, region.z)
+        val position = if (is2D) {
+            val lightYear = 9460000000000000.0
+            val maxZoomOffset = 4 * lightYear
+            val zoomOffsetPercent = (scale / 10.0).coerceIn(0.0..1.0)
+            val zoomOffset = maxZoomOffset * zoomOffsetPercent
+            // The offset makes the region labels move above the regions when zooming out
+            MapLayoutRepository.transformNewEdenCoordinate2D(region.x2d ?: 0.0, (region.y2d ?: 0.0) + zoomOffset)
+        } else {
+            MapLayoutRepository.transformNewEdenCoordinate3D(region.x, region.z)
+        }
         val offset = getCanvasCoordinates(position.x, position.y, center, scale)
         if (isOnCanvas(offset, 100)) {
             val textLayout = textMeasurer.measure(region.name.uppercase(), style = regionNameStyle, softWrap = false)
@@ -188,12 +246,16 @@ class SystemsMapPainter(
 
     private fun DrawScope.drawSystem(
         system: MapSolarSystem,
+        is2D: Boolean,
         center: DoubleOffset,
         scale: Float,
-        zoom: Float,
         systemColorStrategy: SystemColorStrategy,
     ) {
-        val position = MapLayoutRepository.transformNewEdenCoordinate(system.x, system.z)
+        val position = if (is2D) {
+            MapLayoutRepository.transformNewEdenCoordinate2D(system.x2d ?: 0.0, (system.y2d ?: 0.0))
+        } else {
+            MapLayoutRepository.transformNewEdenCoordinate3D(system.x, system.z)
+        }
         val offset = getCanvasCoordinates(position.x, position.y, center, scale)
         if (isOnCanvas(offset, 100)) {
             val systemColor = systemColorStrategy.getActiveColor(system.id)
@@ -201,7 +263,6 @@ class SystemsMapPainter(
             val brush = drawCache.getSystemRadialGradient(systemColor, radius)
             translate(offset.x, offset.y) {
                 drawCircle(brush, radius = radius, center = Offset.Zero)
-                drawCircle(systemColor, radius = (0.2f * density * zoom / 2), center = Offset.Zero)
             }
         }
     }
@@ -222,7 +283,13 @@ class SystemsMapPainter(
         val deltaOffset = to - from
 
         val autopilotPathEffect = getAutopilotPathEffect(connection.from.id, connection.to.id, animation, zoom)
-        if (connection.type == MapGateConnectionsRepository.ConnectionType.Region || scale < 4 || mapType is RegionMap) {
+        val isDrawingConnection = when (mapType) {
+            ClusterRegionsMap -> throw IllegalStateException("ClusterRegionsMap doesn't draw systems")
+            is ClusterSystemsMap -> connection.type == MapGateConnectionsRepository.ConnectionType.Region || scale < 4
+            is DistanceMap -> true
+            is RegionMap -> true
+        }
+        if (isDrawingConnection) {
             translate(from.x, from.y) {
                 val width = (1f / scale).coerceAtMost(2f) * density
                 if (autopilotPathEffect != null) {
@@ -244,7 +311,12 @@ class SystemsMapPainter(
                         pathEffect = autopilotPathEffect,
                     )
                 } else {
-                    val (fromColor, toColor) = if (mapType is RegionMap || scale < 0.5) {
+                    val isActiveColor = when (mapType) {
+                        ClusterRegionsMap -> throw IllegalStateException("ClusterRegionsMap doesn't draw systems")
+                        is ClusterSystemsMap -> if (mapType.is2D) scale <= 0.8 else scale <= 0.5
+                        is DistanceMap, is RegionMap -> true
+                    }
+                    val (fromColor, toColor) = if (isActiveColor) {
                         systemColorStrategy.getActiveColor(connection.from.id) to
                             systemColorStrategy.getActiveColor(connection.to.id)
                     } else {
@@ -316,7 +388,12 @@ class SystemsMapPainter(
         } else {
             val alphaModifier = jumpBridgeNetworkOpacity / 100f
             val toColorFilter: Color.(isBidirectional: Boolean) -> Color = { if (it) this else this.copy(alpha = 0.1f) }
-            val colors = if (mapType is RegionMap || scale < 0.5) {
+            val isActiveColor = when (mapType) {
+                ClusterRegionsMap -> throw IllegalStateException("ClusterRegionsMap doesn't draw systems")
+                is ClusterSystemsMap -> if (mapType.is2D) scale <= 0.8 else scale <= 0.5
+                is DistanceMap, is RegionMap -> true
+            }
+            val colors = if (isActiveColor) {
                 val fromColor = systemColorStrategy.getActiveColor(connection.from.id)
                 val toColor = systemColorStrategy.getActiveColor(connection.to.id)
                 val bridgeColor = Color(0xFF75D25A)

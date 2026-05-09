@@ -2,11 +2,13 @@ package dev.nohus.rift.compose
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.PointerMatcher
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,10 +21,13 @@ import androidx.compose.foundation.onClick
 import androidx.compose.material.Divider
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -32,6 +37,7 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.positionInRoot
@@ -42,16 +48,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import androidx.compose.ui.window.Popup
 import dev.nohus.rift.compose.theme.Cursors
+import dev.nohus.rift.compose.theme.LocalRiftColors
 import dev.nohus.rift.compose.theme.RiftTheme
 import dev.nohus.rift.compose.theme.Spacing
+import dev.nohus.rift.compose.theme.getRiftColors
 import dev.nohus.rift.di.koin
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import java.util.UUID
 
 private var openContextMenuId by mutableStateOf<String?>(null)
 
-@OptIn(ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun RiftContextMenuArea(
     items: List<ContextMenuItem>,
@@ -76,10 +87,20 @@ fun RiftContextMenuArea(
     var areaOffset by remember { mutableStateOf(IntOffset.Zero) }
     var offset by remember { mutableStateOf(IntOffset.Zero) }
     val density = LocalDensity.current
+    val scope = rememberCoroutineScope()
     Box(
         modifier = modifier
             .onPlaced {
-                areaOffset = it.positionInRoot().let { IntOffset(it.x.toInt(), it.y.toInt()) }
+                if (it.isAttached) {
+                    areaOffset = it.positionInRoot().let { IntOffset(it.x.toInt(), it.y.toInt()) }
+                }
+            }
+            .modifyIf(acceptsLeftClick) {
+                pointerInput(Unit) {
+                    // We only consume left-click events without any action because the Release event handles them already.
+                    // This is only to stop the left click from propagating to other consumers behind
+                    detectTapGestures {}
+                }
             }
             .onPointerEvent(PointerEventType.Release) { event ->
                 val awtEvent = event.awtEventOrNull ?: return@onPointerEvent
@@ -87,8 +108,16 @@ fun RiftContextMenuArea(
                     with(density) {
                         offset = IntOffset((awtEvent.x / scale).dp.roundToPx(), (awtEvent.y / scale).dp.roundToPx()) - areaOffset
                     }
-                    isMenuShown = true
                     openContextMenuId = contextMenuId
+
+                    scope.launch {
+                        delay(5)
+                        if (openContextMenuId != contextMenuId) {
+                            // Another menu had taken over. This is to allow for nested menu areas to take priority.
+                            return@launch
+                        }
+                        isMenuShown = true
+                    }
                 }
             },
     ) {
@@ -108,7 +137,7 @@ fun RiftContextMenuArea(
 }
 
 /**
- * Manually shown version (for the map)
+ * Manually shown version (for the map and text links)
  */
 @Composable
 fun RiftContextMenuPopup(
@@ -116,10 +145,24 @@ fun RiftContextMenuPopup(
     offset: IntOffset,
     onDismissRequest: () -> Unit,
 ) {
+    val contextMenuId = remember { UUID.randomUUID().toString() }
+    DisposableEffect(Unit) {
+        openContextMenuId = contextMenuId
+        onDispose {
+            if (openContextMenuId == contextMenuId) {
+                openContextMenuId = null
+            }
+        }
+    }
     RiftContextMenuPopup(
         isExpanded = true,
         offset = offset,
-        onDismissRequest = onDismissRequest,
+        onDismissRequest = {
+            if (openContextMenuId == contextMenuId) {
+                openContextMenuId = null
+            }
+            onDismissRequest()
+        },
         items = items,
     )
 }
@@ -136,26 +179,45 @@ private fun RiftContextMenuPopup(
             offset = offset,
             onDismissRequest = onDismissRequest,
         ) {
-            Column(
-                modifier = Modifier
-                    .pointerHoverIcon(PointerIcon(Cursors.pointer))
-                    .width(IntrinsicSize.Max)
-                    .background(RiftTheme.colors.windowBackgroundActive)
-                    .border(1.dp, RiftTheme.colors.divider)
-                    .padding(1.dp)
-                    .padding(vertical = 7.dp),
-            ) {
-                val hasIconSpace = items.any { it is ContextMenuItem.TextItem && it.iconResource != null || it is ContextMenuItem.CheckboxItem || it is ContextMenuItem.RadioItem }
-                for (item in items) {
-                    when (item) {
-                        is ContextMenuItem.TextItem -> ContextMenuRow(item.text, item.iconResource, hasIconSpace, null) {
-                            onDismissRequest()
-                            item.onClick()
+            CompositionLocalProvider(LocalRiftColors provides getRiftColors(isTransparent = false)) {
+                ScrollbarColumn(
+                    isScrollbarConditional = true,
+                    contentPadding = PaddingValues(vertical = 7.dp),
+                    modifier = Modifier
+                        .pointerHoverIcon(PointerIcon(Cursors.pointer))
+                        .width(IntrinsicSize.Max)
+                        .background(RiftTheme.colors.windowBackgroundActive)
+                        .border(1.dp, RiftTheme.colors.divider)
+                        .padding(1.dp),
+                ) {
+                    val hasIconSpace = items.any { it is ContextMenuItem.TextItem && it.iconResource != null || it is ContextMenuItem.CheckboxItem || it is ContextMenuItem.RadioItem }
+                    for (item in items) {
+                        when (item) {
+                            is ContextMenuItem.TextItem -> ContextMenuRow(item.text, item.iconResource, item.iconContent, hasIconSpace, isSelected = null, isHighlighted = item.isHighlighted) {
+                                onDismissRequest()
+                                item.onClick()
+                            }
+                            is ContextMenuItem.CheckboxItem -> ContextMenuRow(item.text, null, null, hasIconSpace, item.isSelected, isHighlighted = false, isRadio = false, item.onClick)
+                            is ContextMenuItem.CheckboxItemWithInternalState -> {
+                                var isSelected by remember { mutableStateOf(item.isSelected()) }
+                                ContextMenuRow(
+                                    text = item.text,
+                                    iconResource = null,
+                                    iconContent = null,
+                                    hasIconSpace = hasIconSpace,
+                                    isSelected = isSelected,
+                                    isHighlighted = false,
+                                    isRadio = false,
+                                    onClick = {
+                                        item.onClick(isSelected)
+                                        isSelected = item.isSelected()
+                                    },
+                                )
+                            }
+                            is ContextMenuItem.RadioItem -> ContextMenuRow(item.text, null, null, hasIconSpace, item.isSelected, isHighlighted = false, isRadio = true, item.onClick)
+                            is ContextMenuItem.HeaderItem -> ContextMenuHeader(item.text)
+                            ContextMenuItem.DividerItem -> ContextMenuDivider()
                         }
-                        is ContextMenuItem.CheckboxItem -> ContextMenuRow(item.text, null, hasIconSpace, item.isSelected, false, item.onClick)
-                        is ContextMenuItem.RadioItem -> ContextMenuRow(item.text, null, hasIconSpace, item.isSelected, true, item.onClick)
-                        is ContextMenuItem.HeaderItem -> ContextMenuHeader(item.text)
-                        ContextMenuItem.DividerItem -> ContextMenuDivider()
                     }
                 }
             }
@@ -167,6 +229,8 @@ sealed interface ContextMenuItem {
     data class TextItem(
         val text: String,
         val iconResource: DrawableResource? = null,
+        val iconContent: (@Composable (PointerInteractionStateHolder) -> Unit)? = null,
+        val isHighlighted: Boolean = false,
         val onClick: () -> Unit,
     ) : ContextMenuItem
 
@@ -174,6 +238,12 @@ sealed interface ContextMenuItem {
         val text: String,
         val isSelected: Boolean,
         val onClick: () -> Unit,
+    ) : ContextMenuItem
+
+    data class CheckboxItemWithInternalState(
+        val text: String,
+        val isSelected: () -> Boolean,
+        val onClick: (isSelected: Boolean) -> Unit,
     ) : ContextMenuItem
 
     data class RadioItem(
@@ -194,8 +264,10 @@ sealed interface ContextMenuItem {
 private fun ContextMenuRow(
     text: String,
     iconResource: DrawableResource?,
+    iconContent: (@Composable (PointerInteractionStateHolder) -> Unit)?,
     hasIconSpace: Boolean,
     isSelected: Boolean?,
+    isHighlighted: Boolean = false,
     isRadio: Boolean = false,
     onClick: () -> Unit,
 ) {
@@ -216,9 +288,10 @@ private fun ContextMenuRow(
                 .pointerHoverIcon(PointerIcon(Cursors.pointerInteractive))
                 .onClick { onClick() },
         ) {
+            val style = if (isHighlighted) RiftTheme.typography.bodyPrimary.copy(color = RiftTheme.colors.primary) else RiftTheme.typography.bodyPrimary
             Text(
                 text = text,
-                style = RiftTheme.typography.bodyPrimary,
+                style = style,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
                 modifier = Modifier
@@ -227,7 +300,14 @@ private fun ContextMenuRow(
                     .padding(start = max(iconAreaSize - itemPadding, 0.dp), end = Spacing.small),
             )
         }
-        if (iconResource != null) {
+        if (iconContent != null) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.requiredSize(iconAreaSize),
+            ) {
+                iconContent(pointerState)
+            }
+        } else if (iconResource != null) {
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.requiredSize(iconAreaSize),

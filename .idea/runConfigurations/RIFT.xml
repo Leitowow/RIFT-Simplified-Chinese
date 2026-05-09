@@ -3,6 +3,7 @@
     <option name="MAIN_CLASS_NAME" value="dev.nohus.rift.MainKt" />
     <module name="rift.main" />
     <shortenClasspath name="NONE" />
+    <option name="VM_PARAMETERS" value="--add-opens java.desktop/java.awt=ALL-UNNAMED --add-exports java.desktop/java.awt.peer=ALL-UNNAMED --enable-native-access=ALL-UNNAMED" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>

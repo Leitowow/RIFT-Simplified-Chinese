@@ -44,6 +44,7 @@ import dev.nohus.rift.compose.rememberPointerInteractionStateHolder
 import dev.nohus.rift.compose.theme.RiftTheme
 import dev.nohus.rift.compose.theme.Spacing
 import dev.nohus.rift.contacts.ContactsRepository.EntityType
+import dev.nohus.rift.contacts.ContactsRepository.Label
 import dev.nohus.rift.contacts.ContactsViewModel.DeleteContactRequest
 import dev.nohus.rift.contacts.ContactsViewModel.EditContactDialog
 import dev.nohus.rift.contacts.ContactsViewModel.UpdateContactRequest
@@ -107,7 +108,7 @@ private fun EditContactDialogContent(
 
         var selectedStanding by remember { mutableStateOf(defaultStanding) }
         var selectedCharacter: LocalCharacter by remember { mutableStateOf(defaultCharacter) }
-        var selectedLabels: List<String> by remember { mutableStateOf(emptyList()) }
+        var selectedLabels: List<Label> by remember { mutableStateOf(emptyList()) }
         var selectedWatched: Boolean? by remember { mutableStateOf(null) }
 
         LaunchedEffect(selectedCharacter) {
@@ -131,12 +132,12 @@ private fun EditContactDialogContent(
             Column {
                 Text(
                     text = dialog.entity.name,
-                    style = RiftTheme.typography.titlePrimary.copy(fontWeight = FontWeight.Bold),
+                    style = RiftTheme.typography.headerPrimary.copy(fontWeight = FontWeight.Bold),
                 )
 
                 Text(
                     text = selectedStanding.getName(),
-                    style = RiftTheme.typography.titlePrimary,
+                    style = RiftTheme.typography.headerPrimary,
                     modifier = Modifier.padding(top = Spacing.medium),
                 )
                 StandingLevelSelector(
@@ -157,14 +158,14 @@ private fun EditContactDialogContent(
 
                 Text(
                     text = "Choose character",
-                    style = RiftTheme.typography.titlePrimary,
+                    style = RiftTheme.typography.headerPrimary,
                     modifier = Modifier.padding(top = Spacing.mediumLarge),
                 )
                 RiftDropdown(
                     items = dialog.characters,
                     selectedItem = selectedCharacter,
                     onItemSelected = { selectedCharacter = it },
-                    getItemName = { it.info.success?.name ?: "${it.characterId}" },
+                    getItemName = { it.info?.name ?: "${it.characterId}" },
                     modifier = Modifier.padding(top = Spacing.small),
                 )
 
@@ -177,7 +178,7 @@ private fun EditContactDialogContent(
                         RiftTooltipArea("Labels can only be created in-game") {
                             Text(
                                 text = if (labels.isNotEmpty()) "Assign labels" else "No labels available",
-                                style = RiftTheme.typography.titlePrimary,
+                                style = RiftTheme.typography.headerPrimary,
                             )
                         }
                         ScrollbarColumn(
@@ -187,7 +188,7 @@ private fun EditContactDialogContent(
                         ) {
                             for (label in labels) {
                                 RiftCheckboxWithLabel(
-                                    label = label,
+                                    label = label.name,
                                     isChecked = label in selectedLabels,
                                     onCheckedChange = { selectedLabels = selectedLabels.toggle(label) },
                                 )
@@ -252,12 +253,13 @@ private fun StandingLevelSelector(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         modifier = modifier,
     ) {
-        Standing.entries.forEach { standing ->
+        listOf(Standing.Terrible, Standing.Bad, Standing.Neutral, Standing.Good, Standing.Excellent).forEach { standing ->
             val color = standing.getFlagColor()
             val icon = when (standing) {
                 Standing.Terrible, Standing.Bad -> Res.drawable.flag_negative
                 Standing.Neutral -> Res.drawable.flag_neutral
                 Standing.Good, Standing.Excellent -> Res.drawable.flag_positive
+                Standing.Self, Standing.Corporation, Standing.Alliance -> error("Not used in selector")
             }
             StandingBox(
                 color = color,
@@ -277,6 +279,7 @@ private fun Standing.getName(): String {
         Standing.Neutral -> "Neutral Standing"
         Standing.Good -> "Good Standing"
         Standing.Excellent -> "Excellent Standing"
+        Standing.Self, Standing.Corporation, Standing.Alliance -> error("Not used in selector")
     }
 }
 

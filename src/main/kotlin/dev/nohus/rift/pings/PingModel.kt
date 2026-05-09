@@ -1,5 +1,6 @@
 package dev.nohus.rift.pings
 
+import dev.nohus.rift.network.InstantSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.time.Instant
@@ -47,7 +48,7 @@ data class FleetCommander(
 @Serializable
 sealed interface FormupLocation {
     @Serializable
-    data class System(val name: String) : FormupLocation
+    data class System(val id: Int) : FormupLocation
 
     @Serializable
     data class Text(val text: String) : FormupLocation

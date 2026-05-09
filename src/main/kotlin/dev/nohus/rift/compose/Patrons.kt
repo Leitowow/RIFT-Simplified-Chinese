@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -33,19 +32,21 @@ fun Patrons(patrons: List<Patron>, modifier: Modifier = Modifier) {
     RiftTooltipArea(
         text = "Become a member on Patreon",
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(Spacing.small),
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             modifier = modifier
                 .onClick { "https://patreon.com/Nohus".toURIOrNull()?.openBrowser() }
                 .hoverBackground()
                 .border(1.dp, RiftTheme.colors.borderGreyLight)
                 .fillMaxWidth()
-                .padding(vertical = Spacing.medium),
+                .padding(
+                    vertical = Spacing.small,
+                ),
         ) {
             Text(
                 text = "PATRONS",
                 style = RiftTheme.typography.headlineHighlighted.copy(fontWeight = FontWeight.Bold),
+                modifier = Modifier.padding(horizontal = Spacing.medium),
             )
 
             Box(
@@ -55,14 +56,14 @@ fun Patrons(patrons: List<Patron>, modifier: Modifier = Modifier) {
                 if (patrons.isEmpty()) {
                     Text(
                         text = "Support RIFT",
-                        style = RiftTheme.typography.titlePrimary,
+                        style = RiftTheme.typography.headerPrimary,
                     )
                 } else if (patrons.size == 1) {
-                    Patron(patrons.single())
+                    Patron(patrons.single(), modifier = Modifier.padding(horizontal = Spacing.medium))
                 } else {
                     val shuffledPatrons = remember(patrons) { patrons.shuffled() }
-                    InfiniteScrollingCarousel(shuffledPatrons, delay = 50) { patron ->
-                        Patron(patron)
+                    InfiniteScrollingCarousel(shuffledPatrons, delay = 5_000) { patron ->
+                        Patron(patron, modifier = Modifier.padding(end = Spacing.large))
                     }
                 }
             }
@@ -71,30 +72,27 @@ fun Patrons(patrons: List<Patron>, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun Patron(patron: Patron) {
-    ClickablePlayer(patron.characterId) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(Spacing.small),
-            verticalAlignment = Alignment.CenterVertically,
+private fun Patron(patron: Patron, modifier: Modifier = Modifier) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(Spacing.small),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier,
+    ) {
+        Box(
             modifier = Modifier
-                .padding(horizontal = Spacing.medium),
+                .clip(CircleShape)
+                .background(RiftTheme.colors.windowBackgroundActive.copy(alpha = 0.3f)),
         ) {
-            Box(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(RiftTheme.colors.windowBackgroundActive.copy(alpha = 0.3f)),
-            ) {
-                AsyncPlayerPortrait(
-                    characterId = patron.characterId,
-                    size = 32,
-                    modifier = Modifier.size(32.dp),
-                )
-            }
-
-            Text(
-                text = patron.name,
-                style = RiftTheme.typography.titlePrimary,
+            AsyncCharacterPortrait(
+                characterId = patron.characterId,
+                size = 32,
+                modifier = Modifier.size(32.dp),
             )
         }
+
+        Text(
+            text = patron.name,
+            style = RiftTheme.typography.headerPrimary,
+        )
     }
 }

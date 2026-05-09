@@ -1,8 +1,12 @@
 package dev.nohus.rift.planetaryindustry
 
 import dev.nohus.rift.ViewModel
+import dev.nohus.rift.characters.repositories.LocalCharactersRepository
+import dev.nohus.rift.charactersettings.AccountAssociationsRepository
+import dev.nohus.rift.clipboard.Clipboard
 import dev.nohus.rift.network.AsyncResource
 import dev.nohus.rift.planetaryindustry.PlanetaryIndustryRepository.ColonyItem
+import dev.nohus.rift.planetaryindustry.PlanetaryIndustryRepository.SeekingColony
 import dev.nohus.rift.planetaryindustry.PlanetaryIndustryViewModel.View.DetailsView
 import dev.nohus.rift.planetaryindustry.PlanetaryIndustryViewModel.View.GridView
 import dev.nohus.rift.planetaryindustry.PlanetaryIndustryViewModel.View.ListView
@@ -15,13 +19,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.koin.core.annotation.Single
+import org.koin.core.annotation.Factory
 import java.time.Instant
 
-@Single
+@Factory
 class PlanetaryIndustryViewModel(
     private val planetaryIndustryRepository: PlanetaryIndustryRepository,
+    private val accountAssociationsRepository: AccountAssociationsRepository,
     private val settings: Settings,
+    private val localCharactersRepository: LocalCharactersRepository,
 ) : ViewModel() {
 
     data class UiState(
@@ -34,7 +40,7 @@ class PlanetaryIndustryViewModel(
         data object ListView : View
         data object GridView : View
         data object RowsView : View
-        data class DetailsView(val item: ColonyItem) : View
+        data class DetailsView(val colonyId: String) : View
     }
 
     private var featureSettings: PlanetaryIndustry
@@ -89,8 +95,7 @@ class PlanetaryIndustryViewModel(
     }
 
     fun onDetailsClick(id: String) {
-        val item = _state.value.colonies.success?.firstOrNull { it.colony.id == id } ?: return
-        _state.update { it.copy(view = DetailsView(item)) }
+        _state.update { it.copy(view = DetailsView(id)) }
     }
 
     fun onBackClick() {
@@ -109,23 +114,48 @@ class PlanetaryIndustryViewModel(
         _state.update { it.copy(sortingFilter = sorting, colonies = it.colonies.map { it.sort(sorting) }) }
     }
 
+    fun onCopyData(type: CopyType) {
+        _state.value.colonies.success?.let { colonies ->
+            val text = SpreadsheetFormatter.format(type, colonies)
+            Clipboard.copy(text)
+        }
+    }
+
+    fun setSeekingColony(seekingColony: SeekingColony?) {
+        viewModelScope.launch {
+            planetaryIndustryRepository.setSeekingColony(seekingColony)
+        }
+    }
+
     private fun List<ColonyItem>.sort(sorting: ColonySortingFilter): List<ColonyItem> {
-        val characterSelector: (ColonyItem) -> Comparable<*> = { it.colony.characterId }
+        val accountSelector: (ColonyItem) -> Comparable<*> = {
+            accountAssociationsRepository.getAssociations()[it.colony.characterId] ?: 0
+        }
+        val characterAgeSelector: (ColonyItem) -> Comparable<*> = { it.colony.characterId }
+        val characterAlphabeticalSelector: (ColonyItem) -> Comparable<*> = {
+            val characterId = it.colony.characterId
+            localCharactersRepository.characters.value.firstOrNull { it.characterId == characterId }?.info?.name ?: ""
+        }
         val statusSelector: (ColonyItem) -> Comparable<*> = { it.colony.status.order }
         val expiryTimeSelector: (ColonyItem) -> Comparable<*> = { item ->
             item.ffwdColony.currentSimTime.takeIf { it.isAfter(item.colony.currentSimTime) } ?: Instant.MAX
         }
+        val planetSelector: (ColonyItem) -> Comparable<*> = { it.colony.planet.id }
         return when (sorting) {
             ColonySortingFilter.Character -> {
-                sortedWith(compareBy(characterSelector, statusSelector, expiryTimeSelector))
+                sortedWith(compareBy(accountSelector, characterAgeSelector, planetSelector))
+            }
+
+            ColonySortingFilter.CharacterAlphabetical -> {
+                sortedWith(compareBy(characterAlphabeticalSelector, planetSelector))
             }
 
             ColonySortingFilter.Status -> {
-                sortedWith(compareBy(statusSelector, expiryTimeSelector, characterSelector))
+                sortedWith(compareBy(statusSelector, expiryTimeSelector, characterAgeSelector))
             }
 
             ColonySortingFilter.ExpiryTime -> {
-                sortedWith(compareBy(expiryTimeSelector, statusSelector, characterSelector))
+                sortedWith(compareBy(expiryTimeSelector, statusSelector, characterAgeSelector))
             }
         }
     }

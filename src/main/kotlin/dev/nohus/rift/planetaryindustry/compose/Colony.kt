@@ -1,15 +1,8 @@
 package dev.nohus.rift.planetaryindustry.compose
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.ScrollState
@@ -17,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -31,32 +25,27 @@ import androidx.compose.foundation.onClick
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.ColorMatrix
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import dev.nohus.rift.compose.AsyncPlayerPortrait
+import dev.nohus.rift.compose.ButtonCornerCut
 import dev.nohus.rift.compose.ButtonType
 import dev.nohus.rift.compose.RiftButton
+import dev.nohus.rift.compose.RiftSlider
+import dev.nohus.rift.compose.RiftSolarSystemChip
 import dev.nohus.rift.compose.RiftTooltipArea
-import dev.nohus.rift.compose.SolarSystemPill
-import dev.nohus.rift.compose.SolarSystemPillState
 import dev.nohus.rift.compose.getNow
 import dev.nohus.rift.compose.modifyIf
 import dev.nohus.rift.compose.pointerInteraction
@@ -64,24 +53,12 @@ import dev.nohus.rift.compose.rememberPointerInteractionStateHolder
 import dev.nohus.rift.compose.theme.Cursors
 import dev.nohus.rift.compose.theme.RiftTheme
 import dev.nohus.rift.compose.theme.Spacing
+import dev.nohus.rift.dynamicportraits.DynamicCharacterPortraitParallax
 import dev.nohus.rift.generated.resources.Res
 import dev.nohus.rift.generated.resources.clock_16
 import dev.nohus.rift.generated.resources.fastforward
-import dev.nohus.rift.generated.resources.pi_disc_shadow
-import dev.nohus.rift.generated.resources.pi_ecu_bottom
-import dev.nohus.rift.generated.resources.pi_ecu_top
-import dev.nohus.rift.generated.resources.pi_needsattentionicon
-import dev.nohus.rift.generated.resources.pi_processor
-import dev.nohus.rift.generated.resources.planet_barren_128
-import dev.nohus.rift.generated.resources.planet_gas_128
-import dev.nohus.rift.generated.resources.planet_ice_128
-import dev.nohus.rift.generated.resources.planet_lava_128
-import dev.nohus.rift.generated.resources.planet_ocean_128
-import dev.nohus.rift.generated.resources.planet_plasma_128
-import dev.nohus.rift.generated.resources.planet_storm_128
-import dev.nohus.rift.generated.resources.planet_temperate_128
-import dev.nohus.rift.network.esi.PlanetType
 import dev.nohus.rift.planetaryindustry.PlanetaryIndustryRepository.ColonyItem
+import dev.nohus.rift.planetaryindustry.PlanetaryIndustryRepository.SeekingColony
 import dev.nohus.rift.planetaryindustry.models.Colony
 import dev.nohus.rift.planetaryindustry.models.ColonyStatus
 import dev.nohus.rift.planetaryindustry.models.ColonyStatus.Extracting
@@ -98,8 +75,6 @@ import dev.nohus.rift.utils.formatDateTime
 import dev.nohus.rift.utils.formatDurationCompact
 import dev.nohus.rift.utils.invertedPlural
 import dev.nohus.rift.utils.plural
-import dev.nohus.rift.utils.roundSecurity
-import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
 import java.time.Duration
 import java.time.Instant
@@ -113,6 +88,7 @@ fun ColonyTitle(
     isExpanded: Boolean,
     isViewingFastForward: Boolean,
     onViewFastForwardChange: (Boolean) -> Unit,
+    onSetSeekingColony: (SeekingColony?) -> Unit,
     scrollState: ScrollState? = null,
     colonyIconModifier: Modifier = Modifier,
     onDetailsClick: () -> Unit,
@@ -127,18 +103,12 @@ fun ColonyTitle(
             modifier = Modifier
                 .background(Brush.linearGradient(listOf(Color.Transparent, RiftTheme.colors.backgroundPrimaryDark))),
         ) {
-            ColonyIcon(colony, colonyIconModifier)
+            ColonyIcon(colony, rememberInfiniteTransition(), colonyIconModifier)
             Column(
                 modifier = Modifier.padding(vertical = Spacing.small),
             ) {
                 ColonyOwner(colony, item.characterName)
-                SolarSystemPill(
-                    SolarSystemPillState(
-                        distance = item.distance,
-                        name = colony.planet.name,
-                        security = colony.system.security.roundSecurity(),
-                    ),
-                )
+                RiftSolarSystemChip(item.location)
             }
             Spacer(Modifier.weight(1f))
             ExpiresIn(item, isViewingFastForward, onViewFastForwardChange)
@@ -148,7 +118,7 @@ fun ColonyTitle(
             )
         }
         AnimatedVisibility(isViewingFastForward) {
-            ViewingFastForward(item, onReturnClick = { onViewFastForwardChange(false) })
+            ViewingFastForward(item, onSetSeekingColony, onReturnClick = { onViewFastForwardChange(false) })
         }
         AnimatedVisibility(scrollState != null) {
             Box(
@@ -165,33 +135,94 @@ fun ColonyTitle(
 @Composable
 private fun ViewingFastForward(
     item: ColonyItem,
+    onSetSeekingColony: (SeekingColony?) -> Unit,
     onReturnClick: () -> Unit,
 ) {
+    val maxSeekHours = Duration.between(item.colony.currentSimTime, item.ffwdColony.currentSimTime).toHours().toInt() + 1
+    var seekHours by remember { mutableStateOf(maxSeekHours) }
+
     Row(
-        horizontalArrangement = Arrangement.spacedBy(Spacing.small),
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(top = Spacing.medium),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.mediumLarge),
+        modifier = Modifier
+            .padding(top = Spacing.small)
+            .background(RiftTheme.colors.windowBackgroundSecondary)
+            .padding(vertical = Spacing.medium),
     ) {
+        RiftButton(
+            text = "Now",
+            icon = Res.drawable.clock_16,
+            type = ButtonType.Primary,
+            cornerCut = ButtonCornerCut.BottomLeft,
+            isCompact = false,
+            onClick = onReturnClick,
+        )
+
         Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.weight(1f),
         ) {
             Text(
-                text = formatDateTime(item.ffwdColony.currentSimTime),
-                style = RiftTheme.typography.titlePrimary,
+                text = "Time fast-forward",
+                style = RiftTheme.typography.headerPrimary,
             )
-            getFutureColonyStatusDescription(item.ffwdColony.status)?.let {
-                Text(
-                    text = it,
-                    style = RiftTheme.typography.bodyPrimary,
+
+            LaunchedEffect(seekHours) {
+                val seekTimestamp = item.colony.currentSimTime + Duration.ofHours(seekHours.toLong())
+                if (seekTimestamp >= item.ffwdColony.currentSimTime) {
+                    // Seeked to the expiry time, stop seeking, which will show the expired colony
+                    onSetSeekingColony(null)
+                } else {
+                    onSetSeekingColony(SeekingColony(item.colony.id, seekTimestamp))
+                }
+            }
+            BoxWithConstraints(
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                RiftSlider(
+                    width = maxWidth,
+                    range = 0..maxSeekHours,
+                    currentValue = seekHours,
+                    onValueChange = { seekHours = it },
+                    getValueName = { null },
+                    isPreciseScroll = true,
+                    isImmediate = true,
                 )
             }
+            DisposableEffect(Unit) {
+                onDispose {
+                    onSetSeekingColony(null)
+                }
+            }
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(Spacing.mediumLarge),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .padding(top = Spacing.medium),
+            ) {
+                val colony = item.seekColony ?: item.ffwdColony
+                Text(
+                    text = formatDateTime(colony.currentSimTime),
+                    style = RiftTheme.typography.headerPrimary,
+                )
+                getFutureColonyStatusDescription(colony.status)?.let {
+                    Text(
+                        text = it,
+                        style = RiftTheme.typography.bodyPrimary,
+                    )
+                }
+            }
         }
+
         RiftButton(
-            text = "Present time",
-            icon = Res.drawable.clock_16,
-            type = ButtonType.Secondary,
+            text = "Expires",
+            icon = Res.drawable.fastforward,
+            type = ButtonType.Primary,
+            cornerCut = ButtonCornerCut.BottomRight,
             isCompact = false,
-            onClick = onReturnClick,
+            isEnabled = seekHours < maxSeekHours,
+            onClick = { seekHours = maxSeekHours },
         )
     }
 }
@@ -203,13 +234,15 @@ private fun getFutureColonyStatusDescription(status: ColonyStatus): String? {
             val inactive = status.pins.count { it.status == ExtractorInactive }
             val full = status.pins.filter { it.status == StorageFull }
             buildList {
-                if (expired > 0) add("Extractor${expired.plural} expire${inactive.invertedPlural}")
+                if (expired > 0) add("Extractor${expired.plural} expire${expired.invertedPlural}")
                 if (inactive > 0) add("Extractor${inactive.plural} become${inactive.invertedPlural} inactive")
                 full.forEach { add("${it.getName()} becomes full") }
             }.joinToString()
         }
         is Idle -> "All production stops"
-        is NotSetup, is Producing, is Extracting -> return null // Should never happen
+        is NotSetup -> "Not setup"
+        is Producing -> "Producing"
+        is Extracting -> "Extracting"
     }
     return state
 }
@@ -293,72 +326,6 @@ fun ColonyOverview(
 }
 
 /**
- * Grid view planet icon
- */
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun ColonyPlanetSnippet(
-    item: ColonyItem,
-    isShowingCharacter: Boolean,
-    colonyIconModifier: Modifier = Modifier,
-    modifier: Modifier = Modifier,
-    onExpandClick: () -> Unit,
-) {
-    val colony = item.colony
-    val pointerInteraction = rememberPointerInteractionStateHolder()
-    Column(
-        modifier = modifier
-            .pointerInteraction(pointerInteraction)
-            .pointerHoverIcon(PointerIcon(Cursors.pointerInteractive))
-            .onClick { onExpandClick() },
-    ) {
-        Box(
-            modifier = Modifier.modifyIf(isShowingCharacter) { Modifier.size(80.dp) },
-        ) {
-            Box {
-                val hoverAlpha by animateFloatAsState(if (pointerInteraction.isHovered) 1f else 0f)
-                Image(
-                    painter = painterResource(Res.drawable.pi_disc_shadow),
-                    contentDescription = null,
-                    colorFilter = ColorFilter.tint(Color.White),
-                    modifier = Modifier
-                        .size(64.dp)
-                        .scale(1.2f)
-                        .alpha(hoverAlpha)
-                        .align(Alignment.TopStart),
-                )
-                ColonyIcon(
-                    colony = colony,
-                    modifier = colonyIconModifier
-                        .size(64.dp)
-                        .align(Alignment.TopStart),
-                )
-            }
-            if (isShowingCharacter) {
-                val animatable = remember { Animatable(0f) }
-                LaunchedEffect(Unit) {
-                    delay(200)
-                    animatable.animateTo(1f, tween(500))
-                }
-                Box(
-                    modifier = Modifier
-                        .scale(animatable.value)
-                        .align(Alignment.BottomEnd)
-                        .clip(CircleShape)
-                        .background(RiftTheme.colors.windowBackgroundActive.copy(alpha = 0.3f)),
-                ) {
-                    AsyncPlayerPortrait(
-                        characterId = colony.characterId,
-                        size = 32,
-                        modifier = Modifier.size(32.dp),
-                    )
-                }
-            }
-        }
-    }
-}
-
-/**
  * List of pins with details
  */
 @Composable
@@ -392,15 +359,16 @@ private fun ColonyOwner(
                 .clip(CircleShape)
                 .background(RiftTheme.colors.windowBackgroundActive.copy(alpha = 0.3f)),
         ) {
-            AsyncPlayerPortrait(
+            DynamicCharacterPortraitParallax(
                 characterId = colony.characterId,
-                size = 32,
-                modifier = Modifier.size(32.dp),
+                size = 32.dp,
+                enterTimestamp = null,
+                pointerInteractionStateHolder = null,
             )
         }
         Text(
             text = characterName ?: "Loading…",
-            style = RiftTheme.typography.titlePrimary,
+            style = RiftTheme.typography.headerPrimary,
         )
     }
 }
@@ -426,121 +394,4 @@ private fun List<Pin>.sort(): List<Pin> {
             },
         ),
     )
-}
-
-@Composable
-fun ColonyIcon(
-    colony: Colony,
-    modifier: Modifier = Modifier,
-) {
-    val type = colony.type
-    RiftTooltipArea(
-        tooltip = {
-            Column(
-                modifier = Modifier.padding(Spacing.large),
-            ) {
-                when (colony.status) {
-                    is Extracting -> Text("Extracting", fontWeight = FontWeight.Bold, color = RiftTheme.colors.textGreen)
-                    is Producing -> Text("Producing", fontWeight = FontWeight.Bold, color = RiftTheme.colors.textGreen)
-                    is NotSetup -> Text("Not setup", fontWeight = FontWeight.Bold, color = RiftTheme.colors.textRed)
-                    is NeedsAttention -> Text("Needs attention", fontWeight = FontWeight.Bold, color = RiftTheme.colors.textRed)
-                    is Idle -> Text("Idle", fontWeight = FontWeight.Bold)
-                }
-                Text(
-                    text = colony.planet.name,
-                    style = RiftTheme.typography.bodyPrimary,
-                )
-                Text(
-                    text = "${type.name} planet",
-                    style = RiftTheme.typography.bodySecondary,
-                )
-            }
-        },
-        modifier = modifier,
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            val icon = when (type) {
-                PlanetType.Temperate -> Res.drawable.planet_temperate_128
-                PlanetType.Barren -> Res.drawable.planet_barren_128
-                PlanetType.Oceanic -> Res.drawable.planet_ocean_128
-                PlanetType.Ice -> Res.drawable.planet_ice_128
-                PlanetType.Gas -> Res.drawable.planet_gas_128
-                PlanetType.Lava -> Res.drawable.planet_lava_128
-                PlanetType.Storm -> Res.drawable.planet_storm_128
-                PlanetType.Plasma -> Res.drawable.planet_plasma_128
-            }
-            val colorFilter = if (colony.status is NeedsAttention) {
-                ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0.25f) })
-            } else {
-                null
-            }
-            Image(
-                painter = painterResource(icon),
-                contentDescription = null,
-                colorFilter = colorFilter,
-                modifier = Modifier.size(64.dp),
-            )
-
-            val transition = rememberInfiniteTransition()
-            when (colony.status) {
-                is Extracting -> {
-                    Image(
-                        painter = painterResource(Res.drawable.pi_disc_shadow),
-                        contentDescription = null,
-                        alpha = 0.5f,
-                        modifier = Modifier.size(32.dp),
-                    )
-                    Image(
-                        painter = painterResource(Res.drawable.pi_ecu_bottom),
-                        contentDescription = null,
-                        modifier = Modifier.size(32.dp),
-                    )
-                    val shift by transition.animateFloat(
-                        initialValue = 1f,
-                        targetValue = 0f,
-                        animationSpec = infiniteRepeatable(tween(2_000, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-                    )
-                    val maxShift = LocalDensity.current.run { -8.dp.toPx() }
-                    Image(
-                        painter = painterResource(Res.drawable.pi_ecu_top),
-                        contentDescription = null,
-                        modifier = Modifier.size(32.dp).graphicsLayer(translationY = maxShift * shift),
-                    )
-                }
-                is Producing -> {
-                    Image(
-                        painter = painterResource(Res.drawable.pi_disc_shadow),
-                        contentDescription = null,
-                        alpha = 0.5f,
-                        modifier = Modifier.size(32.dp),
-                    )
-                    val rotation by transition.animateFloat(
-                        initialValue = 0f,
-                        targetValue = 360f,
-                        animationSpec = infiniteRepeatable(tween(30_000, easing = LinearEasing)),
-                    )
-                    Image(
-                        painter = painterResource(Res.drawable.pi_processor),
-                        contentDescription = null,
-                        modifier = Modifier.size(32.dp).rotate(rotation),
-                    )
-                }
-                is NotSetup, is NeedsAttention -> {
-                    val alpha by transition.animateFloat(
-                        initialValue = 0.2f,
-                        targetValue = 1f,
-                        animationSpec = infiniteRepeatable(tween(1000), repeatMode = RepeatMode.Reverse),
-                    )
-                    Image(
-                        painter = painterResource(Res.drawable.pi_needsattentionicon),
-                        contentDescription = null,
-                        colorFilter = ColorFilter.tint(Color(0xFFFF0000)),
-                        alpha = alpha,
-                        modifier = Modifier.size(31.dp),
-                    )
-                }
-                is Idle -> {}
-            }
-        }
-    }
 }

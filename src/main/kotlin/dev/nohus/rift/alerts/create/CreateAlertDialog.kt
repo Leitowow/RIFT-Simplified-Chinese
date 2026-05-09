@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.onClick
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -38,6 +39,7 @@ import androidx.compose.ui.window.WindowScope
 import androidx.compose.ui.window.rememberWindowState
 import dev.nohus.rift.alerts.create.CreateAlertViewModel.UiState
 import dev.nohus.rift.alerts.create.FormAnswer.CharacterAnswer
+import dev.nohus.rift.alerts.create.FormAnswer.ContactsLabelAnswer
 import dev.nohus.rift.alerts.create.FormAnswer.FreeformTextAnswer
 import dev.nohus.rift.alerts.create.FormAnswer.IntelChannelAnswer
 import dev.nohus.rift.alerts.create.FormAnswer.JumpsRangeAnswer
@@ -54,6 +56,7 @@ import dev.nohus.rift.compose.PointerInteractionStateHolder
 import dev.nohus.rift.compose.RequirementIcon
 import dev.nohus.rift.compose.RiftButton
 import dev.nohus.rift.compose.RiftCheckbox
+import dev.nohus.rift.compose.RiftCheckboxWithLabel
 import dev.nohus.rift.compose.RiftDialog
 import dev.nohus.rift.compose.RiftDropdown
 import dev.nohus.rift.compose.RiftFileChooserButton
@@ -66,6 +69,7 @@ import dev.nohus.rift.compose.Tab
 import dev.nohus.rift.compose.hoverBackground
 import dev.nohus.rift.compose.theme.RiftTheme
 import dev.nohus.rift.compose.theme.Spacing
+import dev.nohus.rift.contacts.ContactsRepository.Label
 import dev.nohus.rift.di.koin
 import dev.nohus.rift.generated.resources.Res
 import dev.nohus.rift.generated.resources.play
@@ -75,7 +79,9 @@ import dev.nohus.rift.planetaryindustry.PlanetaryIndustryRepository.ColonyItem
 import dev.nohus.rift.utils.plural
 import dev.nohus.rift.utils.sound.Sound
 import dev.nohus.rift.utils.sound.SoundPlayer
-import dev.nohus.rift.utils.viewModel
+import dev.nohus.rift.utils.toRegexOrNull
+import dev.nohus.rift.utils.withColor
+import dev.nohus.rift.viewModel
 import dev.nohus.rift.windowing.WindowManager
 import java.nio.file.Path
 import kotlin.io.path.absolutePathString
@@ -135,6 +141,8 @@ private fun CreateAlertDialogContent(
                         Text(
                             text = text,
                             style = RiftTheme.typography.bodySecondary,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.padding(bottom = Spacing.small),
                         )
                     }
@@ -163,6 +171,7 @@ private fun CreateAlertDialogContent(
                             sounds = state.sounds,
                             recentTargets = state.recentTargets,
                             colonies = state.colonies,
+                            labels = state.labels,
                             onFormAnswer = onFormPendingAnswer,
                         )
                     }
@@ -200,12 +209,13 @@ private fun FormQuestion(
     sounds: List<Sound>,
     recentTargets: Set<String>,
     colonies: List<ColonyItem>,
+    labels: List<Label>,
     onFormAnswer: (FormAnswer) -> Unit,
 ) {
     Column {
         Text(
             text = formQuestion.title,
-            style = RiftTheme.typography.titleSecondary,
+            style = RiftTheme.typography.headerSecondary,
             modifier = Modifier
                 .padding(vertical = Spacing.medium),
         )
@@ -303,7 +313,7 @@ private fun FormQuestion(
                     }
                     Text(
                         text = "From: ",
-                        style = RiftTheme.typography.titlePrimary,
+                        style = RiftTheme.typography.headerPrimary,
                     )
                     val maxJumps = 16 // 0 - 15
                     RiftDropdown(
@@ -319,7 +329,7 @@ private fun FormQuestion(
                     )
                     Text(
                         text = " To: ",
-                        style = RiftTheme.typography.titlePrimary,
+                        style = RiftTheme.typography.headerPrimary,
                     )
                     RiftDropdown(
                         items = List(maxJumps - min) { min + it },
@@ -348,13 +358,13 @@ private fun FormQuestion(
                             onFormAnswer(CharacterAnswer(characterId))
                         },
                         getItemName = { characterId ->
-                            characters.firstOrNull { it.characterId == characterId }?.info?.success?.name ?: "$characterId"
+                            characters.firstOrNull { it.characterId == characterId }?.info?.name ?: "$characterId"
                         },
                     )
                 } else {
                     Text(
                         text = "You have no characters to choose from!",
-                        style = RiftTheme.typography.titlePrimary,
+                        style = RiftTheme.typography.headerPrimary,
                     )
                 }
             }
@@ -377,7 +387,7 @@ private fun FormQuestion(
                 } else {
                     Text(
                         text = "You have no intel channels to choose from!",
-                        style = RiftTheme.typography.titlePrimary,
+                        style = RiftTheme.typography.headerPrimary,
                     )
                 }
             }
@@ -594,7 +604,7 @@ private fun FormQuestion(
                         } else {
                             Text(
                                 text = "No colonies available.\nCheck the Planetary Industry window.",
-                                style = RiftTheme.typography.titlePrimary,
+                                style = RiftTheme.typography.headerPrimary,
                             )
                         }
                     }
@@ -602,22 +612,110 @@ private fun FormQuestion(
             }
 
             is FormQuestion.FreeformTextQuestion -> {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth(),
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(Spacing.medium),
                 ) {
+                    var isRegex by remember { mutableStateOf(false) }
                     var text: String by remember { mutableStateOf("") }
-                    LaunchedEffect(Unit) {
-                        onFormAnswer(FreeformTextAnswer(""))
+                    var testText: String by remember { mutableStateOf("") }
+
+                    val regex = if (isRegex) text.toRegexOrNull(RegexOption.IGNORE_CASE) else null
+                    val match = regex?.find(testText)
+
+                    LaunchedEffect(text, regex) {
+                        val answer = if (regex != null) text else text.trim()
+                        onFormAnswer(FreeformTextAnswer(answer, regex != null))
                     }
-                    RiftTextField(
-                        text = text,
-                        placeholder = formQuestion.placeholder,
-                        onTextChanged = {
-                            text = it
-                            onFormAnswer(FreeformTextAnswer(it.trim()))
-                        },
-                        modifier = Modifier.weight(1f),
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        RiftTextField(
+                            text = text,
+                            placeholder = formQuestion.placeholder,
+                            onTextChanged = { text = it },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    if (formQuestion.isRegexAllowed) {
+                        RiftCheckboxWithLabel(
+                            label = "Use regex",
+                            tooltip = "Your filter will be evaluated as a regular expression.\nMatching is case insensitive.\n\nYou can learn more about regular expressions online.",
+                            isChecked = isRegex,
+                            onCheckedChange = { isRegex = it },
+                        )
+                        AnimatedVisibility(isRegex) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                RiftTextField(
+                                    text = testText,
+                                    placeholder = "Enter a message to test if it matches",
+                                    onTextChanged = {
+                                        testText = it
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                )
+                                AnimatedContent(match, contentKey = { it != null }) { match ->
+                                    if (match != null) {
+                                        Text(
+                                            text = buildAnnotatedString {
+                                                val trimmed = match.value.trim()
+                                                if (trimmed.isNotBlank()) {
+                                                    append("Matched: ")
+                                                    withColor(RiftTheme.colors.textSpecialHighlighted) {
+                                                        append(trimmed)
+                                                    }
+                                                } else {
+                                                    append("Matched")
+                                                }
+                                            },
+                                            maxLines = 1,
+                                            overflow = TextOverflow.MiddleEllipsis,
+                                            style = RiftTheme.typography.bodyPrimary,
+                                            modifier = Modifier
+                                                .padding(start = Spacing.medium)
+                                                .widthIn(max = 150.dp),
+                                        )
+                                    }
+                                }
+                                RequirementIcon(
+                                    isFulfilled = match != null,
+                                    fulfilledTooltip = "This message would trigger this alert",
+                                    notFulfilledTooltip = "This message wouldn't trigger this alert",
+                                    modifier = Modifier.padding(start = Spacing.small),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            is FormQuestion.ContactsLabelQuestion -> {
+                if (labels.isNotEmpty()) {
+                    ScrollbarColumn(
+                        modifier = Modifier.heightIn(max = 200.dp),
+                    ) {
+                        var selected: List<Label> by remember { mutableStateOf(emptyList()) }
+                        for (label in labels) {
+                            ListSelectorRow(
+                                text = label.name,
+                                description = label.owner.name,
+                                isMultipleChoice = true,
+                                isSelected = label in selected,
+                                onSelect = {
+                                    if (label in selected) selected -= label else selected += label
+                                    onFormAnswer(ContactsLabelAnswer(selected))
+                                },
+                            )
+                        }
+                    }
+                } else {
+                    Text(
+                        text = "No contact labels available.\nCheck the Contacts window.",
+                        style = RiftTheme.typography.headerPrimary,
                     )
                 }
             }
@@ -661,9 +759,9 @@ private fun ListSelectorRow(
             modifier = Modifier.weight(1f),
         ) {
             val style = if (isSelected) {
-                RiftTheme.typography.titlePrimary.copy(color = RiftTheme.colors.primary)
+                RiftTheme.typography.headerPrimary.copy(color = RiftTheme.colors.primary)
             } else {
-                RiftTheme.typography.titlePrimary
+                RiftTheme.typography.headerPrimary
             }
             Text(
                 text = text,
@@ -716,7 +814,7 @@ private fun Pair<FormQuestion, FormAnswer>.toAnswerString(
 
         is FormQuestion.OwnedCharacterQuestion -> {
             val characterId = (answer as CharacterAnswer).characterId
-            characters.firstOrNull { it.characterId == characterId }?.info?.success?.name ?: "$characterId"
+            characters.firstOrNull { it.characterId == characterId }?.info?.name ?: "$characterId"
         }
 
         is FormQuestion.IntelChannelQuestion -> {
@@ -754,6 +852,15 @@ private fun Pair<FormQuestion, FormAnswer>.toAnswerString(
 
         is FormQuestion.FreeformTextQuestion -> {
             (answer as FreeformTextAnswer).text.takeIf { it.isNotBlank() }
+        }
+
+        is FormQuestion.ContactsLabelQuestion -> {
+            val labels = (answer as ContactsLabelAnswer).labels
+            if (labels.size == 1) {
+                labels.single().name
+            } else {
+                "${labels.size} labels"
+            }
         }
     }
 }

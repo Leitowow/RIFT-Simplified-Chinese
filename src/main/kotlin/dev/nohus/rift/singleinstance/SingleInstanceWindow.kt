@@ -20,7 +20,6 @@ import dev.nohus.rift.windowing.WindowManager
 @Composable
 fun SingleInstanceWindow(
     windowState: WindowManager.RiftWindowState,
-    onRunAnywayClick: () -> Unit,
     onCloseRequest: () -> Unit,
 ) {
     RiftWindow(
@@ -31,7 +30,6 @@ fun SingleInstanceWindow(
         isResizable = false,
     ) {
         SingleInstanceContent(
-            onRunAnywayClick = onRunAnywayClick,
             onCloseClick = onCloseRequest,
         )
     }
@@ -39,26 +37,19 @@ fun SingleInstanceWindow(
 
 @Composable
 private fun SingleInstanceContent(
-    onRunAnywayClick: () -> Unit,
     onCloseClick: () -> Unit,
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
         Text(
-            text = "RIFT is already running. Starting multiple instances is not recommended.",
+            text = "RIFT is already running. Starting multiple instances is not possible.",
             style = RiftTheme.typography.bodyPrimary,
         )
         Row(
             horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
         ) {
             Spacer(Modifier.weight(1f))
-            RiftButton(
-                text = "Run anyway",
-                type = ButtonType.Negative,
-                cornerCut = ButtonCornerCut.None,
-                onClick = onRunAnywayClick,
-            )
             RiftButton(
                 text = "Close",
                 onClick = onCloseClick,

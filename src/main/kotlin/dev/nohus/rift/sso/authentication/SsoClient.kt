@@ -21,6 +21,7 @@ import org.jose4j.jwt.JwtClaims
 import org.jose4j.jwt.consumer.JwtConsumerBuilder
 import org.jose4j.keys.resolvers.HttpsJwksVerificationKeyResolver
 import org.koin.core.annotation.Factory
+import org.koin.core.annotation.Named
 import java.io.IOException
 import java.net.URI
 import java.security.MessageDigest
@@ -36,7 +37,7 @@ private val logger = KotlinLogging.logger {}
 class SsoClient(
     private val server: CallbackServer,
     private val eveSsoRepository: EveSsoRepository,
-    private val json: Json,
+    @Named("network") private val json: Json,
 ) {
     private val httpClient = HttpClient(CIO) {
         install(ContentNegotiation) {
@@ -55,7 +56,6 @@ class SsoClient(
         val jwtExpectedIssuer: String,
         val clientId: String,
         val clientSecret: String?,
-        val scopes: String,
     )
 
     private fun getSsoConfiguration(authority: SsoAuthority) = when (authority) {
@@ -70,26 +70,10 @@ class SsoClient(
             jwtExpectedIssuer = "https://login.eveonline.com",
             clientId = "84f160b7c2d54bddb41c0ef587923e65",
             clientSecret = null,
-            scopes = listOf(
-                "esi-location.read_online.v1",
-                "esi-location.read_location.v1",
-                "esi-universe.read_structures.v1",
-                "esi-ui.write_waypoint.v1",
-                "esi-wallet.read_character_wallet.v1",
-                "esi-search.search_structures.v1",
-                "esi-assets.read_assets.v1",
-                "esi-alliances.read_contacts.v1",
-                "esi-corporations.read_contacts.v1",
-                "esi-characters.read_contacts.v1",
-                "esi-characters.write_contacts.v1",
-                "esi-clones.read_clones.v1",
-                "esi-clones.read_implants.v1",
-                "esi-planets.manage_planets.v1",
-            ).joinToString(" "),
         )
     }
 
-    suspend fun authenticate(authority: SsoAuthority): Authentication = withContext(Dispatchers.IO) {
+    suspend fun authenticate(authority: SsoAuthority, scopes: List<String>): Authentication = withContext(Dispatchers.IO) {
         val codeVerifier = generateRandomBytes()
         val codeChallenge = generateCodeChallenge(codeVerifier)
         val state = generateRandomBytes()
@@ -102,7 +86,7 @@ class SsoClient(
                 server.stop()
                 try {
                     val response = postSsoTokenRequest(configuration, code, codeVerifier)
-                    completableDeferred.complete(response.toAuthentication(configuration))
+                    completableDeferred.complete(response.toAuthentication(configuration, scopes))
                 } catch (e: Exception) {
                     logger.error(e) { "SSO authentication failed after a successful callback" }
                     completableDeferred.completeExceptionally(e)
@@ -110,7 +94,7 @@ class SsoClient(
             }
         }
 
-        val uri = buildSsoUrl(configuration, codeChallenge, state)
+        val uri = buildSsoUrl(configuration, codeChallenge, state, scopes)
         uri.openBrowser()
 
         completableDeferred.await()
@@ -136,7 +120,7 @@ class SsoClient(
             )
             if (response.status.isSuccess()) {
                 val tokenResponse: TokenResponse = response.body()
-                tokenResponse.toAuthentication(configuration)
+                tokenResponse.toAuthentication(configuration, authentication.scopes)
             } else {
                 val errorResponse: SsoErrorResponse = response.body()
                 handleSsoError(authentication, errorResponse)
@@ -162,14 +146,18 @@ class SsoClient(
         return jwtConsumer.processToClaims(accessToken)
     }
 
-    private fun TokenResponse.toAuthentication(configuration: SsoConfiguration): Authentication {
+    private fun TokenResponse.toAuthentication(configuration: SsoConfiguration, scopes: List<String>): Authentication {
         val claims = validateJwt(configuration, accessToken)
         val expires = Instant.now() + Duration.ofSeconds(expiresIn.toLong() - 1)
         val refreshToken = refreshToken ?: throw IOException("No refresh token in token response")
         return when (configuration.authority) {
             SsoAuthority.Eve -> {
                 val characterId = claims.subject.substringAfter("CHARACTER:EVE:").toInt()
-                Authentication.EveAuthentication(characterId, accessToken, refreshToken, expires)
+                val grantedScopes = claims.getStringListClaimValue("scp").toList().sorted()
+                if (grantedScopes != scopes) {
+                    logger.error { "Scopes granted by SSO don't match requested scopes: $grantedScopes, expected $scopes" }
+                }
+                Authentication.EveAuthentication(characterId, accessToken, refreshToken, expires, grantedScopes)
             }
         }
     }
@@ -178,12 +166,13 @@ class SsoClient(
         configuration: SsoConfiguration,
         codeChallenge: String,
         state: String,
+        scopes: List<String>,
     ): URI {
         return URIBuilder(configuration.authorizationEndpoint).apply {
             addParameter("response_type", "code")
             addParameter("redirect_uri", configuration.callbackUrl)
             addParameter("client_id", configuration.clientId)
-            addParameter("scope", configuration.scopes)
+            addParameter("scope", scopes.joinToString(" "))
             addParameter("code_challenge", codeChallenge)
             addParameter("code_challenge_method", "S256")
             addParameter("state", state)

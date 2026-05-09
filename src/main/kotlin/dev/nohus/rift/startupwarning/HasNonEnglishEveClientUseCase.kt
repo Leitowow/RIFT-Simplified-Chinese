@@ -31,7 +31,7 @@ class HasNonEnglishEveClientUseCase(
         if (!settings.isSetupWizardFinished) return false
         val dir = settings.eveSettingsDirectory ?: return false
         return try {
-            return dir.listDirectoryEntries()
+            dir.listDirectoryEntries()
                 .filter { file ->
                     file.isDirectory() && file.name.startsWith("settings_")
                 }.flatMap { directory ->
@@ -58,7 +58,7 @@ class HasNonEnglishEveClientUseCase(
                 }.any()
         } catch (e: FileSystemException) {
             logger.error(e) { "Failed reading EVE client settings" }
-            return false
+            false
         }
     }
 }

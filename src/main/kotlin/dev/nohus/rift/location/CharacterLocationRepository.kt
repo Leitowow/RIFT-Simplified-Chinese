@@ -1,13 +1,15 @@
 package dev.nohus.rift.location
 
 import dev.nohus.rift.characters.repositories.LocalCharactersRepository
+import dev.nohus.rift.characters.repositories.LocalCharactersRepository.LocalCharacter
 import dev.nohus.rift.characters.repositories.OnlineCharactersRepository
 import dev.nohus.rift.location.LocationRepository.Station
 import dev.nohus.rift.location.LocationRepository.Structure
-import dev.nohus.rift.network.Result.Failure
-import dev.nohus.rift.network.Result.Success
 import dev.nohus.rift.network.esi.EsiApi
+import dev.nohus.rift.network.esi.models.CharacterIdShip
+import dev.nohus.rift.network.requests.Originator
 import dev.nohus.rift.repositories.SolarSystemsRepository
+import dev.nohus.rift.sso.scopes.ScopeGroups
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -42,6 +44,7 @@ class CharacterLocationRepository(
         val regionId: Int?,
         val station: Station?,
         val structure: Structure?,
+        val ship: CharacterIdShip?,
         val timestamp: Instant,
     )
 
@@ -59,13 +62,14 @@ class CharacterLocationRepository(
         }
         launch {
             localSystemChangeController.characterSystemChanges.collect { change ->
-                val currentSystem = _locations.value[change.characterId]?.solarSystemId
-                if (change.systemId != currentSystem) {
+                val current = _locations.value[change.characterId]
+                if (change.systemId != current?.solarSystemId) {
                     _locations.value += change.characterId to Location(
                         solarSystemId = change.systemId,
                         regionId = solarSystemsRepository.getRegionIdBySystemId(change.systemId),
                         station = null,
                         structure = null,
+                        ship = current?.ship,
                         timestamp = change.timestamp,
                     )
                     logger.debug { "Location updated from logs for character ${change.characterId}" }
@@ -74,13 +78,20 @@ class CharacterLocationRepository(
         }
     }
 
+    fun isUndocked(characterId: Int): Boolean {
+        val location = _locations.value[characterId] ?: return false
+        return location.station == null && location.structure == null
+    }
+
     private suspend fun loadLocations() {
         val minTime = Instant.now() - locationExpiry
         val minTimeOffline = Instant.now() - locationExpiryOffline
         localCharactersRepository.characters.value
-            .filter { it.isAuthenticated }
-            .map { it.characterId }
-            .filter { id ->
+            .filter { character ->
+                ScopeGroups.readCharacterLocation in character.scopes
+            }
+            .filter { character ->
+                val id = character.characterId
                 val isMissing = id !in _locations.value.keys
                 if (isMissing) return@filter true
                 val timestamp = _locations.value[id]?.timestamp
@@ -92,29 +103,29 @@ class CharacterLocationRepository(
                 }
                 isExpired
             }
-            .forEach { id ->
-                loadLocation(id)
+            .forEach { character ->
+                loadLocation(character)
             }
     }
 
-    private suspend fun loadLocation(characterId: Int) {
-        when (val result = esiApi.getCharacterIdLocation(characterId)) {
-            is Success -> {
-                val station = locationRepository.getStation(result.data.stationId)
-                val structure = locationRepository.getStructure(result.data.structureId, characterId)
-                _locations.value +=
-                    characterId to Location(
-                        solarSystemId = result.data.solarSystemId,
-                        regionId = solarSystemsRepository.getRegionIdBySystemId(result.data.solarSystemId),
-                        station = station,
-                        structure = structure,
-                        timestamp = Instant.now(),
-                    )
-                logger.debug { "Location updated from ESI for character $characterId" }
-            }
-            is Failure -> {
-                logger.error { "Failed getting location for character $characterId" }
-            }
+    private suspend fun loadLocation(character: LocalCharacter) {
+        val location = esiApi.getCharacterIdLocation(Originator.LocalCharacters, character.characterId).success ?: return
+        val ship = if (ScopeGroups.readCurrentShip in character.scopes) {
+            esiApi.getCharacterIdShip(Originator.LocalCharacters, character.characterId).success ?: _locations.value[character.characterId]?.ship
+        } else {
+            null
         }
+        val station = locationRepository.getStation(Originator.LocalCharacters, location.stationId)
+        val structure = locationRepository.getStructure(Originator.LocalCharacters, location.structureId, character.characterId)
+        _locations.value +=
+            character.characterId to Location(
+                solarSystemId = location.solarSystemId,
+                regionId = solarSystemsRepository.getRegionIdBySystemId(location.solarSystemId),
+                station = station,
+                structure = structure,
+                ship = ship,
+                timestamp = Instant.now(),
+            )
+        logger.debug { "Location updated from ESI for character ${character.characterId}" }
     }
 }

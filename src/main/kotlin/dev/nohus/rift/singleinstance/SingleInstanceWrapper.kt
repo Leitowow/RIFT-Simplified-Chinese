@@ -10,17 +10,14 @@ import dev.nohus.rift.windowing.WindowManager.RiftWindowState
 
 @Composable
 fun SingleInstanceWrapper(
-    onRunAnywayClick: () -> Unit,
     onCloseRequest: () -> Unit,
 ) {
     val scale = koin.get<UiScaleController>().uiScale
     SingleInstanceWindow(
         windowState = RiftWindowState(
             windowState = rememberWindowState(width = (300 * scale).dp, height = Dp.Unspecified),
-            isVisible = true,
             minimumSize = 300 to 100,
         ),
-        onRunAnywayClick = onRunAnywayClick,
         onCloseRequest = onCloseRequest,
     )
 }

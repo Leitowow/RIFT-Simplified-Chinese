@@ -1,13 +1,13 @@
 package dev.nohus.rift.logs.parse
 
 import org.koin.core.annotation.Single
+import java.io.FileInputStream
 import java.io.IOException
 import java.nio.file.Path
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import kotlin.io.path.bufferedReader
-import kotlin.io.path.readText
 
 @Single
 class ChatLogFileParser {
@@ -16,12 +16,21 @@ class ChatLogFileParser {
     private val dateFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm:ss")
     private val charset = Charsets.UTF_16LE
 
-    fun parse(file: Path): List<ChatMessage> {
-        val text = file.readText(charset)
-        return parseText(text)
+    data class ParseResult(
+        val messages: List<ChatMessage>,
+        val fileOffset: Long,
+    )
+
+    fun parse(file: Path, offset: Long): ParseResult {
+        return FileInputStream(file.toFile()).use { stream ->
+            stream.channel.position(offset)
+            val bytes = stream.readAllBytes()
+            val messages = parseText(String(bytes, charset))
+            ParseResult(messages, offset + bytes.size)
+        }
     }
 
-    fun parseHeader(characterId: String, file: Path): ChatLogFileMetadata? {
+    fun parseHeader(characterId: Int, file: Path): ChatLogFileMetadata? {
         val metadata = mutableMapOf<String, String>()
         val systemMessages = mutableListOf<ChatMessage>()
 
@@ -65,7 +74,7 @@ class ChatLogFileParser {
             channelId = metadata["Channel ID"] ?: return null,
             channelName = metadata["Channel Name"] ?: return null,
             listener = metadata["Listener"] ?: return null,
-            characterId = characterId.toIntOrNull() ?: return null,
+            characterId = characterId,
             sessionStarted = metadata["Session started"] ?: return null,
             groupName = metadata["GroupName"],
             motd = metadata["MOTD"],

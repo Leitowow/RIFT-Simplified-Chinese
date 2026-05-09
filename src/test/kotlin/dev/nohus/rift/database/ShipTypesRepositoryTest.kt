@@ -1,17 +1,27 @@
 package dev.nohus.rift.database
 
 import dev.nohus.rift.database.static.StaticDatabase
+import dev.nohus.rift.network.esi.EsiApi
+import dev.nohus.rift.repositories.NamesRepository
 import dev.nohus.rift.repositories.ShipTypesRepository
+import dev.nohus.rift.repositories.TypesRepository
 import dev.nohus.rift.utils.HasNonAsciiWindowsUsernameUseCase
 import dev.nohus.rift.utils.OperatingSystem
 import dev.nohus.rift.utils.directories.AppDirectories
 import dev.nohus.rift.utils.osdirectories.LinuxDirectories
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
+import io.mockk.mockk
 
 class ShipTypesRepositoryTest : FreeSpec({
 
-    val target = ShipTypesRepository(StaticDatabase(SqliteInitializer(HasNonAsciiWindowsUsernameUseCase(OperatingSystem.Linux, AppDirectories(LinuxDirectories())))))
+    val database = StaticDatabase(SqliteInitializer(HasNonAsciiWindowsUsernameUseCase(OperatingSystem.Linux, AppDirectories(LinuxDirectories()))))
+    val namesRepository: NamesRepository = mockk()
+    val typesRepository = TypesRepository(database, namesRepository)
+    val target = ShipTypesRepository(
+        staticDatabase = database,
+        typesRepository = typesRepository,
+    )
 
     listOf(
         "Buzzard" to "Buzzard",
@@ -36,9 +46,10 @@ class ShipTypesRepositoryTest : FreeSpec({
         "Buzzar" to null,
         " Buzzard" to null,
         "Buzzard " to null,
-    ).forEach { (input, expected) ->
-        "for input \"$input\", getShip() returns \"$expected\"" {
-            val actual = target.getShip(input)
+    ).forEach { (input, expectedName) ->
+        val expected = expectedName?.let { typesRepository.getType(expectedName) }
+        "for input \"$input\", getFuzzyShip() returns \"$expected\"" {
+            val actual = target.getFuzzyShip(input)
             actual shouldBe expected
         }
     }

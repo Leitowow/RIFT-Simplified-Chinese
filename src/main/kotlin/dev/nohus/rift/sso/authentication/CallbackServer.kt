@@ -4,7 +4,7 @@ import dev.nohus.rift.generated.resources.Res
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.call
+import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.netty.NettyApplicationEngine
@@ -24,7 +24,7 @@ private val logger = KotlinLogging.logger {}
 class CallbackServer {
 
     private val scope = CoroutineScope(Dispatchers.IO)
-    private var server: NettyApplicationEngine? = null
+    private var server: EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration>? = null
     private var callback: (suspend (code: String, state: String) -> Unit)? = null
 
     fun start(port: Int, deferred: CompletableDeferred<Authentication>) {
@@ -54,7 +54,7 @@ class CallbackServer {
         server = null
     }
 
-    private fun createCallbackServer(port: Int): NettyApplicationEngine {
+    private fun createCallbackServer(port: Int): EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration> {
         return embeddedServer(Netty, port = port) {
             routing {
                 get("/callback") {

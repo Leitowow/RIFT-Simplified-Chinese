@@ -2,8 +2,11 @@ package dev.nohus.rift.planetaryindustry
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -12,7 +15,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -33,19 +38,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import dev.nohus.rift.compose.AsyncPlayerPortrait
 import dev.nohus.rift.compose.ButtonType
 import dev.nohus.rift.compose.ContextMenuItem
-import dev.nohus.rift.compose.LoadingSpinner
+import dev.nohus.rift.compose.LoadingSpinnerAmbient
 import dev.nohus.rift.compose.OnVisibilityChange
 import dev.nohus.rift.compose.RiftButton
 import dev.nohus.rift.compose.RiftContextMenuPopup
@@ -56,18 +63,24 @@ import dev.nohus.rift.compose.ScrollbarColumn
 import dev.nohus.rift.compose.ScrollbarLazyColumn
 import dev.nohus.rift.compose.theme.RiftTheme
 import dev.nohus.rift.compose.theme.Spacing
+import dev.nohus.rift.dynamicportraits.DynamicCharacterPortraitParallax
 import dev.nohus.rift.generated.resources.Res
 import dev.nohus.rift.generated.resources.bars_sort_ascending_16px
 import dev.nohus.rift.generated.resources.checkmark_16px
+import dev.nohus.rift.generated.resources.copy_16px
 import dev.nohus.rift.generated.resources.details_view_16px
 import dev.nohus.rift.generated.resources.grid_view_16px
 import dev.nohus.rift.generated.resources.list_view_16px
+import dev.nohus.rift.generated.resources.menu_excel
+import dev.nohus.rift.generated.resources.menu_excel_addin
+import dev.nohus.rift.generated.resources.menu_googlesheets
 import dev.nohus.rift.generated.resources.pi_slotunlocked
 import dev.nohus.rift.generated.resources.window_planets
 import dev.nohus.rift.network.AsyncResource.Error
 import dev.nohus.rift.network.AsyncResource.Loading
 import dev.nohus.rift.network.AsyncResource.Ready
 import dev.nohus.rift.planetaryindustry.PlanetaryIndustryRepository.ColonyItem
+import dev.nohus.rift.planetaryindustry.PlanetaryIndustryRepository.SeekingColony
 import dev.nohus.rift.planetaryindustry.PlanetaryIndustryViewModel.UiState
 import dev.nohus.rift.planetaryindustry.PlanetaryIndustryViewModel.View.DetailsView
 import dev.nohus.rift.planetaryindustry.PlanetaryIndustryViewModel.View.GridView
@@ -84,9 +97,10 @@ import dev.nohus.rift.settings.persistence.ColonySortingFilter
 import dev.nohus.rift.settings.persistence.ColonyView
 import dev.nohus.rift.utils.invertedPlural
 import dev.nohus.rift.utils.plural
-import dev.nohus.rift.utils.viewModel
+import dev.nohus.rift.viewModel
 import dev.nohus.rift.windowing.WindowManager.RiftWindowState
 import org.jetbrains.compose.resources.painterResource
+import java.time.Duration
 import java.time.Instant
 
 @Composable
@@ -111,6 +125,8 @@ fun PlanetaryIndustryWindow(
             onDetailsClick = viewModel::onDetailsClick,
             onBackClick = viewModel::onBackClick,
             onSortingFilterChange = viewModel::onSortingFilterChange,
+            onCopyData = viewModel::onCopyData,
+            onSetSeekingColony = viewModel::setSeekingColony,
         )
         OnVisibilityChange(viewModel::onVisibilityChange)
     }
@@ -125,6 +141,8 @@ private fun PlanetaryIndustryWindowContent(
     onDetailsClick: (id: String) -> Unit,
     onBackClick: () -> Unit,
     onSortingFilterChange: (ColonySortingFilter) -> Unit,
+    onCopyData: (CopyType) -> Unit,
+    onSetSeekingColony: (SeekingColony?) -> Unit,
 ) {
     when (val resource = state.colonies) {
         is Error -> {
@@ -135,7 +153,7 @@ private fun PlanetaryIndustryWindowContent(
             ) {
                 Text(
                     text = "Could not load your colonies",
-                    style = RiftTheme.typography.titlePrimary,
+                    style = RiftTheme.typography.headerPrimary,
                     textAlign = TextAlign.Center,
                 )
                 RiftButton(
@@ -152,10 +170,10 @@ private fun PlanetaryIndustryWindowContent(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxWidth().padding(Spacing.large),
             ) {
-                LoadingSpinner()
+                LoadingSpinnerAmbient()
                 Text(
                     text = "Loading colonies…",
-                    style = RiftTheme.typography.titlePrimary,
+                    style = RiftTheme.typography.headerPrimary,
                     textAlign = TextAlign.Center,
                 )
             }
@@ -172,6 +190,8 @@ private fun PlanetaryIndustryWindowContent(
                     onRequestSimulation = onRequestSimulation,
                     onDetailsClick = onDetailsClick,
                     onSortingFilterChange = onSortingFilterChange,
+                    onCopyData = onCopyData,
+                    onSetSeekingColony = onSetSeekingColony,
                 )
             } else {
                 EmptyState()
@@ -190,6 +210,8 @@ private fun MainColoniesContent(
     onRequestSimulation: () -> Unit,
     onDetailsClick: (id: String) -> Unit,
     onSortingFilterChange: (ColonySortingFilter) -> Unit,
+    onCopyData: (CopyType) -> Unit,
+    onSetSeekingColony: (SeekingColony?) -> Unit,
 ) {
     val lazyListState = rememberLazyListState()
     val lazyGridState = rememberLazyGridState()
@@ -203,153 +225,179 @@ private fun MainColoniesContent(
                 state = state,
                 onViewChange = onViewChange,
                 onSortingFilterChange = onSortingFilterChange,
+                onCopyData = onCopyData,
             )
         }
 
-        // Shared element transition temporarily commented out due to crashes in LookaheadScope:
-        // https://issuetracker.google.com/issues/368429360
-        //
-//        var sharedTransitionLayoutSize by remember { mutableStateOf(Offset.Zero) }
-//        val overlayClip = remember(sharedTransitionLayoutSize) { getLayoutBoundsOverlayClip(sharedTransitionLayoutSize) }
-//        SharedTransitionLayout(
-//            modifier = Modifier.onSizeChanged {
-//                sharedTransitionLayoutSize = Offset(it.width.toFloat(), it.height.toFloat())
-//            },
-//        ) {
-        AnimatedContent(targetState = state.view) { view ->
-            when (view) {
-                is DetailsView -> {
-                    ColonyDetails(
-                        item = view.item,
-                        now = Instant.now(),
-//                            animatedVisibilityScope = this@AnimatedContent,
-//                            sharedTransitionScope = this@SharedTransitionLayout,
-                        onBackClick = onBackClick,
-                        onRequestSimulation = onRequestSimulation,
-                    )
-                }
-
-                ListView -> {
-                    Column {
-                        ScrollbarLazyColumn(
-                            listState = lazyListState,
-                            verticalArrangement = Arrangement.spacedBy(Spacing.medium),
-                            contentPadding = PaddingValues(top = Spacing.medium),
-                        ) {
-                            items(items, key = { it.colony.id }) { item ->
-                                Column(
-                                    modifier = Modifier.animateItem(),
-                                ) {
-                                    var isViewingFastForward by remember { mutableStateOf(false) }
-                                    ColonyTitle(
-                                        item = item,
-                                        isExpanded = false,
-                                        isViewingFastForward = isViewingFastForward,
-                                        onViewFastForwardChange = { isViewingFastForward = it },
-//                                            colonyIconModifier = Modifier
-//                                                .sharedElement(
-//                                                    rememberSharedContentState(item.colony.id),
-//                                                    this@AnimatedContent,
-//                                                    clipInOverlayDuringTransition = overlayClip,
-//                                                ),
-                                        onDetailsClick = { onDetailsClick(item.colony.id) },
-                                    )
-                                    if (isViewingFastForward) {
-                                        ColonyOverview(
-                                            colony = item.ffwdColony,
-                                            now = item.ffwdColony.currentSimTime,
-                                            isAdvancingTime = false,
-                                            onRequestSimulation = {},
-                                        )
-                                    } else {
-                                        ColonyOverview(
-                                            colony = item.colony,
-                                            now = Instant.now(),
-                                            isAdvancingTime = true,
-                                            onRequestSimulation = onRequestSimulation,
-                                        )
-                                    }
-                                }
-                            }
+        var sharedTransitionLayoutSize by remember { mutableStateOf(Offset.Zero) }
+        val overlayClip = remember(sharedTransitionLayoutSize) { getLayoutBoundsOverlayClip(sharedTransitionLayoutSize) }
+        SharedTransitionLayout(
+            modifier = Modifier.onSizeChanged {
+                sharedTransitionLayoutSize = Offset(it.width.toFloat(), it.height.toFloat())
+            },
+        ) {
+            AnimatedContent(targetState = state.view) { view ->
+                when (view) {
+                    is DetailsView -> {
+                        val item = state.colonies.success?.firstOrNull { it.colony.id == view.colonyId }
+                        if (item != null) {
+                            ColonyDetails(
+                                item = item,
+                                now = Instant.now(),
+                                animatedVisibilityScope = this@AnimatedContent,
+                                sharedTransitionScope = this@SharedTransitionLayout,
+                                onBackClick = onBackClick,
+                                onRequestSimulation = onRequestSimulation,
+                                onSetSeekingColony = onSetSeekingColony,
+                            )
                         }
                     }
-                }
 
-                GridView -> {
-                    Column {
-                        LazyVerticalGrid(
-                            columns = GridCells.FixedSize(80.dp),
-                            state = lazyGridState,
-                            contentPadding = PaddingValues(top = Spacing.medium),
-                            horizontalArrangement = Arrangement.spacedBy(Spacing.small),
-                            verticalArrangement = Arrangement.spacedBy(Spacing.small),
-                        ) {
-                            items(items, key = { it.colony.id }) { item ->
-                                ColonyPlanetSnippet(
-                                    item = item,
-//                                        colonyIconModifier = Modifier
-//                                            .sharedElement(
-//                                                rememberSharedContentState(item.colony.id),
-//                                                this@AnimatedContent,
-//                                                clipInOverlayDuringTransition = overlayClip,
-//                                            ),
-                                    isShowingCharacter = true,
-                                    modifier = Modifier.animateItem(),
-                                    onExpandClick = { onDetailsClick(item.colony.id) },
-                                )
-                            }
-                        }
-                    }
-                }
-
-                RowsView -> {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(7),
-                        state = lazyGridRowsState,
-                        contentPadding = PaddingValues(top = Spacing.medium),
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.small),
-                        verticalArrangement = Arrangement.spacedBy(Spacing.small),
-                    ) {
-                        items.groupBy { it.colony.characterId }.forEach { (characterId, items) ->
-                            item(key = characterId) {
-                                RiftTooltipArea(
-                                    text = items.first().characterName ?: "Loading…",
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .animateItem()
-                                            .clip(CircleShape)
-                                            .background(RiftTheme.colors.windowBackgroundActive.copy(alpha = 0.3f)),
+                    ListView -> {
+                        Column {
+                            ScrollbarLazyColumn(
+                                listState = lazyListState,
+                                verticalArrangement = Arrangement.spacedBy(Spacing.medium),
+                                contentPadding = PaddingValues(top = Spacing.medium),
+                            ) {
+                                items(items, key = { it.colony.id }) { item ->
+                                    Column(
+                                        modifier = Modifier.animateItem(),
                                     ) {
-                                        AsyncPlayerPortrait(
-                                            characterId = characterId,
-                                            size = 64,
-                                            modifier = Modifier.size(64.dp),
+                                        var isViewingFastForward by remember { mutableStateOf(false) }
+                                        ColonyTitle(
+                                            item = item,
+                                            isExpanded = false,
+                                            isViewingFastForward = isViewingFastForward,
+                                            onViewFastForwardChange = { isViewingFastForward = it },
+                                            onSetSeekingColony = onSetSeekingColony,
+                                            colonyIconModifier = Modifier
+                                                .sharedElement(
+                                                    rememberSharedContentState(item.colony.id),
+                                                    this@AnimatedContent,
+                                                    clipInOverlayDuringTransition = overlayClip,
+                                                ),
+                                            onDetailsClick = { onDetailsClick(item.colony.id) },
                                         )
+                                        if (isViewingFastForward) {
+                                            val colony = item.seekColony ?: item.ffwdColony
+                                            ColonyOverview(
+                                                colony = colony,
+                                                now = colony.currentSimTime,
+                                                isAdvancingTime = false,
+                                                onRequestSimulation = {},
+                                            )
+                                        } else {
+                                            ColonyOverview(
+                                                colony = item.colony,
+                                                now = Instant.now(),
+                                                isAdvancingTime = true,
+                                                onRequestSimulation = onRequestSimulation,
+                                            )
+                                        }
                                     }
                                 }
                             }
-                            items.forEach { item ->
-                                item(key = item.colony.id) {
+                        }
+                    }
+
+                    GridView -> {
+                        Column {
+                            val transition = rememberInfiniteTransition()
+                            LazyVerticalGrid(
+                                columns = GridCells.FixedSize(80.dp),
+                                state = lazyGridState,
+                                contentPadding = PaddingValues(top = Spacing.medium),
+                                horizontalArrangement = Arrangement.spacedBy(Spacing.small),
+                                verticalArrangement = Arrangement.spacedBy(Spacing.small),
+                            ) {
+                                items(items, key = { it.colony.id }) { item ->
                                     ColonyPlanetSnippet(
                                         item = item,
+                                        colonyIconModifier = Modifier
+                                            .sharedElement(
+                                                rememberSharedContentState(item.colony.id),
+                                                this@AnimatedContent,
+                                                clipInOverlayDuringTransition = overlayClip,
+                                            ),
+                                        transition = transition,
+                                        isShowingCharacter = true,
                                         modifier = Modifier.animateItem(),
-                                        isShowingCharacter = false,
                                         onExpandClick = { onDetailsClick(item.colony.id) },
                                     )
                                 }
                             }
-                            repeat(6 - items.size) {
-                                item(key = "$characterId-empty-$it") {
+                        }
+                    }
+
+                    RowsView -> {
+                        val transition = rememberInfiniteTransition()
+                        val now = remember(items) { Instant.now() }
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(7),
+                            state = lazyGridRowsState,
+                            contentPadding = PaddingValues(vertical = Spacing.medium),
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.small),
+                            verticalArrangement = Arrangement.spacedBy(Spacing.small),
+                        ) {
+                            items.groupBy { it.colony.characterId }.entries.forEachIndexed { index, (characterId, items) ->
+                                item(key = characterId) {
                                     RiftTooltipArea(
-                                        text = "Unestablished Colony",
-                                        modifier = Modifier.animateItem(),
+                                        text = items.first().characterName ?: "Loading…",
                                     ) {
-                                        Image(
-                                            painter = painterResource(Res.drawable.pi_slotunlocked),
-                                            contentDescription = null,
-                                            modifier = Modifier.size(64.dp),
+                                        Box(
+                                            contentAlignment = Alignment.Center,
+                                            modifier = Modifier
+                                                .animateItem()
+                                                .background(RiftTheme.colors.windowBackgroundActive.copy(alpha = 0.3f))
+                                                .size(72.dp),
+                                        ) {
+                                            DynamicCharacterPortraitParallax(
+                                                characterId = characterId,
+                                                size = 64.dp,
+                                                enterTimestamp = now + (Duration.ofMillis(100L + index * 100)),
+                                                pointerInteractionStateHolder = null,
+                                                modifier = Modifier
+                                                    .clip(CircleShape),
+                                            )
+                                        }
+                                    }
+                                }
+                                items.forEach { item ->
+                                    item(key = item.colony.id) {
+                                        ColonyPlanetSnippet(
+                                            item = item,
+                                            colonyIconModifier = Modifier
+                                                .sharedElement(
+                                                    rememberSharedContentState(item.colony.id),
+                                                    this@AnimatedContent,
+                                                    clipInOverlayDuringTransition = overlayClip,
+                                                ),
+                                            transition = transition,
+                                            modifier = Modifier.animateItem(),
+                                            isShowingCharacter = false,
+                                            onExpandClick = { onDetailsClick(item.colony.id) },
                                         )
+                                    }
+                                }
+                                repeat(6 - items.size) {
+                                    item(key = "$characterId-empty-$it") {
+                                        RiftTooltipArea(
+                                            text = "Unestablished Colony",
+                                            modifier = Modifier.animateItem(),
+                                        ) {
+                                            Box(
+                                                contentAlignment = Alignment.Center,
+                                                modifier = Modifier
+                                                    .size(72.dp),
+                                            ) {
+                                                Image(
+                                                    painter = painterResource(Res.drawable.pi_slotunlocked),
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(64.dp),
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -358,7 +406,6 @@ private fun MainColoniesContent(
                 }
             }
         }
-//        }
     }
 }
 
@@ -366,7 +413,7 @@ private fun MainColoniesContent(
 private fun getLayoutBoundsOverlayClip(sharedTransitionLayoutSize: Offset): SharedTransitionScope.OverlayClip {
     return object : SharedTransitionScope.OverlayClip {
         override fun getClipPath(
-            state: SharedTransitionScope.SharedContentState,
+            sharedContentState: SharedTransitionScope.SharedContentState,
             bounds: Rect,
             layoutDirection: LayoutDirection,
             density: Density,
@@ -382,7 +429,7 @@ private fun getLayoutBoundsOverlayClip(sharedTransitionLayoutSize: Offset): Shar
 private fun EmptyState() {
     Text(
         text = "No established planetary colonies.",
-        style = RiftTheme.typography.titlePrimary,
+        style = RiftTheme.typography.headerPrimary,
         textAlign = TextAlign.Center,
         modifier = Modifier
             .fillMaxWidth()
@@ -395,45 +442,61 @@ private fun EmptyState() {
 private fun ColonyDetails(
     item: ColonyItem,
     now: Instant,
-//    sharedTransitionScope: SharedTransitionScope,
-//    animatedVisibilityScope: AnimatedVisibilityScope,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     onBackClick: () -> Unit,
     onRequestSimulation: () -> Unit,
+    onSetSeekingColony: (SeekingColony?) -> Unit,
 ) {
-    Column {
-        var isViewingFastForward by remember { mutableStateOf(false) }
-        val scrollState = rememberScrollState()
-//        with(sharedTransitionScope) {
-        ColonyTitle(
-            item = item,
-            isExpanded = true,
-            isViewingFastForward = isViewingFastForward,
-            onViewFastForwardChange = { isViewingFastForward = it },
-            scrollState = scrollState,
-//                colonyIconModifier = Modifier
-//                    .sharedElement(rememberSharedContentState(item.colony.id), animatedVisibilityScope),
-            onDetailsClick = onBackClick,
+    Box(Modifier.fillMaxSize()) {
+        Image(
+            painter = painterResource(item.colony.planet.type.background),
+            contentDescription = null,
+            contentScale = ContentScale.FillHeight,
+            alignment = Alignment.BottomEnd,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .scale(scaleX = 1f, scaleY = -1f)
+                .height(160.dp),
         )
-//        }
-        ScrollbarColumn(
-            scrollState = scrollState,
-            contentPadding = PaddingValues(top = Spacing.medium),
-        ) {
-            AnimatedContent(isViewingFastForward) {
-                if (it) {
-                    ColonyPins(
-                        colony = item.ffwdColony,
-                        now = item.ffwdColony.currentSimTime,
-                        isAdvancingTime = false,
-                        onRequestSimulation = {},
-                    )
-                } else {
-                    ColonyPins(
-                        colony = item.colony,
-                        now = now,
-                        isAdvancingTime = true,
-                        onRequestSimulation = onRequestSimulation,
-                    )
+        Column {
+            var isViewingFastForward by remember { mutableStateOf(false) }
+            val scrollState = rememberScrollState()
+            with(sharedTransitionScope) {
+                ColonyTitle(
+                    item = item,
+                    isExpanded = true,
+                    isViewingFastForward = isViewingFastForward,
+                    onViewFastForwardChange = { isViewingFastForward = it },
+                    onSetSeekingColony = onSetSeekingColony,
+                    scrollState = scrollState,
+                    colonyIconModifier = Modifier
+                        .sharedElement(rememberSharedContentState(item.colony.id), animatedVisibilityScope),
+                    onDetailsClick = onBackClick,
+                )
+            }
+
+            ScrollbarColumn(
+                scrollState = scrollState,
+                contentPadding = PaddingValues(top = Spacing.medium),
+            ) {
+                AnimatedContent(isViewingFastForward) {
+                    if (it) {
+                        val colony = item.seekColony ?: item.ffwdColony
+                        ColonyPins(
+                            colony = colony,
+                            now = colony.currentSimTime,
+                            isAdvancingTime = false,
+                            onRequestSimulation = {},
+                        )
+                    } else {
+                        ColonyPins(
+                            colony = item.colony,
+                            now = now,
+                            isAdvancingTime = true,
+                            onRequestSimulation = onRequestSimulation,
+                        )
+                    }
                 }
             }
         }
@@ -446,6 +509,7 @@ private fun FiltersRow(
     modifier: Modifier = Modifier,
     onViewChange: (ColonyView) -> Unit,
     onSortingFilterChange: (ColonySortingFilter) -> Unit,
+    onCopyData: (CopyType) -> Unit,
 ) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
@@ -512,9 +576,14 @@ private fun FiltersRow(
                 onClick = { onSortingFilterChange(ColonySortingFilter.ExpiryTime) },
             ),
             ContextMenuItem.TextItem(
-                text = "By character",
+                text = "By character account and age",
                 iconResource = Res.drawable.checkmark_16px.takeIf { ColonySortingFilter.Character == state.sortingFilter },
                 onClick = { onSortingFilterChange(ColonySortingFilter.Character) },
+            ),
+            ContextMenuItem.TextItem(
+                text = "By character name",
+                iconResource = Res.drawable.checkmark_16px.takeIf { ColonySortingFilter.CharacterAlphabetical == state.sortingFilter },
+                onClick = { onSortingFilterChange(ColonySortingFilter.CharacterAlphabetical) },
             ),
         )
         Box(contentAlignment = Alignment.BottomStart) {
@@ -540,6 +609,46 @@ private fun FiltersRow(
             }
         }
 
+        val copyItems = listOf<ContextMenuItem>(
+            ContextMenuItem.TextItem(
+                text = "Copy for Google Sheets",
+                iconResource = Res.drawable.menu_googlesheets,
+                onClick = { onCopyData(CopyType.GoogleSheets) },
+            ),
+            ContextMenuItem.TextItem(
+                text = "Copy for Excel",
+                iconResource = Res.drawable.menu_excel,
+                onClick = { onCopyData(CopyType.Excel) },
+            ),
+            ContextMenuItem.TextItem(
+                text = "Copy for Excel with EVE Online add-in",
+                iconResource = Res.drawable.menu_excel_addin,
+                onClick = { onCopyData(CopyType.ExcelWithAddin) },
+            ),
+        )
+        Box(contentAlignment = Alignment.BottomStart) {
+            var isShown by remember { mutableStateOf(false) }
+            RiftTooltipArea(
+                text = "Copy to spreadsheet",
+            ) {
+                RiftImageButton(
+                    resource = Res.drawable.copy_16px,
+                    size = 16.dp,
+                    onClick = { isShown = true },
+                )
+            }
+            if (isShown) {
+                val offset = with(LocalDensity.current) {
+                    16.dp.toPx().toInt()
+                }
+                RiftContextMenuPopup(
+                    items = copyItems,
+                    offset = IntOffset(0, offset),
+                    onDismissRequest = { isShown = false },
+                )
+            }
+        }
+
         Spacer(Modifier.weight(1f))
         state.colonies.success?.let { items ->
             val colonyCount = items.size
@@ -557,7 +666,7 @@ private fun FiltersRow(
                 }
                 Text(
                     text = text,
-                    style = RiftTheme.typography.titlePrimary,
+                    style = RiftTheme.typography.headerPrimary,
                 )
             }
         }

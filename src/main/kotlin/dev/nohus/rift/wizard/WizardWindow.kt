@@ -1,9 +1,6 @@
 package dev.nohus.rift.wizard
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateIntAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -18,12 +15,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.onClick
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -33,9 +27,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -46,6 +38,7 @@ import dev.nohus.rift.compose.RiftButton
 import dev.nohus.rift.compose.RiftDropdownWithLabel
 import dev.nohus.rift.compose.RiftMessageDialog
 import dev.nohus.rift.compose.RiftWindow
+import dev.nohus.rift.compose.TypingText
 import dev.nohus.rift.compose.theme.RiftTheme
 import dev.nohus.rift.compose.theme.Spacing
 import dev.nohus.rift.configurationpack.displayName
@@ -55,7 +48,7 @@ import dev.nohus.rift.generated.resources.tray_tray_64
 import dev.nohus.rift.generated.resources.window_agent
 import dev.nohus.rift.get
 import dev.nohus.rift.settings.persistence.ConfigurationPack
-import dev.nohus.rift.utils.viewModel
+import dev.nohus.rift.viewModel
 import dev.nohus.rift.windowing.WindowManager.RiftWindowState
 import dev.nohus.rift.wizard.WizardViewModel.EveInstallationState
 import dev.nohus.rift.wizard.WizardViewModel.UiState
@@ -126,7 +119,7 @@ private fun WizardWindowContent(
                 .padding(end = Spacing.large),
         ) {
             AnimatedImage(
-                resource = "files/aura.gif",
+                resource = "aura.gif",
                 modifier = Modifier
                     .size(200.dp)
                     .border(2.dp, RiftTheme.colors.borderPrimary),
@@ -190,7 +183,7 @@ private fun WelcomeStep(
         }
         TypingText(
             text = text,
-            style = RiftTheme.typography.titlePrimary,
+            style = RiftTheme.typography.headerPrimary,
             onFinishedTyping = { hasFinishedTyping = true },
         )
     }
@@ -244,7 +237,7 @@ private fun EveInstallationStep(
         }
         TypingText(
             text = text,
-            style = RiftTheme.typography.titlePrimary,
+            style = RiftTheme.typography.headerPrimary,
             onFinishedTyping = { hasFinishedTyping = true },
         )
         AnimatedVisibility(
@@ -318,7 +311,7 @@ private fun CharactersStep(
         }
         TypingText(
             text = text,
-            style = RiftTheme.typography.titlePrimary,
+            style = RiftTheme.typography.headerPrimary,
             onFinishedTyping = { hasFinishedTyping = true },
         )
         AnimatedVisibility(
@@ -370,7 +363,7 @@ private fun ConfigurationPacksStep(
         }
         TypingText(
             text = text,
-            style = RiftTheme.typography.titlePrimary,
+            style = RiftTheme.typography.headerPrimary,
             onFinishedTyping = { hasFinishedTyping = true },
         )
         AnimatedVisibility(
@@ -402,6 +395,7 @@ private fun IntelChannelsStep(
         onContinueClick = onContinueClick,
         isContinueVisible = hasFinishedTyping,
         isWarning = !step.hasChannels,
+        warningButtonText = "Skip",
     ) {
         val text = buildAnnotatedString {
             if (step.hasChannels) {
@@ -416,13 +410,13 @@ private fun IntelChannelsStep(
                     append("Intel channels")
                 }
                 append(
-                    "\n\nLet's add intel channels that you want RIFT to monitor for intel reports.",
+                    "\n\nIf you are in an alliance with intel channels, you can have RIFT monitor them for intel reports.",
                 )
             }
         }
         TypingText(
             text = text,
-            style = RiftTheme.typography.titlePrimary,
+            style = RiftTheme.typography.headerPrimary,
             onFinishedTyping = { hasFinishedTyping = true },
         )
         AnimatedVisibility(
@@ -466,7 +460,7 @@ private fun FinishStep(
         }
         TypingText(
             text = text,
-            style = RiftTheme.typography.titlePrimary,
+            style = RiftTheme.typography.headerPrimary,
             onFinishedTyping = { hasFinishedTyping = true },
         )
         AnimatedVisibility(
@@ -488,6 +482,7 @@ private fun StepContent(
     onContinueClick: () -> Unit,
     isContinueVisible: Boolean = true,
     isWarning: Boolean = false,
+    warningButtonText: String = "Continue anyway",
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
@@ -500,7 +495,7 @@ private fun StepContent(
             enter = fadeIn(),
             modifier = Modifier.align(Alignment.End),
         ) {
-            val text = if (isWarning) "Continue anyway" else "Continue"
+            val text = if (isWarning) warningButtonText else "Continue"
             val type = if (isWarning) ButtonType.Negative else ButtonType.Primary
             RiftButton(
                 text = text,
@@ -509,26 +504,4 @@ private fun StepContent(
             )
         }
     }
-}
-
-@Composable
-private fun TypingText(
-    text: AnnotatedString,
-    style: TextStyle,
-    onFinishedTyping: () -> Unit = {},
-    modifier: Modifier = Modifier,
-) {
-    var targetValue by remember(text) { mutableStateOf(0) }
-    val animationSpec = remember(targetValue) {
-        tween<Int>(durationMillis = targetValue * 20, easing = LinearEasing)
-    }
-    val typedCharacters = key(text) { animateIntAsState(targetValue, animationSpec, finishedListener = { onFinishedTyping() }) }
-    LaunchedEffect(text) {
-        targetValue = text.length
-    }
-    Text(
-        text = text.subSequence(0, typedCharacters.value),
-        style = style,
-        modifier = modifier,
-    )
 }

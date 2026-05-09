@@ -6,10 +6,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -35,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import dev.nohus.rift.clipboard.Clipboard
 import dev.nohus.rift.compose.ButtonCornerCut
 import dev.nohus.rift.compose.ButtonType
 import dev.nohus.rift.compose.ContextMenuItem
@@ -46,18 +49,21 @@ import dev.nohus.rift.compose.RiftButton
 import dev.nohus.rift.compose.RiftContextMenuArea
 import dev.nohus.rift.compose.RiftTabBar
 import dev.nohus.rift.compose.RiftTextField
+import dev.nohus.rift.compose.RiftWarningBanner
 import dev.nohus.rift.compose.RiftWindow
+import dev.nohus.rift.compose.ScrollbarColumn
 import dev.nohus.rift.compose.ScrollbarLazyColumn
 import dev.nohus.rift.compose.Tab
-import dev.nohus.rift.compose.TextWithLinks
 import dev.nohus.rift.compose.annotateLinks
 import dev.nohus.rift.compose.hoverBackground
 import dev.nohus.rift.compose.theme.RiftTheme
 import dev.nohus.rift.compose.theme.Spacing
+import dev.nohus.rift.di.koin
 import dev.nohus.rift.generated.resources.Res
 import dev.nohus.rift.generated.resources.bee
 import dev.nohus.rift.generated.resources.logout
 import dev.nohus.rift.generated.resources.window_chatchannels
+import dev.nohus.rift.jabber.JabberAccountRepository.JabberAccountResult.JabberAccount
 import dev.nohus.rift.jabber.JabberViewModel.ContactListState
 import dev.nohus.rift.jabber.JabberViewModel.TabModel
 import dev.nohus.rift.jabber.JabberViewModel.UiState
@@ -65,10 +71,9 @@ import dev.nohus.rift.jabber.client.MultiUserChatController.MultiUserMessage
 import dev.nohus.rift.jabber.client.RosterUsersController.RosterUser
 import dev.nohus.rift.jabber.client.UserChatController.UserChat
 import dev.nohus.rift.jabber.client.UserChatController.UserMessage
-import dev.nohus.rift.utils.Clipboard
 import dev.nohus.rift.utils.openBrowser
 import dev.nohus.rift.utils.toURIOrNull
-import dev.nohus.rift.utils.viewModel
+import dev.nohus.rift.viewModel
 import dev.nohus.rift.windowing.WindowManager.RiftWindowState
 import org.jetbrains.compose.resources.painterResource
 import org.jivesoftware.smack.chat2.Chat
@@ -205,7 +210,7 @@ private fun ConnectingContent() {
             LoadingSpinner()
             Text(
                 text = "Connecting…",
-                style = RiftTheme.typography.titlePrimary,
+                style = RiftTheme.typography.headerPrimary,
                 modifier = Modifier
                     .padding(top = Spacing.large),
             )
@@ -251,7 +256,7 @@ private fun NoAccountContent(
                 }
                 Text(
                     text = text,
-                    style = RiftTheme.typography.titlePrimary,
+                    style = RiftTheme.typography.headerPrimary,
                     textAlign = TextAlign.Center,
                 )
             }
@@ -295,7 +300,9 @@ private fun LoginContent(
     Column(
         modifier = Modifier.padding(Spacing.medium),
     ) {
-        var jidLocalPart by remember { mutableStateOf("") }
+        val account = remember { koin.get<JabberAccountRepository>().getAccount() as? JabberAccount }
+        var jidLocalPart by remember { mutableStateOf(account?.jid?.substringBeforeLast("@") ?: "") }
+        val savedPassword = remember { account?.password }
         var password by remember { mutableStateOf("") }
         Box(
             contentAlignment = Alignment.Center,
@@ -317,9 +324,8 @@ private fun LoginContent(
                     textAlign = TextAlign.Center,
                 )
                 if (state.errorMessage != null) {
-                    Text(
+                    RiftWarningBanner(
                         text = state.errorMessage,
-                        style = RiftTheme.typography.bodyPrimary.copy(color = RiftTheme.colors.borderError),
                         modifier = Modifier.padding(top = Spacing.medium),
                     )
                 }
@@ -328,7 +334,7 @@ private fun LoginContent(
                 ) {
                     Text(
                         text = "Jabber username",
-                        style = RiftTheme.typography.titlePrimary,
+                        style = RiftTheme.typography.headerPrimary,
                     )
                     RiftTextField(
                         text = jidLocalPart,
@@ -340,13 +346,13 @@ private fun LoginContent(
                     )
                     Text(
                         text = "Jabber password",
-                        style = RiftTheme.typography.titlePrimary,
+                        style = RiftTheme.typography.headerPrimary,
                         modifier = Modifier
                             .padding(top = Spacing.small),
                     )
                     RiftTextField(
                         text = password,
-                        placeholder = "Type your password",
+                        placeholder = if (savedPassword != null) "(unchanged)" else "Type your password",
                         isPassword = true,
                         onTextChanged = { password = it },
                         modifier = Modifier
@@ -364,7 +370,10 @@ private fun LoginContent(
         RiftButton(
             text = "Connect",
             cornerCut = ButtonCornerCut.Both,
-            onClick = { onConnectClick(jidLocalPart, password) },
+            onClick = {
+                val effectivePassword = password.takeIf { it.isNotEmpty() } ?: savedPassword ?: password
+                onConnectClick(jidLocalPart, effectivePassword)
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = Spacing.medium),
@@ -536,20 +545,28 @@ private fun AddContact(
     ) {
         Text(
             text = "Add contact",
-            style = RiftTheme.typography.titlePrimary,
+            style = RiftTheme.typography.headerPrimary,
         )
         var jidLocalPart by remember { mutableStateOf("") }
-        RiftTextField(
-            text = jidLocalPart,
-            placeholder = "Jabber username",
-            onTextChanged = {
-                jidLocalPart = it
-            },
-            modifier = Modifier.fillMaxWidth(),
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            RiftTextField(
+                text = jidLocalPart,
+                placeholder = "Jabber username",
+                onTextChanged = {
+                    jidLocalPart = it
+                },
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = "@goonfleet.com",
+                style = RiftTheme.typography.bodyPrimary,
+            )
+        }
         Text(
-            text = "Choose nickname",
-            style = RiftTheme.typography.titlePrimary,
+            text = "Choose nickname (optional)",
+            style = RiftTheme.typography.headerPrimary,
         )
         var name by remember { mutableStateOf("") }
         RiftTextField(
@@ -562,7 +579,7 @@ private fun AddContact(
         )
         Text(
             text = "Choose group (optional)",
-            style = RiftTheme.typography.titlePrimary,
+            style = RiftTheme.typography.headerPrimary,
         )
         var group by remember { mutableStateOf("") }
         RiftTextField(
@@ -592,7 +609,10 @@ private fun AddContact(
             RiftButton(
                 text = "Add contact",
                 cornerCut = ButtonCornerCut.BottomRight,
-                onClick = { onAddContactSubmitClick(jidLocalPart, name, listOf(group)) },
+                onClick = {
+                    val name = name.takeIf { it.isNotBlank() } ?: jidLocalPart
+                    onAddContactSubmitClick(jidLocalPart, name, listOf(group))
+                },
                 modifier = Modifier.weight(1f),
             )
         }
@@ -611,7 +631,7 @@ private fun AddChatRoom(
     ) {
         Text(
             text = "Add chat room",
-            style = RiftTheme.typography.titlePrimary,
+            style = RiftTheme.typography.headerPrimary,
         )
         var jidLocalPart by remember { mutableStateOf("") }
         Row(
@@ -678,7 +698,7 @@ private fun UserChat(
             }
             Text(
                 text = userChat.name,
-                style = RiftTheme.typography.titlePrimary,
+                style = RiftTheme.typography.headerPrimary,
             )
         }
         Box(
@@ -750,20 +770,22 @@ private fun MultiUserChat(
     onMessageSend: (String) -> Unit,
 ) {
     Column {
-        Column(
-            modifier = Modifier.padding(Spacing.medium),
+        ScrollbarColumn(
+            modifier = Modifier
+                .heightIn(max = 85.dp)
+                .padding(Spacing.medium),
         ) {
             if (subject != null) {
                 val linkStyle = SpanStyle(color = RiftTheme.colors.textLink, fontWeight = FontWeight.Bold)
                 val linkifiedSubject = remember(subject) { annotateLinks(subject.trim(), linkStyle) }
-                TextWithLinks(
+                Text(
                     text = linkifiedSubject,
                     style = RiftTheme.typography.bodyPrimary,
                 )
             } else {
                 Text(
                     text = multiUserChat.room.localpartOrNull?.toString() ?: "",
-                    style = RiftTheme.typography.titlePrimary,
+                    style = RiftTheme.typography.headerPrimary,
                 )
             }
         }
@@ -787,6 +809,7 @@ private fun MultiUserChat(
         }
         ScrollbarLazyColumn(
             listState = listState,
+            contentPadding = PaddingValues(vertical = Spacing.medium),
             scrollbarModifier = Modifier.padding(Spacing.small),
             modifier = Modifier.weight(1f),
         ) {
@@ -884,8 +907,8 @@ private fun ChatMessage(
                 .hoverBackground()
                 .padding(horizontal = Spacing.medium, vertical = Spacing.verySmall),
         ) {
-            val style = if (isUsingBiggerFontSize) RiftTheme.typography.titlePrimary else RiftTheme.typography.bodyPrimary
-            TextWithLinks(
+            val style = if (isUsingBiggerFontSize) RiftTheme.typography.headerPrimary else RiftTheme.typography.bodyPrimary
+            Text(
                 text = text,
                 style = style,
             )

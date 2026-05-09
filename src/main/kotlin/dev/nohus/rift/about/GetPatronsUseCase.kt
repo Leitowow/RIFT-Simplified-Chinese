@@ -3,6 +3,7 @@ package dev.nohus.rift.about
 import dev.nohus.rift.network.HttpGetUseCase
 import dev.nohus.rift.network.HttpGetUseCase.CacheBehavior
 import dev.nohus.rift.network.Result
+import dev.nohus.rift.network.requests.Originator
 import dev.nohus.rift.repositories.character.CharacterDetailsRepository
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -22,11 +23,11 @@ class GetPatronsUseCase(
 
     suspend operator fun invoke(cache: CacheBehavior): Result<List<Patron>> {
         return coroutineScope {
-            val characterIds = httpGet("https://riftforeve.online/patrons.txt", cache).success
+            val characterIds = httpGet(Originator.Patrons, "https://riftforeve.online/patrons.txt", cache).success
                 ?.trim()?.lines()?.mapNotNull { it.toIntOrNull() } ?: return@coroutineScope Result.Failure()
             val patrons = characterIds.map { id ->
                 async {
-                    characterDetailsRepository.getCharacterDetails(id)
+                    characterDetailsRepository.getCharacterDetails(Originator.Patrons, id)
                 }
             }.awaitAll().mapNotNull { response ->
                 val details = response ?: return@mapNotNull null

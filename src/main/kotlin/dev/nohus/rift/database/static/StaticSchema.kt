@@ -11,8 +11,12 @@ object SolarSystems : Table() {
     val x = double("x")
     val y = double("y")
     val z = double("z")
+    val x2d = double("x2d").nullable()
+    val y2d = double("y2d").nullable()
     val security = double("security")
     val hasJoveObservatory = bool("hasJoveObservatory")
+    val asteroidBeltCount = integer("asteroidBeltCount")
+    val iceFieldCount = integer("iceFieldCount")
     override val primaryKey = PrimaryKey(solarSystemId)
 }
 
@@ -22,12 +26,15 @@ object Regions : Table() {
     val x = double("x")
     val y = double("y")
     val z = double("z")
+    val x2d = double("x2d").nullable()
+    val y2d = double("y2d").nullable()
     override val primaryKey = PrimaryKey(regionId)
 }
 
 object Constellations : Table() {
     val constellationId = integer("constellationId")
     val constellationName = varchar("constellationName", 100)
+    val regionId = integer("regionId")
     val x = double("x")
     val y = double("y")
     val z = double("z")
@@ -62,16 +69,33 @@ object Ships : Table() {
 
 object Types : Table() {
     val typeId = integer("typeId")
-    val typeName = varchar("typeName", 100)
+    val groupId = integer("groupId")
+    val categoryId = integer("categoryId")
+    val typeName = varchar("typeName", 150)
     val volume = float("volume")
+    val radius = float("radius").nullable()
+    val repackagedVolume = float("repackagedVolume").nullable()
     val iconId = integer("iconID").nullable()
     override val primaryKey = PrimaryKey(typeId)
+}
+
+object TypeGroups : Table() {
+    val groupId = integer("groupId")
+    val groupName = varchar("groupName", 100)
+    override val primaryKey = PrimaryKey(groupId)
+}
+
+object TypeCategories : Table() {
+    val categoryId = integer("categoryId")
+    val categoryName = varchar("categoryName", 100)
+    override val primaryKey = PrimaryKey(categoryId)
 }
 
 object StarGates : Table() {
     val fromSystemId = integer("fromSystemId")
     val toSystemId = integer("toSystemId")
     val starGateTypeId = integer("starGateTypeId")
+    val locationId = long("locationId")
 }
 
 object Stations : Table() {
@@ -79,6 +103,8 @@ object Stations : Table() {
     val typeId = integer("typeId")
     val systemId = integer("systemId")
     val name = varchar("name", 100)
+    val corporationId = integer("corporationId")
+    val hasLoyaltyPointsStore = bool("hasLoyaltyPointsStore")
     override val primaryKey = PrimaryKey(id)
 }
 
@@ -102,4 +128,27 @@ object PlanetaryIndustrySchematicsTypes : Table() {
     val typeId = integer("typeId")
     val quantity = integer("quantity")
     val isInput = bool("isInput")
+}
+
+object Celestials : Table() {
+    val id = integer("id")
+    val typeId = integer("typeId")
+    val solarSystemId = integer("solarSystemId")
+    val orbitId = integer("orbitId").nullable()
+    val x = double("x")
+    val y = double("y")
+    val z = double("z")
+    val radius = double("radius").nullable()
+    val name = varchar("name", 100)
+    override val primaryKey = PrimaryKey(id)
+}
+
+object TypeDogmas : Table() {
+    val typeId = integer("typeId")
+    val entityOverviewShipGroupId = integer("entityOverviewShipGroupId").nullable()
+}
+
+object Backdrops : Table() {
+    val name = varchar("name", 100)
+    val bytes = binary("values")
 }

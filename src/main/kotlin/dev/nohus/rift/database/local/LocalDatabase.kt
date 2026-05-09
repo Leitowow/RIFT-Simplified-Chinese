@@ -27,7 +27,7 @@ class LocalDatabase(
 
     init {
         transaction(targetDatabase) {
-            SchemaUtils.create(Characters2)
+            SchemaUtils.create(Characters2, CharacterAffiliations, WalletJournalEntries, WalletTransactions)
         }
     }
 
@@ -41,7 +41,8 @@ class LocalDatabase(
     }
 
     suspend fun <T> transaction(block: Transaction.() -> T): T {
-        return mutex.withLock { // Mutex because SQLite support only 1 connection at a time
+        // Mutex because SQLite support only 1 connection at a time
+        return mutex.withLock {
             transaction(targetDatabase) {
                 block()
             }

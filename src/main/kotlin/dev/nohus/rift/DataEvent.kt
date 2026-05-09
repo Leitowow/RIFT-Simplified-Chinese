@@ -36,6 +36,14 @@ fun Event?.get(): Boolean {
 }
 
 @Composable
+fun <T> EventEffect(event: DataEvent<T>?, block: (T) -> Unit) {
+    LaunchedEffect(event) {
+        val value = event?.get() ?: return@LaunchedEffect
+        block(value)
+    }
+}
+
+@Composable
 fun EventEffect(event: Event?, block: () -> Unit) {
     LaunchedEffect(event) {
         if (event.get()) {

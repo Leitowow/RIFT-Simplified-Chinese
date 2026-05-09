@@ -18,6 +18,7 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import dev.nohus.rift.compose.ButtonCornerCut
 import dev.nohus.rift.compose.ButtonType
+import dev.nohus.rift.compose.RiftAutocompleteTextField
 import dev.nohus.rift.compose.RiftButton
 import dev.nohus.rift.compose.RiftCheckboxWithLabel
 import dev.nohus.rift.compose.RiftDropdown
@@ -43,7 +44,7 @@ private fun ThemePreviewWindow(onCloseRequest: () -> Unit) {
     RiftWindow(
         title = "RIFT – Theme Preview",
         icon = Res.drawable.window_info,
-        state = RiftWindowState(windowState = rememberWindowState(width = 400.dp, height = Dp.Unspecified), isVisible = true, minimumSize = 400 to 400),
+        state = RiftWindowState(windowState = rememberWindowState(width = 400.dp, height = Dp.Unspecified), minimumSize = 400 to 400),
         onCloseClick = onCloseRequest,
     ) {
         Column(
@@ -74,6 +75,13 @@ private fun ThemePreviewWindow(onCloseRequest: () -> Unit) {
                 onItemSelected = { selectedItem = it },
                 getItemName = { it },
             )
+            var text by remember { mutableStateOf("") }
+            RiftAutocompleteTextField(
+                text = text,
+                suggestions = listOf("Aaa", "Bbb", "Ccc").map { text + it }.takeIf { text.isNotEmpty() } ?: emptyList(),
+                placeholder = "Autocomplete text field",
+                onTextChanged = { text = it },
+            )
 
             var isChecked by remember { mutableStateOf(true) }
             RiftCheckboxWithLabel(
@@ -103,9 +111,10 @@ private fun ThemePreviewWindow(onCloseRequest: () -> Unit) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
             ) {
-                RiftButton("Jump", null, ButtonType.Primary, ButtonCornerCut.BottomLeft, false, Modifier.width(100.dp)) {}
-                RiftButton("Rename", null, ButtonType.Secondary, ButtonCornerCut.None, false, Modifier.width(100.dp)) {}
-                RiftButton("Destroy", null, ButtonType.Negative, ButtonCornerCut.BottomRight, false, Modifier.width(100.dp)) {}
+                RiftButton("Jump", null, ButtonType.Primary, ButtonCornerCut.BottomLeft, false, true, Modifier.width(100.dp)) {}
+                RiftButton("Rename", null, ButtonType.Secondary, ButtonCornerCut.None, false, true, Modifier.width(100.dp)) {}
+                RiftButton("Disabled", null, ButtonType.Secondary, ButtonCornerCut.None, false, false, Modifier.width(100.dp)) {}
+                RiftButton("Destroy", null, ButtonType.Negative, ButtonCornerCut.BottomRight, false, true, Modifier.width(100.dp)) {}
             }
 
             var selectedTab by remember { mutableStateOf(2) }

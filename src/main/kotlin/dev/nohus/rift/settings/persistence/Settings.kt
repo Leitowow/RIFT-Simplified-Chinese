@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.koin.core.annotation.Single
 import java.nio.file.Path
+import java.time.Instant
 import java.time.ZoneId
 import kotlin.io.path.pathString
 
@@ -36,10 +37,6 @@ class Settings(
         get() = model.eveSettingsDirectory?.let { Path.of(it) }
         set(value) = update { copy(eveSettingsDirectory = value?.pathString) }
 
-    var isLoadOldMessagesEnabled: Boolean
-        get() = model.isLoadOldMessagesEnabled
-        set(value) = update { copy(isLoadOldMessagesEnabled = value) }
-
     var intelMap: IntelMap
         get() = model.intelMap
         set(value) = update { copy(intelMap = value) }
@@ -64,17 +61,9 @@ class Settings(
         get() = model.openWindows
         set(value) = update { copy(openWindows = value) }
 
-    var windowPlacements: Map<RiftWindow, WindowPlacement>
-        get() = model.windowPlacements
-        set(value) = update { copy(windowPlacements = value) }
-
-    var alwaysOnTopWindows: Set<RiftWindow>
-        get() = model.alwaysOnTopWindows
-        set(value) = update { copy(alwaysOnTopWindows = value) }
-
-    var lockedWindows: Set<RiftWindow>
-        get() = model.lockedWindows
-        set(value) = update { copy(lockedWindows = value) }
+    var windowSettings: Map<RiftWindow, List<WindowSettings>>
+        get() = model.windowSettings
+        set(value) = update { copy(windowSettings = value) }
 
     var notificationEditPosition: Pos?
         get() = model.notificationEditPosition
@@ -104,6 +93,10 @@ class Settings(
         get() = model.isDisplayEveTime
         set(value) = update { copy(isDisplayEveTime = value) }
 
+    var isShowIskCents: Boolean
+        get() = model.isShowIskCents
+        set(value) = update { copy(isShowIskCents = value) }
+
     val displayTimeZone: ZoneId
         get() = if (model.isDisplayEveTime) ZoneId.of("UTC") else ZoneId.systemDefault()
 
@@ -122,6 +115,10 @@ class Settings(
     var jabberIsUsingBiggerFontSize: Boolean
         get() = model.jabberIsUsingBiggerFontSize
         set(value) = update { copy(jabberIsUsingBiggerFontSize = value) }
+
+    var jabberConferences: List<String>
+        get() = model.jabberConferences
+        set(value) = update { copy(jabberConferences = value) }
 
     var isSettingsReadFailure: Boolean
         get() = model.isSettingsReadFailure
@@ -183,6 +180,10 @@ class Settings(
         get() = model.selectedPlanetTypes
         set(value) = update { copy(selectedPlanetTypes = value) }
 
+    var selectedSovereigntyUpgradeTypes: List<Int>
+        get() = model.selectedSovereigntyUpgradeTypes
+        set(value) = update { copy(selectedSovereigntyUpgradeTypes = value) }
+
     var installationId: String?
         get() = model.installationId
         set(value) = update { copy(installationId = value) }
@@ -241,4 +242,64 @@ class Settings(
     var isTrayIconWorking: Boolean
         get() = model.isTrayIconWorking
         set(value) = update { copy(isTrayIconWorking = value) }
+
+    var isWindowTransparencyEnabled: Boolean
+        get() = model.isWindowTransparencyEnabled
+        set(value) = update { copy(isWindowTransparencyEnabled = value) }
+
+    var windowTransparencyModifier: Float
+        get() = model.windowTransparencyModifier
+        set(value) = update { copy(windowTransparencyModifier = value) }
+
+    var isSmartAlwaysAbove: Boolean
+        get() = model.isSmartAlwaysAbove
+        set(value) = update { copy(isSmartAlwaysAbove = value) }
+
+    var mapMarkers: List<MapMarker>
+        get() = model.mapMarkers
+        set(value) = update { copy(mapMarkers = value) }
+
+    var assetLocationPins: Map<Long, LocationPinStatus>
+        get() = model.assetLocationPins
+        set(value) = update { copy(assetLocationPins = value) }
+
+    var assetLocationCustomNames: Map<Long, String>
+        get() = model.assetLocationCustomNames
+        set(value) = update { copy(assetLocationCustomNames = value) }
+
+    var isJukeboxRevealed: Boolean
+        get() = model.isJukeboxRevealed
+        set(value) = update { copy(isJukeboxRevealed = value) }
+
+    var sovereigntyUpgrades: Map<String, List<Int>>
+        get() = model.sovereigntyUpgrades
+        set(value) = update { copy(sovereigntyUpgrades = value) }
+
+    var isSovereigntyUpgradesHackImportingEnabled: Boolean
+        get() = model.isSovereigntyUpgradesHackImportingEnabled
+        set(value) = update { copy(isSovereigntyUpgradesHackImportingEnabled = value) }
+
+    var isSovereigntyUpgradesHackImportingOfflineEnabled: Boolean
+        get() = model.isSovereigntyUpgradesHackImportingOfflineEnabled
+        set(value) = update { copy(isSovereigntyUpgradesHackImportingOfflineEnabled = value) }
+
+    var preferredExternalServices: List<ExternalService>
+        get() = model.preferredExternalServices2
+        set(value) = update { copy(preferredExternalServices2 = value) }
+
+    var corpWalletDivisionNames: Map<Int, Map<Int, String>>
+        get() = model.corpWalletDivisionNames
+        set(value) = update { copy(corpWalletDivisionNames = value) }
+
+    var newVersionSeenTimestamp: Instant?
+        get() = model.newVersionSeenTimestamp?.let { Instant.ofEpochMilli(it) }
+        set(value) = update { copy(newVersionSeenTimestamp = value?.toEpochMilli()) }
+
+    var characterPortraits: CharacterPortraits
+        get() = model.characterPortraits
+        set(value) = update { copy(characterPortraits = value) }
+
+    var isZkillboardMonitoringEnabled: Boolean
+        get() = model.isZkillboardMonitoringEnabled
+        set(value) = update { copy(isZkillboardMonitoringEnabled = value) }
 }

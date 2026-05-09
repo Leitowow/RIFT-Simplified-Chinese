@@ -9,7 +9,7 @@ data class TokenResponse(
     val accessToken: String,
     @SerialName("expires_in")
     val expiresIn: Int,
-    @SerialName("refresh_token") // Returned by EVE SSO
+    @SerialName("refresh_token")
     val refreshToken: String? = null,
     @SerialName("token_type")
     val tokenType: String,

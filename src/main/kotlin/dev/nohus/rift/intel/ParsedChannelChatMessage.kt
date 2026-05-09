@@ -1,5 +1,6 @@
 package dev.nohus.rift.intel
 
+import dev.nohus.rift.intel.state.IntelUnderstanding
 import dev.nohus.rift.logs.parse.ChatLogFileMetadata
 import dev.nohus.rift.logs.parse.ChatMessage
 import dev.nohus.rift.logs.parse.ChatMessageParser.Token
@@ -9,4 +10,5 @@ data class ParsedChannelChatMessage(
     val channelRegions: List<String>,
     val metadata: ChatLogFileMetadata,
     val parsed: List<Token>,
+    val understanding: IntelUnderstanding,
 )

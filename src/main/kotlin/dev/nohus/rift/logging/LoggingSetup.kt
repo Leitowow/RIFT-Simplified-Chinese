@@ -16,7 +16,7 @@ private val logger = java.util.logging.Logger.getLogger(PacketParserUtils::class
 fun initializeLogging() {
     silenceChattyThirdPartyLoggers()
     @Suppress("KotlinConstantConditions")
-    if (BuildConfig.environment == "dev") {
+    if (BuildConfig.isDevEnvironment) {
         val logger = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME) as Logger
 
         val patternLayoutEncoder = PatternLayoutEncoder()

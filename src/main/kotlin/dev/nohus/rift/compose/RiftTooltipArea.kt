@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,7 +54,9 @@ import org.jetbrains.compose.resources.painterResource
  * Where on the content element the tooltip is anchored to
  */
 enum class Anchor {
-    Left, Middle, Right
+    Left,
+    Middle,
+    Right,
 }
 
 @Composable
@@ -63,6 +66,7 @@ fun RiftTooltipArea(
     contentAnchor: Anchor = Anchor.Middle,
     horizontalOffset: Dp = 0.dp,
     verticalOffset: Dp = 0.dp,
+    forcedVisibility: Boolean? = null,
     content: @Composable () -> Unit,
 ) {
     RiftTooltipArea(
@@ -71,6 +75,7 @@ fun RiftTooltipArea(
         contentAnchor = contentAnchor,
         horizontalOffset = horizontalOffset,
         verticalOffset = verticalOffset,
+        forcedVisibility = forcedVisibility,
         content = content,
     )
 }
@@ -82,6 +87,7 @@ fun RiftTooltipArea(
     contentAnchor: Anchor = Anchor.Middle,
     horizontalOffset: Dp = 0.dp,
     verticalOffset: Dp = 0.dp,
+    forcedVisibility: Boolean? = null,
     content: @Composable () -> Unit,
 ) {
     RiftTooltipArea(
@@ -90,6 +96,7 @@ fun RiftTooltipArea(
         contentAnchor = contentAnchor,
         horizontalOffset = horizontalOffset,
         verticalOffset = verticalOffset,
+        forcedVisibility = forcedVisibility,
         content = content,
     )
 }
@@ -101,6 +108,7 @@ fun RiftTooltipArea(
     contentAnchor: Anchor = Anchor.Middle,
     horizontalOffset: Dp = 0.dp,
     verticalOffset: Dp = 0.dp,
+    forcedVisibility: Boolean? = null,
     content: @Composable () -> Unit,
 ) {
     PointerTooltipArea(
@@ -111,6 +119,7 @@ fun RiftTooltipArea(
         contentAnchor = contentAnchor,
         offset = DpOffset(horizontalOffset, verticalOffset),
         modifier = modifier,
+        forcedVisibility = forcedVisibility,
         content = content,
     )
 }
@@ -161,6 +170,7 @@ private fun PointerTooltipArea(
     offset: DpOffset = DpOffset.Zero,
     modifier: Modifier = Modifier,
     delayMillis: Int = 500,
+    forcedVisibility: Boolean? = null,
     content: @Composable () -> Unit,
 ) {
     var parentBounds by remember { mutableStateOf(Rect.Zero) }
@@ -186,7 +196,15 @@ private fun PointerTooltipArea(
     }
 
     fun hideIfNotHovered(globalPosition: Offset) {
-        if (!parentBounds.contains(globalPosition)) {
+        if (forcedVisibility == null && !parentBounds.contains(globalPosition)) {
+            hide()
+        }
+    }
+
+    LaunchedEffect(forcedVisibility) {
+        if (forcedVisibility == true) {
+            startShowing()
+        } else if (forcedVisibility == false) {
             hide()
         }
     }
@@ -196,21 +214,25 @@ private fun PointerTooltipArea(
             .onGloballyPositioned { parentBounds = it.boundsInWindow() }
             .onPointerEvent(PointerEventType.Enter) {
                 cursorPosition = it.position
-                if (!isVisible && !it.buttons.areAnyPressed) {
-                    startShowing()
+                if (forcedVisibility == null) {
+                    if (!isVisible && !it.buttons.areAnyPressed) {
+                        startShowing()
+                    }
                 }
             }
             .onPointerEvent(PointerEventType.Move) {
                 cursorPosition = it.position
-                if (!isVisible && !it.buttons.areAnyPressed) {
-                    startShowing()
+                if (forcedVisibility == null) {
+                    if (!isVisible && !it.buttons.areAnyPressed) {
+                        startShowing()
+                    }
                 }
             }
             .onPointerEvent(PointerEventType.Exit) {
                 hideIfNotHovered(parentBounds.topLeft + it.position)
             }
             .onPointerEvent(PointerEventType.Press, pass = PointerEventPass.Initial) {
-                hide()
+                if (forcedVisibility == null) hide()
             },
     ) {
         content()
@@ -223,7 +245,7 @@ private fun PointerTooltipArea(
                     offset = offset,
                     onPointerPositioned = { topX, bottomX -> pointerPosition = topX to bottomX },
                 ),
-                onDismissRequest = { isVisible = false },
+                onDismissRequest = { if (forcedVisibility == null) isVisible = false },
             ) {
                 var popupPosition by remember { mutableStateOf(Offset.Zero) }
                 Box(

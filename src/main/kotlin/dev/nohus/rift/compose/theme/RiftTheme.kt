@@ -10,7 +10,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 fun RiftTheme(
     content: @Composable () -> Unit,
 ) {
-    val colors = getRiftColors()
+    val colors = getRiftColors(false)
     val typography = getRiftTypography(colors)
     CompositionLocalProvider(
         LocalRiftColors provides colors,

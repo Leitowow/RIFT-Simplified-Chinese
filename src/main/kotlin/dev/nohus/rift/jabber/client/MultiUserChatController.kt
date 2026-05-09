@@ -1,6 +1,7 @@
 package dev.nohus.rift.jabber.client
 
 import dev.nohus.rift.alerts.AlertsTriggerController
+import dev.nohus.rift.settings.persistence.Settings
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -14,7 +15,6 @@ import org.jivesoftware.smack.XMPPConnection
 import org.jivesoftware.smack.XMPPException
 import org.jivesoftware.smack.packet.Message
 import org.jivesoftware.smack.packet.Message.Subject
-import org.jivesoftware.smackx.bookmarks.BookmarkManager
 import org.jivesoftware.smackx.delay.DelayInformationManager
 import org.jivesoftware.smackx.muc.MultiUserChat
 import org.jivesoftware.smackx.muc.MultiUserChatManager
@@ -32,6 +32,7 @@ private val logger = KotlinLogging.logger {}
 @Factory
 class MultiUserChatController(
     private val alertsTriggerController: AlertsTriggerController,
+    private val settings: Settings,
 ) {
 
     data class ChatsState(
@@ -53,18 +54,15 @@ class MultiUserChatController(
     private val dispatcher = Executors.newCachedThreadPool().asCoroutineDispatcher()
     private val scope = CoroutineScope(Job() + dispatcher)
     private var nickname = ""
-    private var bookmarkManager: BookmarkManager? = null
     private var multiUserChatManager: MultiUserChatManager? = null
 
     fun initialize(connection: XMPPConnection, jid: String) {
         this.nickname = JidCreate.entityBareFrom(jid).localpart.toString()
-        this.bookmarkManager = BookmarkManager.getBookmarkManager(connection)
         this.multiUserChatManager = MultiUserChatManager.getInstanceFor(connection)
     }
 
     fun onLogout() {
         nickname = ""
-        bookmarkManager = null
         multiUserChatManager = null
         _state.update { ChatsState() }
     }
@@ -85,8 +83,7 @@ class MultiUserChatController(
     fun addChatRoom(jidLocalPart: String) {
         try {
             val entityBareJid = JidCreate.entityBareFrom("$jidLocalPart@conference.goonfleet.com")
-            val name = entityBareJid.localpart.toString()
-            bookmarkManager?.addBookmarkedConference(name, entityBareJid, true, Resourcepart.from(nickname), null)
+            settings.jabberConferences += entityBareJid.asEntityBareJidString()
             multiUserChatManager?.let { multiUserChatManager ->
                 joinChat(multiUserChatManager, entityBareJid)
             }
@@ -103,7 +100,7 @@ class MultiUserChatController(
      * Removes from server-side bookmarked chats
      */
     fun removeChatRoom(jid: EntityBareJid) {
-        bookmarkManager?.removeBookmarkedConference(jid)
+        settings.jabberConferences -= jid.asEntityBareJidString()
         _state.update {
             it.copy(
                 chats = it.chats.filter { it.room != jid },
@@ -112,12 +109,14 @@ class MultiUserChatController(
         }
     }
 
-    fun joinBookmarkedChats() {
-        val bookmarkManager = this.bookmarkManager ?: return
+    fun joinSavedChats() {
         val multiUserChatManager = this.multiUserChatManager ?: return
-        bookmarkManager.bookmarkedConferences.forEach {
-            if (it.isAutoJoin) {
-                joinChat(multiUserChatManager, it.jid)
+        settings.jabberConferences.forEach {
+            try {
+                val jid = JidCreate.entityBareFrom(it)
+                joinChat(multiUserChatManager, jid)
+            } catch (e: XmppStringprepException) {
+                logger.error { "Could not join saved chat room, invalid JID: $e" }
             }
         }
     }

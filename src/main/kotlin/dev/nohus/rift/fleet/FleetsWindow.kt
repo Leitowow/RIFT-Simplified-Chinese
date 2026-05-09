@@ -17,7 +17,7 @@ import dev.nohus.rift.compose.theme.Spacing
 import dev.nohus.rift.fleet.FleetsViewModel.UiState
 import dev.nohus.rift.generated.resources.Res
 import dev.nohus.rift.generated.resources.window_fleet
-import dev.nohus.rift.utils.viewModel
+import dev.nohus.rift.viewModel
 import dev.nohus.rift.windowing.WindowManager.RiftWindowState
 
 @Composable
@@ -62,7 +62,7 @@ private fun EmptyState(
     ) {
         Text(
             text = "You are not in a fleet",
-            style = RiftTheme.typography.titlePrimary,
+            style = RiftTheme.typography.headerPrimary,
             textAlign = TextAlign.Center,
             modifier = Modifier
                 .fillMaxWidth()

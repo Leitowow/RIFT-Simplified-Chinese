@@ -2,11 +2,13 @@ package dev.nohus.rift.repositories
 
 import dev.nohus.rift.characters.repositories.LocalCharactersRepository
 import dev.nohus.rift.network.Result
-import dev.nohus.rift.network.esi.CharactersIdSearch
 import dev.nohus.rift.network.esi.EsiApi
-import dev.nohus.rift.network.esi.UniverseStructuresId
+import dev.nohus.rift.network.esi.models.CharactersIdSearch
+import dev.nohus.rift.network.esi.models.UniverseStructuresId
+import dev.nohus.rift.network.requests.Originator
 import dev.nohus.rift.repositories.SolarSystemsRepository.MapSolarSystem
 import dev.nohus.rift.settings.persistence.Settings
+import dev.nohus.rift.sso.scopes.ScopeGroups
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -19,6 +21,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import org.koin.core.annotation.Single
+import java.util.UUID
 
 private val logger = KotlinLogging.logger {}
 
@@ -32,23 +35,31 @@ class JumpBridgesRepository(
     private val solarSystemsRepository: SolarSystemsRepository,
 ) {
 
+    /**
+     * Changes when connections have changed
+     */
+    var connectionsKey: UUID = UUID.randomUUID()
+        private set
+
     data class JumpBridgeConnection(
         val from: MapSolarSystem,
         val to: MapSolarSystem,
     )
 
-    fun getConnections(): List<JumpBridgeConnection>? {
+    fun getConnections(): List<JumpBridgeConnection> {
         return settings.jumpBridgeNetwork?.entries
             ?.mapNotNull {
                 val from = solarSystemsRepository.getSystem(it.key) ?: return@mapNotNull null
                 val to = solarSystemsRepository.getSystem(it.value) ?: return@mapNotNull null
                 JumpBridgeConnection(from, to)
             }
-            ?.takeIf { it.isNotEmpty() }
+            ?.distinct()
+            ?: emptyList()
     }
 
     fun setConnections(connections: List<JumpBridgeConnection>) {
         settings.jumpBridgeNetwork = connections.associate { it.from.name to it.to.name }
+        connectionsKey = UUID.randomUUID()
     }
 
     sealed interface SearchState {
@@ -60,7 +71,7 @@ class JumpBridgesRepository(
     fun search(): Flow<SearchState> = channelFlow {
         coroutineScope {
             val characterId = localCharactersRepository.characters.value
-                .firstOrNull { it.isAuthenticated }
+                .firstOrNull { ScopeGroups.readStructures in it.scopes }
                 ?.characterId
             if (characterId == null) {
                 logger.error { "No authenticated characters" }
@@ -82,8 +93,8 @@ class JumpBridgesRepository(
                     semaphore.withPermit {
                         var searchResult: Result<CharactersIdSearch>? = null
                         repeat(3) {
-                            if (searchResult == null || searchResult?.isFailure == true) {
-                                searchResult = esiApi.getCharactersIdSearch(characterId, listOf("structure"), false, search = system)
+                            if (searchResult == null || searchResult.isFailure) {
+                                searchResult = esiApi.getCharactersIdSearch(Originator.JumpBridgeSearch, characterId, listOf("structure"), false, search = system)
                             }
                         }
                         val newFoundConnectionsMutex = Mutex()
@@ -98,8 +109,8 @@ class JumpBridgesRepository(
                                     async {
                                         var structureResult: Result<UniverseStructuresId>? = null
                                         repeat(3) {
-                                            if (structureResult == null || structureResult?.isFailure == true) {
-                                                structureResult = esiApi.getUniverseStructuresId(structureId, characterId)
+                                            if (structureResult == null || structureResult.isFailure) {
+                                                structureResult = esiApi.getUniverseStructuresId(Originator.JumpBridgeSearch, structureId, characterId)
                                             }
                                         }
                                         when (val result = structureResult) {

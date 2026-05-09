@@ -10,6 +10,7 @@ import dev.nohus.rift.location.CharacterLocationRepository
 import dev.nohus.rift.map.MapExternalControl
 import dev.nohus.rift.repositories.GetSystemDistanceFromCharacterUseCase
 import dev.nohus.rift.repositories.SolarSystemsRepository
+import dev.nohus.rift.repositories.SolarSystemsRepository.MapSolarSystem
 import dev.nohus.rift.settings.persistence.DistanceFilter
 import dev.nohus.rift.settings.persistence.EntityFilter
 import dev.nohus.rift.settings.persistence.LocationFilter
@@ -19,9 +20,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.koin.core.annotation.Single
+import org.koin.core.annotation.Factory
 
-@Single
+@Factory
 class IntelFeedViewModel(
     private val intelStateController: IntelStateController,
     private val characterLocationRepository: CharacterLocationRepository,
@@ -32,7 +33,7 @@ class IntelFeedViewModel(
 ) : ViewModel() {
 
     data class UiState(
-        val intel: List<Pair<String, List<Dated<SystemEntity>>>> = emptyList(),
+        val intel: List<Pair<MapSolarSystem, List<Dated<SystemEntity>>>> = emptyList(),
         val totalIntelSystems: Int = 0,
         val search: String? = null,
         val settings: IntelFeedSettings,
@@ -90,6 +91,10 @@ class IntelFeedViewModel(
         )
     }
 
+    fun onIsUsingCompactModeChange(enabled: Boolean) {
+        settings.intelFeed = settings.intelFeed.copy(isUsingCompactMode = enabled)
+    }
+
     fun onLocationFilterSelect(selection: LocationFilter) {
         val current = _state.value.settings.locationFilters
         val new = if (selection in current) current - selection else current + selection
@@ -130,14 +135,14 @@ class IntelFeedViewModel(
     }
 
     private fun getFilteredIntel(
-        intel: Map<String, List<Dated<SystemEntity>>>,
-    ): List<Pair<String, List<Dated<SystemEntity>>>> {
+        intel: Map<MapSolarSystem, List<Dated<SystemEntity>>>,
+    ): List<Pair<MapSolarSystem, List<Dated<SystemEntity>>>> {
         val locationFilterRegionIds = _state.value.settings.locationFilters.flatMap { filter ->
             when (filter) {
                 LocationFilter.KnownSpace -> solarSystemsRepository.getKnownSpaceRegions().map { it.id }
                 LocationFilter.WormholeSpace -> solarSystemsRepository.getWormholeSpaceRegions().map { it.id }
                 LocationFilter.AbyssalSpace -> solarSystemsRepository.getAbyssalSpaceRegions().map { it.id }
-                LocationFilter.CurrentMapRegion -> mapExternalControl.openedRegions.value ?: solarSystemsRepository.getKnownSpaceRegions().map { it.id }
+                LocationFilter.CurrentMapRegion -> mapExternalControl.getOpenedRegions()
             }
         }.toSet()
 
@@ -149,8 +154,7 @@ class IntelFeedViewModel(
             }
             is DistanceFilter.WithinDistance -> {
                 getFilteredIntelByRegions(intel, locationFilterRegionIds).filterKeys { system ->
-                    val systemId = solarSystemsRepository.getSystem(system)?.id ?: return@filterKeys false
-                    val characterDistance = getSystemDistanceFromCharacterUseCase(systemId, filter.jumps, withJumpBridges = _state.value.settings.isUsingJumpBridgesForDistance)
+                    val characterDistance = getSystemDistanceFromCharacterUseCase(system.id, withJumpBridges = _state.value.settings.isUsingJumpBridgesForDistance)
                     characterDistance != null && characterDistance.distance <= filter.jumps
                 }
             }
@@ -159,7 +163,7 @@ class IntelFeedViewModel(
         val search = _state.value.search?.lowercase()
         if (search != null) {
             filteredSystems = filteredSystems
-                .filter { (system, intel) -> search in system.lowercase() || intel.any { search in it.item } }
+                .filter { (system, intel) -> search in system.name.lowercase() || intel.any { search in it.item } }
         }
 
         val entityFilters = _state.value.settings.entityFilters
@@ -180,8 +184,8 @@ class IntelFeedViewModel(
         return when (_state.value.settings.sortingFilter) {
             SortingFilter.Distance -> {
                 filtered.entries.sortedBy {
-                    val systemId = solarSystemsRepository.getSystem(it.key)?.id ?: return@sortedBy Int.MAX_VALUE
-                    getSystemDistanceFromCharacterUseCase(systemId, 9, withJumpBridges = _state.value.settings.isUsingJumpBridgesForDistance)?.distance ?: return@sortedBy Int.MAX_VALUE
+                    val systemId = it.key.id
+                    getSystemDistanceFromCharacterUseCase(systemId, withJumpBridges = _state.value.settings.isUsingJumpBridgesForDistance)?.distance ?: return@sortedBy Int.MAX_VALUE
                 }
             }
             SortingFilter.Time -> {
@@ -193,10 +197,10 @@ class IntelFeedViewModel(
     }
 
     private fun getFilteredIntelByRegions(
-        intel: Map<String, List<Dated<SystemEntity>>>,
+        intel: Map<MapSolarSystem, List<Dated<SystemEntity>>>,
         regionIds: Set<Int>,
-    ): Map<String, List<Dated<SystemEntity>>> {
-        return intel.filterKeys { system -> solarSystemsRepository.getSystem(system)?.regionId in regionIds }
+    ): Map<MapSolarSystem, List<Dated<SystemEntity>>> {
+        return intel.filterKeys { system -> system.regionId in regionIds }
     }
 
     private operator fun SystemEntity.contains(term: String): Boolean {
@@ -211,11 +215,12 @@ class IntelFeedViewModel(
             }
             SystemEntity.CombatProbes -> term in "combat probes"
             SystemEntity.Ess -> term in "ess"
-            is SystemEntity.Gate -> term in "gate" || term in system
+            is SystemEntity.Gate -> term in "gate" || term in system2.name || term == "location"
+            is SystemEntity.Celestial -> term in celestial.name || term == "location"
             SystemEntity.GateCamp -> term in "gate camp"
             is SystemEntity.Killmail -> {
                 term in "kill" ||
-                    ship?.let { term in it.lowercase() } ?: false ||
+                    ship?.let { term in it.name.lowercase() } ?: false ||
                     typeName?.let { term in it.lowercase() } ?: false ||
                     victim.corporationName?.let { term in it.lowercase() } ?: false
                 victim.corporationTicker?.let { term in it.lowercase() } ?: false
@@ -223,7 +228,7 @@ class IntelFeedViewModel(
                 victim.allianceTicker?.let { term in it.lowercase() } ?: false
             }
             SystemEntity.NoVisual -> term in "no visual" || term in "nv"
-            is SystemEntity.Ship -> term in name.lowercase()
+            is SystemEntity.Ship -> term in type.name.lowercase()
             SystemEntity.Skyhook -> term in "skyhook"
             SystemEntity.Spike -> term in "spike"
             is SystemEntity.UnspecifiedCharacter -> term in "hostiles"

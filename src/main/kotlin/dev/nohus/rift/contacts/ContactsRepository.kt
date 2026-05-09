@@ -3,7 +3,9 @@ package dev.nohus.rift.contacts
 import dev.nohus.rift.characters.repositories.LocalCharactersRepository
 import dev.nohus.rift.characters.repositories.LocalCharactersRepository.LocalCharacter
 import dev.nohus.rift.network.esi.EsiApi
+import dev.nohus.rift.network.requests.Originator
 import dev.nohus.rift.repositories.IdRanges.isNpcAgent
+import dev.nohus.rift.sso.scopes.ScopeGroups
 import dev.nohus.rift.standings.Standing
 import dev.nohus.rift.standings.StandingUtils.getStandingLevel
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -23,8 +25,8 @@ import org.koin.core.annotation.Single
 import java.time.Duration
 import java.time.Instant
 import kotlin.time.Duration.Companion.minutes
-import dev.nohus.rift.network.esi.Contact as ContactDto
-import dev.nohus.rift.network.esi.ContactType as ContactTypeDto
+import dev.nohus.rift.network.esi.models.Contact as ContactDto
+import dev.nohus.rift.network.esi.models.ContactType as ContactTypeDto
 
 private val logger = KotlinLogging.logger {}
 
@@ -43,7 +45,7 @@ class ContactsRepository(
     data class Contact(
         val entity: Entity,
         val owner: Entity,
-        val labels: List<String> = emptyList(),
+        val labels: List<Label> = emptyList(),
         val isBlocked: Boolean,
         val isWatched: Boolean,
         val standing: Float,
@@ -66,6 +68,7 @@ class ContactsRepository(
     data class Label(
         val id: Long,
         val name: String,
+        val owner: Entity,
     )
 
     data class ContactsResponse(
@@ -78,11 +81,13 @@ class ContactsRepository(
     private var originalContacts: List<Contact> = emptyList()
     private val _contacts = MutableStateFlow(Contacts())
     val contacts = _contacts.asStateFlow()
+    private val _finishedLoading = MutableStateFlow(false)
+    val finishedLoading = _finishedLoading.asStateFlow()
 
     @OptIn(FlowPreview::class)
     suspend fun start() = coroutineScope {
         launch {
-            localCharactersRepository.characters.debounce(500).collect {
+            localCharactersRepository.characters.debounce(500).collectLatest {
                 reloadEventFlow.emit(Unit)
             }
         }
@@ -111,20 +116,35 @@ class ContactsRepository(
             .map { it.entity.id }
     }
 
+    fun getLabelName(ownerId: Int, labelId: Long): String? {
+        val ownerLabels = _contacts.value.labels.entries.firstOrNull { (owner, _) -> owner.id == ownerId }?.value ?: return null
+        return ownerLabels.firstOrNull { label -> label.id == labelId }?.name
+    }
+
+    /**
+     * Returns labels of the given character/corporation/alliance IDs if there are contacts for them
+     */
+    fun getLabels(ids: List<Int>): List<Label> {
+        return _contacts.value.contacts
+            .filter { it.entity.id in ids }
+            .flatMap { it.labels }
+    }
+
     suspend fun editContact(
         characterId: Int,
-        labels: List<String>,
+        labels: List<Label>,
         standing: Float,
         isWatched: Boolean?,
         entity: Entity,
     ) {
-        val labelIds = getLabelIds(characterId, labels).takeIf { it.isNotEmpty() }
+        val labelIds = labels.map { it.id }.takeIf { it.isNotEmpty() }
         val existingContact = _contacts.value.contacts
             .firstOrNull { it.owner.id == characterId && it.entity.id == entity.id }
 
         val response = if (existingContact != null) {
             // Edit existing contact
             esiApi.putCharactersIdContacts(
+                Originator.Contacts,
                 characterId = characterId,
                 labelIds = labelIds,
                 standing = standing,
@@ -134,6 +154,7 @@ class ContactsRepository(
         } else {
             // Add new contact
             esiApi.postCharactersIdContacts(
+                Originator.Contacts,
                 characterId = characterId,
                 labelIds = labelIds,
                 standing = standing,
@@ -161,7 +182,7 @@ class ContactsRepository(
                 logger.info { "Successfully added contact" }
                 val ownerName = localCharactersRepository.characters.value
                     .firstOrNull { it.characterId == characterId }
-                    ?.info?.success?.name ?: "Unknown"
+                    ?.info?.name ?: "Unknown"
                 _contacts.value.contacts + Contact(
                     entity = entity,
                     owner = Entity(characterId, ownerName, EntityType.Character),
@@ -183,6 +204,7 @@ class ContactsRepository(
         contactId: Int,
     ) {
         val response = esiApi.deleteCharactersIdContacts(
+            Originator.Contacts,
             characterId = characterId,
             contactIds = listOf(contactId),
         )
@@ -208,18 +230,22 @@ class ContactsRepository(
 
     private suspend fun updateContacts() {
         _contacts.update { it.copy(isLoading = true) }
-        val validCharacters =
-            localCharactersRepository.characters.value.filter { it.isAuthenticated && it.info.success != null }
+        val charactersWithScopes = localCharactersRepository.characters.value.filter { ScopeGroups.readContacts in it.scopes }
+        val validCharacters = charactersWithScopes.filter { it.info != null }
         if (validCharacters.isEmpty()) {
             _contacts.update { it.copy(isLoading = false) }
+            if (charactersWithScopes.isEmpty()) {
+                _finishedLoading.update { true }
+            }
             return
         }
         val contactsResponse = getContacts(validCharacters)
         if (contactsResponse == null) {
             _contacts.update { it.copy(isLoading = false) }
+            _finishedLoading.update { true }
             return
         }
-        if (contacts != originalContacts) {
+        if (contactsResponse.contacts != originalContacts) {
             originalContacts = contactsResponse.contacts
             _contacts.update { it.copy(contacts = contactsResponse.contacts, labels = contactsResponse.labels, isLoading = false) }
             logger.info { "Updated contacts" }
@@ -227,8 +253,9 @@ class ContactsRepository(
             // The contacts didn't change since the last time they were fetched, and we might have updated them locally
             // so we don't want to replace the list
             _contacts.update { it.copy(isLoading = false) }
-            logger.info { "Checked contacts, no changes" }
+            logger.debug { "Checked contacts, no changes" }
         }
+        _finishedLoading.update { true }
     }
 
     private suspend fun getContacts(characters: List<LocalCharacter>): ContactsResponse? {
@@ -236,7 +263,7 @@ class ContactsRepository(
         val corporationIds = mutableMapOf<Int, Int>()
         val characterIds = mutableListOf<Int>()
         characters.forEach { character ->
-            character.info.success?.let { details ->
+            character.info?.let { details ->
                 if (details.allianceId != null) allianceIds[details.allianceId] = character.characterId
                 corporationIds[details.corporationId] = character.characterId
                 characterIds += character.characterId
@@ -252,22 +279,22 @@ class ContactsRepository(
     ): ContactsResponse? = coroutineScope {
         // Request contacts and labels
         val allianceContactsLabelsDeferred = allianceIds.map { (allianceId, characterId) ->
-            async { allianceId to esiApi.getAlliancesIdContactsLabels(characterId, allianceId) }
+            async { allianceId to esiApi.getAlliancesIdContactsLabels(Originator.Contacts, characterId, allianceId) }
         }
         val corporationContactsLabelsDeferred = corporationIds.map { (corporationId, characterId) ->
-            async { corporationId to esiApi.getCorporationsIdContactsLabels(characterId, corporationId) }
+            async { corporationId to esiApi.getCorporationsIdContactsLabels(Originator.Contacts, characterId, corporationId) }
         }
         val characterContactsLabelsDeferred = characterIds.map { characterId ->
-            async { characterId to esiApi.getCharactersIdContactsLabels(characterId) }
+            async { characterId to esiApi.getCharactersIdContactsLabels(Originator.Contacts, characterId) }
         }
         val allianceContactsDeferred = allianceIds.map { (allianceId, characterId) ->
-            async { allianceId to esiApi.getAlliancesIdContacts(characterId, allianceId) }
+            async { allianceId to esiApi.getAlliancesIdContacts(Originator.Contacts, characterId, allianceId) }
         }
         val corporationContactsDeferred = corporationIds.map { (corporationId, characterId) ->
-            async { corporationId to esiApi.getCorporationsIdContacts(characterId, corporationId) }
+            async { corporationId to esiApi.getCorporationsIdContacts(Originator.Contacts, characterId, corporationId) }
         }
         val characterContactsDeferred = characterIds.map { characterId ->
-            async { characterId to esiApi.getCharactersIdContacts(characterId) }
+            async { characterId to esiApi.getCharactersIdContacts(Originator.Contacts, characterId) }
         }
 
         // Await contacts
@@ -286,22 +313,25 @@ class ContactsRepository(
         val contactIds = (allianceContactsList.values + corporationContactsList.values + characterContactsList.values)
             .flatMap { it.map { it.contactId } }
         val names = (ownerIds + contactIds).distinct().chunked(1000).flatMap { ids ->
-            esiApi.postUniverseNames(ids).success
-                ?.map { it.id to it.name } ?: return@coroutineScope null
+            esiApi.postUniverseNames(Originator.Contacts, ids.map { it.toLong() }).success
+                ?.map { it.id.toInt() to it.name } ?: return@coroutineScope null
         }.toMap()
 
         // Await labels
         val allianceLabels = allianceContactsLabelsDeferred.awaitAll().associate { (allianceId, result) ->
             val labels = result.success ?: return@coroutineScope null
-            Entity(allianceId, names[allianceId]!!, EntityType.Alliance) to labels.map { Label(it.labelId, it.labelName) }
+            val owner = Entity(allianceId, names[allianceId]!!, EntityType.Alliance)
+            owner to labels.map { Label(it.labelId, it.labelName, owner) }
         }
         val corporationLabels = corporationContactsLabelsDeferred.awaitAll().associate { (corporationId, result) ->
             val labels = result.success ?: return@coroutineScope null
-            Entity(corporationId, names[corporationId]!!, EntityType.Corporation) to labels.map { Label(it.labelId, it.labelName) }
+            val owner = Entity(corporationId, names[corporationId]!!, EntityType.Corporation)
+            owner to labels.map { Label(it.labelId, it.labelName, owner) }
         }
         val characterLabels = characterContactsLabelsDeferred.awaitAll().associate { (characterId, result) ->
             val labels = result.success ?: return@coroutineScope null
-            Entity(characterId, names[characterId]!!, EntityType.Character) to labels.map { Label(it.labelId, it.labelName) }
+            val owner = Entity(characterId, names[characterId]!!, EntityType.Character)
+            owner to labels.map { Label(it.labelId, it.labelName, owner) }
         }
 
         // Process into models
@@ -309,21 +339,21 @@ class ContactsRepository(
             val labels = allianceLabels.entries
                 .firstOrNull { it.key.id == allianceId }
                 ?.value
-                ?.associate { it.id to it.name } ?: emptyMap()
+                ?.associateBy { it.id } ?: emptyMap()
             list.mapNotNull { it.toContact(allianceId, EntityType.Alliance, labels, names) }
         }
         val corporationContacts = corporationContactsList.flatMap { (corporationId, list) ->
             val labels = corporationLabels.entries
                 .firstOrNull { it.key.id == corporationId }
                 ?.value
-                ?.associate { it.id to it.name } ?: emptyMap()
+                ?.associateBy { it.id } ?: emptyMap()
             list.mapNotNull { it.toContact(corporationId, EntityType.Corporation, labels, names) }
         }
         val characterContacts = characterContactsList.flatMap { (characterId, list) ->
             val labels = characterLabels.entries
                 .firstOrNull { it.key.id == characterId }
                 ?.value
-                ?.associate { it.id to it.name } ?: emptyMap()
+                ?.associateBy { it.id } ?: emptyMap()
             list.mapNotNull { it.toContact(characterId, EntityType.Character, labels, names) }
         }
 
@@ -332,11 +362,16 @@ class ContactsRepository(
         return@coroutineScope ContactsResponse(contacts, labels)
     }
 
-    private fun ContactDto.toContact(ownerId: Int, ownerType: EntityType, labels: Map<Long, String>, names: Map<Int, String>): Contact? {
+    private fun ContactDto.toContact(
+        ownerId: Int,
+        ownerType: EntityType,
+        labels: Map<Long, Label>,
+        names: Map<Int, String>,
+    ): Contact? {
         if (isNpcAgent(contactId)) return null
         val entity = Entity(
             id = contactId,
-            name = names[contactId] ?: contactId.toString(), // TODO
+            name = names[contactId] ?: contactId.toString(),
             type = when (contactType) {
                 ContactTypeDto.Character -> EntityType.Character
                 ContactTypeDto.Corporation -> EntityType.Corporation
@@ -346,13 +381,13 @@ class ContactsRepository(
         )
         val owner = Entity(
             id = ownerId,
-            name = names[ownerId] ?: ownerId.toString(), // TODO
+            name = names[ownerId] ?: ownerId.toString(),
             type = ownerType,
         )
         return Contact(
             entity = entity,
             owner = owner,
-            labels = labelIds?.map { labels[it] ?: it.toString() } ?: emptyList(), // TODO
+            labels = labelIds?.mapNotNull { labels[it] } ?: emptyList(),
             isBlocked = isBlocked == true,
             isWatched = isWatched == true,
             standing = standing,

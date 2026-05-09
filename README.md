@@ -11,3 +11,7 @@ For more details and downloads see the project website: [riftforeve.online](http
 ### Building
 
 To run the project, execute: `./gradlew run`. This will download all dependencies, build and run the project.
+
+### Tooling
+
+This project is developed using [IntelliJ IDEA](https://www.jetbrains.com/idea/).

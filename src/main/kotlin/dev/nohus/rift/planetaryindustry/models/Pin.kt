@@ -1,6 +1,6 @@
 package dev.nohus.rift.planetaryindustry.models
 
-import dev.nohus.rift.network.esi.PlanetaryExtractorHead
+import dev.nohus.rift.network.esi.models.PlanetaryExtractorHead
 import dev.nohus.rift.planetaryindustry.PlanetaryIndustrySchematicsRepository.Schematic
 import dev.nohus.rift.repositories.TypesRepository.Type
 import java.time.Duration

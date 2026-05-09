@@ -1,7 +1,9 @@
 package dev.nohus.rift.intel.state
 
+import dev.nohus.rift.repositories.SolarSystemsRepository.MapSolarSystem
+
 data class IntelUnderstanding(
-    val systems: List<String>,
+    val systems: List<MapSolarSystem>,
     val entities: List<SystemEntity>,
     val kills: List<UnderstandMessageUseCase.Kill>,
     val questions: List<UnderstandMessageUseCase.Question>,

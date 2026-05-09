@@ -13,6 +13,9 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.AnnotatedString
@@ -28,10 +31,12 @@ import dev.nohus.rift.about.UpdateController.UpdateAvailability.NO_UPDATE
 import dev.nohus.rift.about.UpdateController.UpdateAvailability.UNKNOWN
 import dev.nohus.rift.about.UpdateController.UpdateAvailability.UPDATE_AUTOMATIC
 import dev.nohus.rift.about.UpdateController.UpdateAvailability.UPDATE_MANUAL
+import dev.nohus.rift.compose.AffiliateCode
 import dev.nohus.rift.compose.ButtonCornerCut
 import dev.nohus.rift.compose.ButtonType
 import dev.nohus.rift.compose.CreatorCode
 import dev.nohus.rift.compose.LinkText
+import dev.nohus.rift.compose.MouseButton
 import dev.nohus.rift.compose.Patrons
 import dev.nohus.rift.compose.RiftAppName
 import dev.nohus.rift.compose.RiftButton
@@ -39,6 +44,7 @@ import dev.nohus.rift.compose.RiftDialog
 import dev.nohus.rift.compose.RiftTooltipArea
 import dev.nohus.rift.compose.RiftWindow
 import dev.nohus.rift.compose.ScrollbarColumn
+import dev.nohus.rift.compose.onMouseClick
 import dev.nohus.rift.compose.theme.RiftTheme
 import dev.nohus.rift.compose.theme.Spacing
 import dev.nohus.rift.generated.resources.Res
@@ -54,8 +60,8 @@ import dev.nohus.rift.utils.OperatingSystem.MacOs
 import dev.nohus.rift.utils.OperatingSystem.Windows
 import dev.nohus.rift.utils.openBrowser
 import dev.nohus.rift.utils.toURIOrNull
-import dev.nohus.rift.utils.viewModel
 import dev.nohus.rift.utils.withColor
+import dev.nohus.rift.viewModel
 import dev.nohus.rift.windowing.WindowManager
 import org.jetbrains.compose.resources.painterResource
 
@@ -76,8 +82,8 @@ fun AboutWindow(
         AboutWindowContent(
             state = state,
             onUpdateClick = viewModel::onUpdateClick,
+            onLogLiteClick = viewModel::onLogLiteClick,
             onDebugClick = viewModel::onDebugClick,
-            onAppDataClick = viewModel::onAppDataClick,
             onLegalClick = viewModel::onLegalClick,
             onCreditsClick = viewModel::onCreditsClick,
             onWhatsNewClick = viewModel::onWhatsNewClick,
@@ -98,7 +104,7 @@ fun AboutWindow(
                     if (state.updateAvailability.success == UPDATE_AUTOMATIC) {
                         Text(
                             text = "A newer version of RIFT is ready to install.",
-                            style = RiftTheme.typography.titlePrimary,
+                            style = RiftTheme.typography.headerPrimary,
                         )
                         RiftButton(
                             text = "Update now",
@@ -108,7 +114,7 @@ fun AboutWindow(
                     } else {
                         Text(
                             text = getUpdateDialogText(state.operatingSystem, state.executablePath),
-                            style = RiftTheme.typography.titlePrimary,
+                            style = RiftTheme.typography.headerPrimary,
                         )
                     }
                 }
@@ -126,7 +132,7 @@ fun AboutWindow(
                 ScrollbarColumn {
                     Text(
                         text = getLegalText(),
-                        style = RiftTheme.typography.titlePrimary,
+                        style = RiftTheme.typography.headerPrimary,
                     )
                 }
             }
@@ -142,7 +148,7 @@ fun AboutWindow(
             ) {
                 Text(
                     text = getCreditsText(),
-                    style = RiftTheme.typography.titlePrimary,
+                    style = RiftTheme.typography.headerPrimary,
                 )
             }
         }
@@ -153,21 +159,23 @@ fun AboutWindow(
 private fun AboutWindowContent(
     state: UiState,
     onUpdateClick: () -> Unit,
+    onLogLiteClick: () -> Unit,
     onDebugClick: () -> Unit,
-    onAppDataClick: () -> Unit,
     onLegalClick: () -> Unit,
     onCreditsClick: () -> Unit,
     onWhatsNewClick: () -> Unit,
 ) {
-    Column {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(Spacing.medium),
+    ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.large),
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(Spacing.small),
-                modifier = Modifier.width(200.dp).padding(bottom = Spacing.large),
+                verticalArrangement = Arrangement.spacedBy(Spacing.medium),
+                modifier = Modifier.width(200.dp),
             ) {
                 Image(
                     painter = painterResource(Res.drawable.partner_400),
@@ -175,12 +183,12 @@ private fun AboutWindowContent(
                     modifier = Modifier
                         .width(200.dp),
                 )
+                AffiliateCode()
                 CreatorCode()
-                Patrons(state.patrons)
             }
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.padding(bottom = Spacing.large).weight(1f),
+                modifier = Modifier.weight(1f),
             ) {
                 Column {
                     RiftAppName(RiftTheme.typography.headlineHighlighted)
@@ -190,7 +198,7 @@ private fun AboutWindowContent(
                     ) {
                         Text(
                             text = state.version,
-                            style = RiftTheme.typography.titlePrimary,
+                            style = RiftTheme.typography.headerPrimary,
                         )
                     }
                     AnimatedContent(state.updateAvailability) { isUpdateAvailable ->
@@ -250,7 +258,7 @@ private fun AboutWindowContent(
 
                     Text(
                         text = "Developed by Nohus",
-                        style = RiftTheme.typography.titlePrimary,
+                        style = RiftTheme.typography.headerPrimary,
                         modifier = Modifier.padding(top = Spacing.medium),
                     )
                     LinkText(
@@ -260,7 +268,7 @@ private fun AboutWindowContent(
 
                     Text(
                         text = "Join the Discord!",
-                        style = RiftTheme.typography.titlePrimary,
+                        style = RiftTheme.typography.headerPrimary,
                         modifier = Modifier.padding(top = Spacing.medium),
                     )
                     LinkText(
@@ -269,7 +277,7 @@ private fun AboutWindowContent(
                     )
 
                     Text(
-                        text = "© 2023–2024 Nohus",
+                        text = "© 2023–2026 Nohus",
                         style = RiftTheme.typography.bodySecondary,
                         modifier = Modifier.padding(top = Spacing.medium),
                     )
@@ -280,21 +288,28 @@ private fun AboutWindowContent(
                 }
             }
         }
+        Patrons(state.patrons)
         Row(
             horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
             modifier = Modifier.align(Alignment.End),
         ) {
+            var isLogLiteVisible by remember { mutableStateOf(false) }
+            if (isLogLiteVisible) {
+                RiftButton(
+                    text = "LogLite",
+                    type = ButtonType.Secondary,
+                    cornerCut = ButtonCornerCut.None,
+                    onClick = onLogLiteClick,
+                )
+            }
             RiftButton(
                 text = "Debug",
                 type = ButtonType.Secondary,
                 cornerCut = ButtonCornerCut.None,
                 onClick = onDebugClick,
-            )
-            RiftButton(
-                text = "App data",
-                type = ButtonType.Secondary,
-                cornerCut = ButtonCornerCut.None,
-                onClick = onAppDataClick,
+                modifier = Modifier.onMouseClick(MouseButton.Right) {
+                    isLogLiteVisible = true
+                },
             )
             RiftButton(
                 text = "Credits",
@@ -319,14 +334,22 @@ private fun getUpdateDialogText(
     return when (operatingSystem) {
         Linux -> {
             buildAnnotatedString {
-                append(
-                    "If you installed the DEB package, you can update the app with your package manager as normal. " +
-                        "For example you can run ",
-                )
+                append("If you installed the ")
+                withColor(RiftTheme.colors.textHighlighted) {
+                    append("DEB")
+                }
+                append(" package, you can update the app with your package manager as normal. For example you can run ")
                 withColor(RiftTheme.colors.textHighlighted) {
                     append("sudo apt update && sudo apt upgrade")
                 }
                 append(".")
+                appendLine()
+                appendLine()
+                append("If you downloaded the ")
+                withColor(RiftTheme.colors.textHighlighted) {
+                    append("AppImage")
+                }
+                append(", you can either use the AppImageUpdate tool, or just download the new version manually.")
                 appendLine()
                 appendLine()
                 append("If you downloaded the ")
@@ -373,16 +396,13 @@ private fun getLegalText(): AnnotatedString {
                 "and all related logos and images are trademarks or registered trademarks of CCP hf.",
         )
         appendLine()
-        append("RIFT collects anonymous statistics, like the number of people using it and popularity of features. This ")
+        append("RIFT collects anonymous statistics, like the number of people using it. This ")
         withStyle(SpanStyle(color = RiftTheme.colors.textHighlighted)) {
             append("does not")
         }
         appendLine(" include any personal data.")
         appendLine()
-        appendLine(
-            "These metrics are required by CCP for the EVE Online Partnership Program, as well as helping " +
-                "improve RIFT by focusing work on features used the most.",
-        )
+        appendLine("These metrics are required by CCP for the EVE Online Partnership Program.")
     }
 }
 
@@ -394,12 +414,6 @@ private fun getCreditsText(): AnnotatedString {
             append("smultar")
         }
         append(" for designing the app icon.")
-        appendLine()
-        append("Thanks to ")
-        withStyle(SpanStyle(color = RiftTheme.colors.textHighlighted)) {
-            append("Steve Ronuken")
-        }
-        append(" for the SDE conversions.")
         appendLine()
         append("Thanks to ")
         withStyle(SpanStyle(color = RiftTheme.colors.textHighlighted)) {

@@ -55,8 +55,8 @@ class SolarSystemsRepositoryTest : FreeSpec({
         Triple("1D", listOf("Paragon Soul", "Tenal"), "1DDR-X"),
     ).forEach { (input, regionsHint, expected) ->
         "for input \"$input\" with region hint \"$regionsHint\" getSystem() returns \"$expected\"" {
-            val actual = target.getSystemName(input, regionsHint)
-            actual shouldBe expected
+            val actual = target.getFuzzySystem(input, regionsHint)
+            actual?.name shouldBe expected
         }
     }
 
@@ -69,8 +69,8 @@ class SolarSystemsRepositoryTest : FreeSpec({
         Triple("AND", listOf(), null),
     ).forEach { (input, systemHints, expected) ->
         "for input \"$input\" with system hints \"$systemHints\" getSystem() returns \"$expected\"" {
-            val actual = target.getSystemName(input, emptyList(), systemHints)
-            actual shouldBe expected
+            val actual = target.getFuzzySystem(input, emptyList(), systemHints)
+            actual?.name shouldBe expected
         }
     }
 })

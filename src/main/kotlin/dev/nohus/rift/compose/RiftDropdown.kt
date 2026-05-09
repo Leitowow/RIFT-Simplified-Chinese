@@ -32,6 +32,7 @@ import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -67,7 +68,9 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import dev.nohus.rift.compose.theme.Cursors
+import dev.nohus.rift.compose.theme.LocalRiftColors
 import dev.nohus.rift.compose.theme.RiftTheme
+import dev.nohus.rift.compose.theme.getRiftColors
 import dev.nohus.rift.generated.resources.Res
 import dev.nohus.rift.generated.resources.dropdown_chevron
 import dev.nohus.rift.generated.resources.window_buttonglow
@@ -307,70 +310,72 @@ private fun <T> RiftDropdownPopup(
         offset = IntOffset(0, fieldHeightPixels - 1), // -1 to cover the bottom border
         onDismissRequest = onDismissRequest,
     ) {
-        val width = with(LocalDensity.current) { size.width.toDp() }
-        Box(
-            modifier = Modifier
-                .width(width)
-                .height(IntrinsicSize.Min)
-                .background(backgroundColor)
-                .pointerHoverIcon(PointerIcon(Cursors.pointerDropdown)),
-        ) {
-            // Borders
-            Box(Modifier.padding(horizontal = 7.dp).height(1.dp).fillMaxWidth().align(Alignment.TopCenter).background(RiftTheme.colors.borderGreyDropdown))
-            Box(Modifier.height(1.dp).fillMaxWidth().align(Alignment.BottomCenter).background(RiftTheme.colors.borderGreyDropdown))
-            Box(Modifier.width(1.dp).fillMaxHeight().align(Alignment.CenterStart).background(RiftTheme.colors.borderGreyDropdown))
-            Box(Modifier.width(1.dp).fillMaxHeight().align(Alignment.CenterEnd).background(RiftTheme.colors.borderGreyDropdown))
-
-            Row(
-                modifier = Modifier.height(IntrinsicSize.Min),
+        CompositionLocalProvider(LocalRiftColors provides getRiftColors(isTransparent = false)) {
+            val width = with(LocalDensity.current) { size.width.toDp() }
+            Box(
+                modifier = Modifier
+                    .width(width)
+                    .height(IntrinsicSize.Min)
+                    .background(backgroundColor.copy(alpha = 1f))
+                    .pointerHoverIcon(PointerIcon(Cursors.pointerDropdown)),
             ) {
-                val isScrolling = items.size > maxItems
-                val maxHeight = (31 * maxItems).dp
-                val colorTransitionSpec = getDropdownTransitionSpec<Color>()
-                if (isScrolling) {
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier
-                            .padding(1.dp)
-                            .padding(bottom = 2.dp)
-                            .height(maxHeight)
-                            .weight(1f),
-                    ) {
-                        items(items) { item ->
-                            DropDownPopupItem(
-                                item = item,
-                                colorTransitionSpec = colorTransitionSpec,
-                                selectedItem = selectedItem,
-                                onItemSelected = onItemSelected,
-                                onDismissRequest = onDismissRequest,
-                                getItemName = getItemName,
-                            )
+                // Borders
+                Box(Modifier.padding(horizontal = 7.dp).height(1.dp).fillMaxWidth().align(Alignment.TopCenter).background(RiftTheme.colors.borderGreyDropdown))
+                Box(Modifier.height(1.dp).fillMaxWidth().align(Alignment.BottomCenter).background(RiftTheme.colors.borderGreyDropdown))
+                Box(Modifier.width(1.dp).fillMaxHeight().align(Alignment.CenterStart).background(RiftTheme.colors.borderGreyDropdown))
+                Box(Modifier.width(1.dp).fillMaxHeight().align(Alignment.CenterEnd).background(RiftTheme.colors.borderGreyDropdown))
+
+                Row(
+                    modifier = Modifier.height(IntrinsicSize.Min),
+                ) {
+                    val isScrolling = items.size > maxItems
+                    val maxHeight = (31 * maxItems).dp
+                    val colorTransitionSpec = getDropdownTransitionSpec<Color>()
+                    if (isScrolling) {
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier
+                                .padding(1.dp)
+                                .padding(bottom = 2.dp)
+                                .height(maxHeight)
+                                .weight(1f),
+                        ) {
+                            items(items) { item ->
+                                DropDownPopupItem(
+                                    item = item,
+                                    colorTransitionSpec = colorTransitionSpec,
+                                    selectedItem = selectedItem,
+                                    onItemSelected = onItemSelected,
+                                    onDismissRequest = onDismissRequest,
+                                    getItemName = getItemName,
+                                )
+                            }
                         }
-                    }
-                    RiftVerticalScrollbar(
-                        listState = listState,
-                        hasBackground = false,
-                        modifier = Modifier
-                            .height(maxHeight)
-                            .padding(horizontal = 1.dp)
-                            .padding(top = 4.dp, bottom = 2.dp),
-                    )
-                } else {
-                    Column(
-                        modifier = Modifier
-                            .padding(1.dp)
-                            .padding(bottom = 2.dp)
-                            .weight(1f),
-                    ) {
-                        for (item in items) {
-                            DropDownPopupItem(
-                                item = item,
-                                colorTransitionSpec = colorTransitionSpec,
-                                selectedItem = selectedItem,
-                                onItemSelected = onItemSelected,
-                                onDismissRequest = onDismissRequest,
-                                getItemName = getItemName,
-                            )
+                        RiftVerticalScrollbar(
+                            listState = listState,
+                            hasBackground = false,
+                            modifier = Modifier
+                                .height(maxHeight)
+                                .padding(horizontal = 1.dp)
+                                .padding(top = 4.dp, bottom = 2.dp),
+                        )
+                    } else {
+                        Column(
+                            modifier = Modifier
+                                .padding(1.dp)
+                                .padding(bottom = 2.dp)
+                                .weight(1f),
+                        ) {
+                            for (item in items) {
+                                DropDownPopupItem(
+                                    item = item,
+                                    colorTransitionSpec = colorTransitionSpec,
+                                    selectedItem = selectedItem,
+                                    onItemSelected = onItemSelected,
+                                    onDismissRequest = onDismissRequest,
+                                    getItemName = getItemName,
+                                )
+                            }
                         }
                     }
                 }

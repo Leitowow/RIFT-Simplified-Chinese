@@ -13,12 +13,12 @@ class StartJabberUseCase(
     private val jabberClient: JabberClient,
 ) {
 
-    suspend operator fun invoke(): JabberClient.LoginResult? {
+    suspend operator fun invoke(): JabberClient.LoginResult {
         val account = jabberAccountRepository.getAccount() as? JabberAccount
         return if (account != null) {
             jabberClient.login(account.jid, account.password)
         } else {
-            null
+            JabberClient.LoginResult.NoAccount
         }
     }
 }

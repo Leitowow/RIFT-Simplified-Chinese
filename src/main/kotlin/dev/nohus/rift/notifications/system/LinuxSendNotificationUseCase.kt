@@ -12,7 +12,10 @@ class LinuxSendNotificationUseCase(
 ) : SendNotificationUseCase {
 
     enum class NotificationMethod {
-        DBus, NotifySend, KDialog, Zenity
+        DBus,
+        NotifySend,
+        KDialog,
+        Zenity,
     }
 
     private val method = detectAvailableNotificationMethod()

@@ -14,13 +14,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.BlurEffect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.nohus.rift.compose.theme.Cursors
-import dev.nohus.rift.generated.resources.Res
-import dev.nohus.rift.generated.resources.window_buttonglow
 import dev.nohus.rift.windowing.LocalRiftWindowState
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -30,13 +34,16 @@ import org.jetbrains.compose.resources.painterResource
 fun RiftImageButton(
     resource: DrawableResource,
     size: Dp,
-    onClick: () -> Unit,
+    onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
+    tint: Color? = null,
+    isFullAlpha: Boolean = false,
     iconPadding: Dp = 0.dp,
     highlightModifier: Float = 1f,
 ) {
     val windowOpenTimestamp = LocalRiftWindowState.current?.openTimestamp
-    key(windowOpenTimestamp) { // This is to clear hover / press states and animations when window is reopened
+    // This is to clear hover / press states and animations when window is reopened
+    key(windowOpenTimestamp) {
         val pointerInteractionStateHolder = remember { PointerInteractionStateHolder() }
         val transition = updateTransition(pointerInteractionStateHolder.current)
         val highlightAlpha by transition.animateFloat {
@@ -48,7 +55,7 @@ fun RiftImageButton(
         }
         val iconAlpha by transition.animateFloat {
             when (it) {
-                PointerInteractionState.Normal -> 0.75f
+                PointerInteractionState.Normal -> if (isFullAlpha) 1f else 0.75f
                 PointerInteractionState.Hover -> 1f
                 PointerInteractionState.Press -> 1f
             }
@@ -58,18 +65,32 @@ fun RiftImageButton(
             modifier = modifier
                 .pointerInteraction(pointerInteractionStateHolder)
                 .pointerHoverIcon(PointerIcon(Cursors.pointerInteractive))
-                .onClick(onClick = onClick),
+                .modifyIfNotNull(onClick) {
+                    onClick(onClick = it)
+                },
         ) {
-            Image(
-                painter = painterResource(Res.drawable.window_buttonglow),
-                contentDescription = null,
-                modifier = Modifier
-                    .size(size + iconPadding * 2)
-                    .alpha(highlightAlpha),
-            )
+            Box(
+                modifier = Modifier.size(size + iconPadding * 2),
+            ) {
+                if (onClick != null) {
+                    val blur = LocalDensity.current.run { size.toPx() } * 0.35f
+                    repeat(2) {
+                        Image(
+                            painter = painterResource(resource),
+                            contentDescription = null,
+                            colorFilter = tint?.let { ColorFilter.tint(tint) },
+                            modifier = Modifier
+                                .graphicsLayer(renderEffect = BlurEffect(blur, blur, edgeTreatment = TileMode.Decal))
+                                .size(size + iconPadding * 2)
+                                .alpha(highlightAlpha),
+                        )
+                    }
+                }
+            }
             Image(
                 painter = painterResource(resource),
                 contentDescription = null,
+                colorFilter = tint?.let { ColorFilter.tint(tint) },
                 modifier = Modifier
                     .size(size)
                     .alpha(iconAlpha),

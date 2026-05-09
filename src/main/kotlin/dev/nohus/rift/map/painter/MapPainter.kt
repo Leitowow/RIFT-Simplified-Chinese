@@ -14,9 +14,9 @@ interface MapPainter {
         scope: DrawScope,
         center: DoubleOffset,
         scale: Float,
-        zoom: Float,
         systemColorStrategy: SystemColorStrategy,
         cellColorStrategy: SystemColorStrategy?,
+        jumpBands: Int,
     )
 
     fun drawAnimated(

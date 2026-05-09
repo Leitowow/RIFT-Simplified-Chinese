@@ -1,12 +1,11 @@
 package dev.nohus.rift.compose
 
+import dev.nohus.rift.utils.getName
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
-import java.time.format.TextStyle
-import java.util.Locale
 
 fun getRelativeTime(timestamp: Instant, displayTimezone: ZoneId, now: Instant = Instant.now()): String {
     val duration = Duration.between(timestamp, now)
@@ -28,8 +27,4 @@ fun getRelativeTime(timestamp: Instant, displayTimezone: ZoneId, now: Instant = 
         }
         "$formatted $timezoneName"
     }
-}
-
-private fun ZoneId.getName(): String {
-    return if (this == ZoneId.of("UTC")) "EVE" else getDisplayName(TextStyle.SHORT, Locale.US)
 }

@@ -1,14 +1,15 @@
 package dev.nohus.rift.tray
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.toAwtImage
 import androidx.compose.ui.window.ApplicationScope
 import androidx.compose.ui.window.Tray
 import androidx.compose.ui.window.rememberTrayState
 import com.formdev.flatlaf.FlatDarkLaf
-import dev.nohus.rift.ApplicationViewModel
-import dev.nohus.rift.configurationpack.ConfigurationPackRepository
+import dev.nohus.rift.BuildConfig
 import dev.nohus.rift.di.koin
 import dev.nohus.rift.generated.resources.Res
 import dev.nohus.rift.generated.resources.tray_tray_128
@@ -27,19 +28,24 @@ import dev.nohus.rift.generated.resources.window_characters
 import dev.nohus.rift.generated.resources.window_chatchannels
 import dev.nohus.rift.generated.resources.window_contacts
 import dev.nohus.rift.generated.resources.window_evemailtag
+import dev.nohus.rift.generated.resources.window_jukebox
 import dev.nohus.rift.generated.resources.window_loudspeaker_icon
 import dev.nohus.rift.generated.resources.window_map
+import dev.nohus.rift.generated.resources.window_opportunities
 import dev.nohus.rift.generated.resources.window_planets
 import dev.nohus.rift.generated.resources.window_quitgame
 import dev.nohus.rift.generated.resources.window_rift_64
 import dev.nohus.rift.generated.resources.window_satellite
 import dev.nohus.rift.generated.resources.window_settings
 import dev.nohus.rift.generated.resources.window_sovereignty
+import dev.nohus.rift.generated.resources.window_wallet
+import dev.nohus.rift.neocom.NeocomViewModel
 import dev.nohus.rift.settings.persistence.Settings
 import dev.nohus.rift.tray.TrayMenuItem.Separator
 import dev.nohus.rift.tray.TrayMenuItem.TrayMenuTextItem
 import dev.nohus.rift.utils.OperatingSystem
-import dev.nohus.rift.windowing.WindowManager
+import dev.nohus.rift.viewModel
+import dev.nohus.rift.windowing.WindowManager.RiftWindow
 import dorkbox.systemTray.MenuItem
 import dorkbox.systemTray.SystemTray
 import dorkbox.systemTray.util.SizeAndScaling
@@ -55,19 +61,20 @@ private val logger = KotlinLogging.logger {}
 
 @Composable
 fun ApplicationScope.RiftTray(
-    viewModel: ApplicationViewModel,
-    windowManager: WindowManager,
     isVisible: Boolean,
 ) {
-    val operatingSystem = remember { koin.get<OperatingSystem>() }
-    val settings = remember { koin.get<Settings>() }
-    val configurationPackRepository = remember { koin.get<ConfigurationPackRepository>() }
     if (isVisible) {
+        val operatingSystem = remember { koin.get<OperatingSystem>() }
+        val settings = remember { koin.get<Settings>() }
+
+        val viewModel: NeocomViewModel = viewModel()
+        val state by viewModel.state.collectAsState()
+
         val items = getTrayMenuItems(
             operatingSystem = operatingSystem,
-            windowManager = windowManager,
-            isJabberEnabled = configurationPackRepository.isJabberEnabled(),
-            onQuitClick = viewModel::onQuit,
+            isJabberEnabled = state.isJabberEnabled,
+            onButtonClick = viewModel::onButtonClick,
+            onQuitClick = viewModel::onQuitClick,
         )
         val didInitialize = initialize(
             items = items,
@@ -79,7 +86,7 @@ fun ApplicationScope.RiftTray(
             AwtTrayIcon(
                 items = items,
                 settings = settings,
-                windowManager = windowManager,
+                onOpenNeocom = { viewModel.onButtonClick(RiftWindow.Neocom) },
             )
         }
     }
@@ -99,32 +106,38 @@ sealed interface TrayMenuItem {
 
 private fun getTrayMenuItems(
     operatingSystem: OperatingSystem,
-    windowManager: WindowManager,
     isJabberEnabled: Boolean,
+    onButtonClick: (RiftWindow) -> Unit,
     onQuitClick: () -> Unit,
 ): List<TrayMenuItem> {
     return buildList {
         if (operatingSystem == OperatingSystem.Windows) {
             // On Windows we want an icon
-            add(TrayMenuTextItem("RIFT", Res.drawable.window_rift_64) { windowManager.onWindowOpen(WindowManager.RiftWindow.Neocom) })
+            add(TrayMenuTextItem("RIFT", Res.drawable.window_rift_64) { onButtonClick(RiftWindow.Neocom) })
         } else {
-            add(TrayMenuTextItem("RIFT", null) { windowManager.onWindowOpen(WindowManager.RiftWindow.Neocom) })
+            add(TrayMenuTextItem("RIFT", null) { onButtonClick(RiftWindow.Neocom) })
         }
         add(Separator)
-        add(TrayMenuTextItem("Alerts", Res.drawable.window_loudspeaker_icon) { windowManager.onWindowOpen(WindowManager.RiftWindow.Alerts) })
-        add(TrayMenuTextItem("Map", Res.drawable.window_map) { windowManager.onWindowOpen(WindowManager.RiftWindow.Map) })
-        add(TrayMenuTextItem("Intel Feed", Res.drawable.window_satellite) { windowManager.onWindowOpen(WindowManager.RiftWindow.IntelFeed) })
-        add(TrayMenuTextItem("Intel Reports", Res.drawable.window_bleedchannel) { windowManager.onWindowOpen(WindowManager.RiftWindow.IntelReports) })
-        add(TrayMenuTextItem("Characters", Res.drawable.window_characters) { windowManager.onWindowOpen(WindowManager.RiftWindow.Characters) })
-        add(TrayMenuTextItem("Assets", Res.drawable.window_assets) { windowManager.onWindowOpen(WindowManager.RiftWindow.Assets) })
-        add(TrayMenuTextItem("Planetary Industry", Res.drawable.window_planets) { windowManager.onWindowOpen(WindowManager.RiftWindow.PlanetaryIndustry) })
-        add(TrayMenuTextItem("Contacts", Res.drawable.window_contacts) { windowManager.onWindowOpen(WindowManager.RiftWindow.Contacts) })
-        if (isJabberEnabled) {
-            add(TrayMenuTextItem("Pings", Res.drawable.window_sovereignty) { windowManager.onWindowOpen(WindowManager.RiftWindow.Pings) })
-            add(TrayMenuTextItem("Jabber", Res.drawable.window_chatchannels) { windowManager.onWindowOpen(WindowManager.RiftWindow.Jabber) })
+        add(TrayMenuTextItem("Alerts", Res.drawable.window_loudspeaker_icon) { onButtonClick(RiftWindow.Alerts) })
+        add(TrayMenuTextItem("Map", Res.drawable.window_map) { onButtonClick(RiftWindow.Map) })
+        add(TrayMenuTextItem("Intel Feed", Res.drawable.window_satellite) { onButtonClick(RiftWindow.IntelFeed) })
+        add(TrayMenuTextItem("Intel Reports", Res.drawable.window_bleedchannel) { onButtonClick(RiftWindow.IntelReports) })
+        add(TrayMenuTextItem("Characters", Res.drawable.window_characters) { onButtonClick(RiftWindow.Characters) })
+        add(TrayMenuTextItem("Assets", Res.drawable.window_assets) { onButtonClick(RiftWindow.Assets) })
+        add(TrayMenuTextItem("Wallets", Res.drawable.window_wallet) { onButtonClick(RiftWindow.Wallet) })
+        add(TrayMenuTextItem("Planetary Industry", Res.drawable.window_planets) { onButtonClick(RiftWindow.PlanetaryIndustry) })
+        add(TrayMenuTextItem("Opportunities", Res.drawable.window_opportunities) { onButtonClick(RiftWindow.Opportunities) })
+        add(TrayMenuTextItem("Contacts", Res.drawable.window_contacts) { onButtonClick(RiftWindow.Contacts) })
+        if (BuildConfig.isDevEnvironment) {
+            add(TrayMenuTextItem("Chat", Res.drawable.window_chatchannels) { onButtonClick(RiftWindow.Chat) })
         }
-        add(TrayMenuTextItem("Settings", Res.drawable.window_settings) { windowManager.onWindowOpen(WindowManager.RiftWindow.Settings) })
-        add(TrayMenuTextItem("About", Res.drawable.window_evemailtag) { windowManager.onWindowOpen(WindowManager.RiftWindow.About) })
+        if (isJabberEnabled) {
+            add(TrayMenuTextItem("Pings", Res.drawable.window_sovereignty) { onButtonClick(RiftWindow.Pings) })
+            add(TrayMenuTextItem("Jabber", Res.drawable.window_chatchannels) { onButtonClick(RiftWindow.Jabber) })
+        }
+        add(TrayMenuTextItem("Jukebox", Res.drawable.window_jukebox) { onButtonClick(RiftWindow.Jukebox) })
+        add(TrayMenuTextItem("Settings", Res.drawable.window_settings) { onButtonClick(RiftWindow.Settings) })
+        add(TrayMenuTextItem("About", Res.drawable.window_evemailtag) { onButtonClick(RiftWindow.About) })
         add(Separator)
         add(TrayMenuTextItem("Quit", Res.drawable.window_quitgame) { onQuitClick() })
     }
@@ -191,7 +204,7 @@ private fun initialize(
 private fun ApplicationScope.AwtTrayIcon(
     items: List<TrayMenuItem>,
     settings: Settings,
-    windowManager: WindowManager,
+    onOpenNeocom: () -> Unit,
 ) {
     val icon = if (settings.isUsingDarkTrayIcon) {
         Res.drawable.tray_tray_dark_128
@@ -202,7 +215,7 @@ private fun ApplicationScope.AwtTrayIcon(
         icon = painterResource(icon),
         state = rememberTrayState(),
         tooltip = "RIFT",
-        onAction = { windowManager.onWindowOpen(WindowManager.RiftWindow.Neocom) },
+        onAction = onOpenNeocom,
         menu = {
             for (item in items) {
                 when (item) {

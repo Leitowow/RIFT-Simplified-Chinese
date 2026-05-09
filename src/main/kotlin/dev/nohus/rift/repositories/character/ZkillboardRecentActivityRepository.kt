@@ -1,6 +1,7 @@
 package dev.nohus.rift.repositories.character
 
 import dev.nohus.rift.network.Result
+import dev.nohus.rift.network.requests.Originator
 import dev.nohus.rift.network.zkillboard.RecentActivity
 import dev.nohus.rift.network.zkillboard.ZkillboardApi
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -21,7 +22,7 @@ class ZkillboardRecentActivityRepository(
 
     suspend fun start() {
         while (true) {
-            val recentActivity = getRecentActivity()
+            val recentActivity = getRecentActivity(Originator.DataPreloading)
             if (recentActivity != null) {
                 activeCharacterIds = recentActivity.characterIds.toSet()
                 logger.info { "Recent activity loaded from zKillboard" }
@@ -32,8 +33,8 @@ class ZkillboardRecentActivityRepository(
         }
     }
 
-    private suspend fun getRecentActivity(): RecentActivity? {
-        return when (val response = zkillboardApi.getRecentActivity()) {
+    private suspend fun getRecentActivity(originator: Originator): RecentActivity? {
+        return when (val response = zkillboardApi.getRecentActivity(originator)) {
             is Result.Success -> {
                 response.data
             }

@@ -8,9 +8,9 @@ import dev.nohus.rift.windowing.WindowManager
 import dev.nohus.rift.windowing.WindowManager.RiftWindow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import org.koin.core.annotation.Single
+import org.koin.core.annotation.Factory
 
-@Single
+@Factory
 class NeocomViewModel(
     private val windowManager: WindowManager,
     private val applicationViewModel: ApplicationViewModel,
@@ -30,17 +30,22 @@ class NeocomViewModel(
     val state = _state.asStateFlow()
 
     fun onButtonClick(window: RiftWindow) {
-        windowManager.onWindowOpen(window)
+        if (window == RiftWindow.Jukebox && windowManager.getOpenWindowUuids(RiftWindow.JukeboxCollapsed).isNotEmpty()) {
+            // We want to open the Jukebox, but collapsed Jukebox is already open so bring that up instead
+            windowManager.onWindowOpen(RiftWindow.JukeboxCollapsed)
+        } else {
+            windowManager.onWindowOpen(window)
+        }
     }
 
     fun onQuitClick() {
         applicationViewModel.onQuit()
     }
 
-    fun onClose() {
+    override fun onClose() {
         if (!settings.isTrayIconWorking) {
             // We don't have confirmation that the tray icon is working
-            // Close the app so it's not running in the background without the user having the ability to quit it
+            // Close the app, so it's not running in the background without the user having the ability to quit it
             applicationViewModel.onQuit()
         }
     }

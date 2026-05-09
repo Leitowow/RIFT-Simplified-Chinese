@@ -24,7 +24,8 @@ data class DialogMessage(
 )
 
 enum class MessageDialogType {
-    Info, Warning
+    Info,
+    Warning,
 }
 
 @Composable

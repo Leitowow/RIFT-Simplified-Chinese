@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.items
@@ -50,6 +51,7 @@ import dev.nohus.rift.alerts.list.AlertsViewModel.UiState
 import dev.nohus.rift.characters.repositories.LocalCharactersRepository.LocalCharacter
 import dev.nohus.rift.compose.ButtonCornerCut
 import dev.nohus.rift.compose.ButtonType
+import dev.nohus.rift.compose.ExpandChevron
 import dev.nohus.rift.compose.PointerInteractionStateHolder
 import dev.nohus.rift.compose.RiftButton
 import dev.nohus.rift.compose.RiftCheckbox
@@ -63,6 +65,7 @@ import dev.nohus.rift.compose.pointerInteraction
 import dev.nohus.rift.compose.theme.Cursors
 import dev.nohus.rift.compose.theme.RiftTheme
 import dev.nohus.rift.compose.theme.Spacing
+import dev.nohus.rift.contacts.ContactsRepository.Label
 import dev.nohus.rift.generated.resources.Res
 import dev.nohus.rift.generated.resources.delete
 import dev.nohus.rift.generated.resources.editplanicon
@@ -72,7 +75,8 @@ import dev.nohus.rift.generated.resources.window_loudspeaker_icon
 import dev.nohus.rift.planetaryindustry.PlanetaryIndustryRepository.ColonyItem
 import dev.nohus.rift.utils.plural
 import dev.nohus.rift.utils.sound.Sound
-import dev.nohus.rift.utils.viewModel
+import dev.nohus.rift.utils.withColor
+import dev.nohus.rift.viewModel
 import dev.nohus.rift.windowing.WindowManager.RiftWindowState
 import java.nio.file.Path
 import java.time.Duration
@@ -94,6 +98,7 @@ fun AlertsWindow(
         AlertsWindowContent(
             state = state,
             onAlertClick = viewModel::onAlertClick,
+            onGroupClick = viewModel::onGroupClick,
             onToggleAlert = viewModel::onToggleAlert,
             onGroupChange = viewModel::onGroupChange,
             onTestAlertSound = viewModel::onTestAlertSound,
@@ -131,6 +136,7 @@ fun AlertsWindow(
 private fun AlertsWindowContent(
     state: UiState,
     onAlertClick: (id: String) -> Unit,
+    onGroupClick: (name: String?) -> Unit,
     onToggleAlert: (id: String, isEnabled: Boolean) -> Unit,
     onGroupChange: (id: String, group: String?) -> Unit,
     onTestAlertSound: (id: String) -> Unit,
@@ -157,35 +163,56 @@ private fun AlertsWindowContent(
                     .entries
                     .sortedWith(compareBy({ it.key == null }, { it.key }))
                     .forEach { (group, alertsInGroup) ->
+                        val isExpanded = group !in state.collapsedGroups
                         stickyHeader {
+                            val text = buildAnnotatedString {
+                                withColor(RiftTheme.colors.textPrimary) {
+                                    append(group ?: "Default")
+                                }
+                                val total = alertsInGroup.size
+                                val enabled = alertsInGroup.count { it.isEnabled }
+                                append(" - ")
+                                append(total.toString())
+                                append(" alert${total.plural}")
+                                if (enabled < total) {
+                                    append(" - ")
+                                    append(enabled.toString())
+                                    append(" enabled")
+                                }
+                            }
                             AlertGroupHeader(
-                                name = group,
+                                name = text,
                                 isEmpty = alertsInGroup.isEmpty(),
+                                isExpanded = isExpanded,
+                                isDefault = group == null,
                                 hasEnabledAlerts = alertsInGroup.any { it.isEnabled },
+                                onClick = { onGroupClick(group) },
                                 onGroupToggleAlerts = { onGroupToggleAlerts(group) },
                                 onGroupRenameClick = { onGroupRenameClick(group!!) },
                                 onGroupDeleteClick = { onGroupDeleteClick(group!!) },
                             )
                         }
-                        if (group in emptyGroups) {
-                            item {
-                                EmptyGroup()
+                        if (isExpanded) {
+                            if (group in emptyGroups) {
+                                item {
+                                    EmptyGroup()
+                                }
                             }
-                        }
-                        items(alertsInGroup, key = { it.id }) { alert ->
-                            val isExpanded = alert.id == state.expandedAlert
-                            AlertItem(
-                                onAlertClick = onAlertClick,
-                                alert = alert,
-                                onToggleAlert = onToggleAlert,
-                                state = state,
-                                isExpanded = isExpanded,
-                                groups = state.groups,
-                                onGroupChange = { onGroupChange(alert.id, it) },
-                                onTestAlertSound = onTestAlertSound,
-                                onEditAlertAction = onEditAlertAction,
-                                onDeleteAlert = onDeleteAlert,
-                            )
+                            items(alertsInGroup, key = { it.id }) { alert ->
+                                val isExpanded = alert.id == state.expandedAlert
+                                AlertItem(
+                                    onAlertClick = onAlertClick,
+                                    alert = alert,
+                                    onToggleAlert = onToggleAlert,
+                                    state = state,
+                                    isExpanded = isExpanded,
+                                    groups = state.groups,
+                                    onGroupChange = { onGroupChange(alert.id, it) },
+                                    onTestAlertSound = onTestAlertSound,
+                                    onEditAlertAction = onEditAlertAction,
+                                    onDeleteAlert = onDeleteAlert,
+                                )
+                            }
                         }
                     }
             }
@@ -196,7 +223,7 @@ private fun AlertsWindowContent(
             ) {
                 Text(
                     text = "No alerts defined.\nCreate some with the button below.",
-                    style = RiftTheme.typography.titlePrimary,
+                    style = RiftTheme.typography.headerPrimary,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -224,11 +251,15 @@ private fun AlertsWindowContent(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun LazyItemScope.AlertGroupHeader(
-    name: String?,
+    name: AnnotatedString,
     isEmpty: Boolean,
+    isExpanded: Boolean,
+    isDefault: Boolean,
     hasEnabledAlerts: Boolean,
+    onClick: () -> Unit,
     onGroupToggleAlerts: () -> Unit,
     onGroupRenameClick: () -> Unit,
     onGroupDeleteClick: () -> Unit,
@@ -236,17 +267,21 @@ private fun LazyItemScope.AlertGroupHeader(
     val pointerState = remember { PointerInteractionStateHolder() }
     Row(
         horizontalArrangement = Arrangement.spacedBy(Spacing.small),
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .pointerInteraction(pointerState)
             .background(RiftTheme.colors.backgroundPrimary)
-            .padding(horizontal = Spacing.medium, vertical = Spacing.small)
             .fillMaxWidth()
             .animateItem()
-            .animateContentSize(),
+            .animateContentSize()
+            .pointerHoverIcon(PointerIcon(Cursors.pointerInteractive))
+            .onClick { onClick() },
     ) {
+        ExpandChevron(isExpanded = isExpanded)
         Text(
-            text = name ?: "Default",
-            style = RiftTheme.typography.titlePrimary,
+            text = name,
+            style = RiftTheme.typography.headerSecondary,
+            modifier = Modifier.padding(vertical = Spacing.small),
         )
         Spacer(Modifier.weight(1f))
 
@@ -263,7 +298,7 @@ private fun LazyItemScope.AlertGroupHeader(
                 )
             }
         }
-        if (name != null) { // Don't show actions for the default group
+        if (!isDefault) {
             RiftTooltipArea(
                 text = "Rename group",
             ) {
@@ -285,6 +320,7 @@ private fun LazyItemScope.AlertGroupHeader(
                 )
             }
         }
+        Spacer(Modifier.width(Spacing.small))
     }
 }
 
@@ -338,7 +374,7 @@ private fun LazyItemScope.AlertItem(
                 isChecked = alert.isEnabled,
                 onCheckedChange = { onToggleAlert(alert.id, it) },
             )
-            val text = getAlertText(alert, state.characters, state.sounds)
+            val text = getAlertText(alert, state.characters, state.sounds, state.labels)
 
             Text(
                 text = text,
@@ -355,6 +391,7 @@ private fun LazyItemScope.AlertItem(
                 getSpecificFleetCommandersDetailText(alert),
                 getDecloakIgnoredKeywordsDetailText(alert),
                 getSpecificColoniesDetailText(alert, state.colonies),
+                getLabeledContactsDetailText(alert, state.labels),
             ).forEach {
                 Row(
                     modifier = Modifier
@@ -559,10 +596,47 @@ private fun getSpecificShipClassesDetailText(alert: Alert): AnnotatedString? {
 }
 
 @Composable
+private fun getLabeledContactsDetailText(alert: Alert, labels: List<Label>): AnnotatedString? {
+    return if (alert.trigger is AlertTrigger.IntelReported) {
+        val labeledContacts = alert.trigger.reportTypes
+            .firstOrNull { it is IntelReportType.LabeledContacts }
+        if (labeledContacts != null) {
+            val labels = (labeledContacts as IntelReportType.LabeledContacts).labels.mapNotNull { label ->
+                labels.firstOrNull { it.owner.id == label.ownerId && it.id == label.id }
+            }
+            val secondary = SpanStyle(color = RiftTheme.colors.textSecondary)
+            val primary = SpanStyle(color = RiftTheme.colors.textPrimary)
+            buildAnnotatedString {
+                withStyle(secondary) {
+                    append("Contact labels: ")
+                    labels.forEachIndexed { index, label ->
+                        withStyle(primary) {
+                            append(label.name)
+                        }
+                        append(" from ")
+                        withStyle(primary) {
+                            append(label.owner.name)
+                        }
+                        if (index != labels.lastIndex) {
+                            appendLine()
+                        }
+                    }
+                }
+            }
+        } else {
+            null
+        }
+    } else {
+        null
+    }
+}
+
+@Composable
 private fun getAlertText(
     alert: Alert,
     characters: List<LocalCharacter>,
     sounds: List<Sound>,
+    labels: List<Label>,
 ): AnnotatedString {
     val secondary = SpanStyle(color = RiftTheme.colors.textSecondary)
     val primary = SpanStyle(color = RiftTheme.colors.textPrimary)
@@ -592,9 +666,20 @@ private fun getAlertText(
                                     "${type.classes.size} ship classes"
                                 }
                             }
+                            is IntelReportType.LabeledContacts -> {
+                                if (type.labels.size == 1) {
+                                    val label = type.labels.single()
+                                    val name = labels.firstOrNull { it.owner.id == label.ownerId && it.id == label.id }?.name ?: "Unknown"
+                                    "characters labeled $name"
+                                } else {
+                                    "characters under ${type.labels.size} labels"
+                                }
+                            }
                             IntelReportType.Bubbles -> "bubbles"
                             IntelReportType.GateCamp -> "gate camps"
                             IntelReportType.Wormhole -> "wormholes"
+                            IntelReportType.Ess -> "ESS"
+                            IntelReportType.Skyhook -> "Skyhooks"
                         }
                     }
                     withStyle(primary) {
@@ -603,9 +688,14 @@ private fun getAlertText(
                     append(" are reported ")
                     val location = when (val location = trigger.reportLocation) {
                         is IntelReportLocation.System -> "${getRangePrefixText(location.jumpsRange)} ${location.systemName}"
+                        is IntelReportLocation.AnyOwnedCharacter if location.onlyUndocked -> "${getRangePrefixText(location.jumpsRange)} any undocked character's location"
                         is IntelReportLocation.AnyOwnedCharacter -> "${getRangePrefixText(location.jumpsRange)} any online character's location"
+                        is IntelReportLocation.OwnedCharacter if location.onlyUndocked -> {
+                            val character = characters.firstOrNull { it.characterId == location.characterId }?.info?.name ?: location.characterId.toString()
+                            "${getRangePrefixText(location.jumpsRange)} $character's undocked location"
+                        }
                         is IntelReportLocation.OwnedCharacter -> {
-                            val character = characters.firstOrNull { it.characterId == location.characterId }?.info?.success?.name ?: location.characterId.toString()
+                            val character = characters.firstOrNull { it.characterId == location.characterId }?.info?.name ?: location.characterId.toString()
                             "${getRangePrefixText(location.jumpsRange)} $character's location"
                         }
                     }
@@ -671,6 +761,16 @@ private fun getAlertText(
                                     }
                                 }
                             }
+                            GameActionType.RanOutOfCharges -> {
+                                append("a module has run ")
+                                withStyle(primary) { append("out of charges") }
+                            }
+
+                            is GameActionType.Custom -> {
+                                append("a game action has happened containing ")
+                                if (type.isRegex) append("regex ")
+                                withStyle(primary) { append(type.messageContaining) }
+                            }
                         }
                     }
                 }
@@ -713,6 +813,9 @@ private fun getAlertText(
                     append("a chat message")
                     if (trigger.messageContaining != null) {
                         append(" containing ")
+                        if (trigger.isRegex) {
+                            append("regex ")
+                        }
                         withStyle(primary) {
                             append(trigger.messageContaining)
                         }
@@ -724,6 +827,9 @@ private fun getAlertText(
                             append(trigger.sender)
                         }
                     }
+                    if (trigger.isExcludingSelf) {
+                        append(" excluding my messages")
+                    }
                     append(" in ")
                     val channel = when (val channel = trigger.channel) {
                         ChatMessageChannel.Any -> "any channel"
@@ -734,6 +840,7 @@ private fun getAlertText(
                     }
                 }
                 is AlertTrigger.JabberPing -> {
+                    @Suppress("DEPRECATION")
                     when (trigger.pingType) {
                         JabberPingType.Message -> {}
                         is JabberPingType.Message2 -> {
@@ -801,6 +908,9 @@ private fun getAlertText(
                     append("a Jabber message")
                     if (trigger.messageContaining != null) {
                         append(" containing ")
+                        if (trigger.isRegex) {
+                            append("regex ")
+                        }
                         withStyle(primary) {
                             append(trigger.messageContaining)
                         }

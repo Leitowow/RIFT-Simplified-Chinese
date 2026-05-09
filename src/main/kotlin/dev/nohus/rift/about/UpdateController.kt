@@ -22,7 +22,11 @@ class UpdateController {
     private val controller: SoftwareUpdateController? = SoftwareUpdateController.getInstance()
 
     enum class UpdateAvailability {
-        NOT_PACKAGED, UNKNOWN, NO_UPDATE, UPDATE_MANUAL, UPDATE_AUTOMATIC
+        NOT_PACKAGED,
+        UNKNOWN,
+        NO_UPDATE,
+        UPDATE_MANUAL,
+        UPDATE_AUTOMATIC,
     }
 
     suspend fun isUpdateAvailable(): UpdateAvailability = withContext(Dispatchers.IO) {

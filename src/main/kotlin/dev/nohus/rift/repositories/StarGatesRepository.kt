@@ -5,27 +5,34 @@ import dev.nohus.rift.database.static.StaticDatabase
 import org.jetbrains.exposed.sql.selectAll
 import org.koin.core.annotation.Single
 
-@Single(createdAtStart = true)
+@Single
 class StarGatesRepository(
     staticDatabase: StaticDatabase,
-    private val solarSystemsRepository: SolarSystemsRepository,
 ) {
 
-    // { fromSystem -> { toSystem -> typeId } }
-    private val stargateTypeIds: Map<Int, Map<Int, Int>>
+    data class StarGate(
+        val typeId: Int?,
+        val locationId: Long?,
+    )
+
+    // { fromSystem -> { toSystem -> StarGate } }
+    private val stargates: Map<Int, Map<Int, StarGate>>
     val connections: List<Pair<Int, Int>>
 
     init {
         val rows = staticDatabase.transaction {
             StarGates.selectAll().toList()
         }
-        stargateTypeIds = rows
+        stargates = rows
             .groupBy { it[StarGates.fromSystemId] }
             .mapValues { (_, rows) ->
                 rows
                     .groupBy { it[StarGates.toSystemId] }
                     .mapValues { (_, rows) ->
-                        rows.single()[StarGates.starGateTypeId]
+                        StarGate(
+                            typeId = rows.single()[StarGates.starGateTypeId],
+                            locationId = rows.single()[StarGates.locationId],
+                        )
                     }
             }
         connections = rows.map {
@@ -33,13 +40,34 @@ class StarGatesRepository(
         }
     }
 
-    fun getStargateTypeId(fromSystem: String, toSystem: String): Int? {
-        val fromSystemId = solarSystemsRepository.getSystemId(fromSystem) ?: return null
-        val toSystemId = solarSystemsRepository.getSystemId(toSystem) ?: return null
-        return getStargateTypeId(fromSystemId, toSystemId)
+    /**
+     * Returns a list of stargates in this system as pairs of target system ID and stargate
+     */
+    fun getStargates(fromSystemId: Int): List<Pair<Int, StarGate>> {
+        return stargates[fromSystemId]?.map { it.key to it.value } ?: emptyList()
     }
 
-    private fun getStargateTypeId(fromSystemId: Int, toSystemId: Int): Int? {
-        return stargateTypeIds[fromSystemId]?.get(toSystemId)
+    fun getStargate(fromSystemId: Int, toSystemId: Int): StarGate? {
+        return stargates[fromSystemId]?.get(toSystemId)
+    }
+
+    /**
+     * Returns a stargate or Ansiblex type ID if found, with location ID if available
+     */
+    fun getGate(
+        isAnsiblex: Boolean,
+        fromSystemId: Int?,
+        toSystemId: Int,
+    ): StarGate {
+        return if (isAnsiblex) {
+            StarGate(35841, null)
+        } else {
+            val stargate = if (fromSystemId != null) {
+                getStargate(fromSystemId, toSystemId)
+            } else {
+                StarGate(null, null)
+            }
+            stargate ?: StarGate(16, null) // Default to Caldari system gate
+        }
     }
 }

@@ -85,12 +85,12 @@ class AboutViewModel(
         updateController.triggerUpdate()
     }
 
-    fun onDebugClick() {
-        windowManager.onWindowOpen(RiftWindow.Debug)
+    fun onLogLiteClick() {
+        windowManager.onWindowOpen(RiftWindow.LogLite)
     }
 
-    fun onAppDataClick() {
-        appDirectories.getAppDataDirectory().openFileManager()
+    fun onDebugClick() {
+        windowManager.onWindowOpen(RiftWindow.Debug)
     }
 
     fun onLegalClick() {

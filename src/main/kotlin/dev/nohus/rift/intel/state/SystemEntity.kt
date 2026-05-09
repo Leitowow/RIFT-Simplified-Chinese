@@ -1,5 +1,8 @@
 package dev.nohus.rift.intel.state
 
+import dev.nohus.rift.repositories.CelestialsRepository
+import dev.nohus.rift.repositories.SolarSystemsRepository.MapSolarSystem
+import dev.nohus.rift.repositories.TypesRepository.Type
 import dev.nohus.rift.repositories.character.CharacterDetailsRepository.CharacterDetails
 import dev.nohus.rift.standings.Standing
 
@@ -11,29 +14,41 @@ sealed interface SystemEntity {
         val name: String,
         val characterId: Int,
         val details: CharacterDetails,
-    ) : SystemEntity, CharacterBound
+    ) : SystemEntity,
+        CharacterBound
 
     data class UnspecifiedCharacter(
         val count: Int,
-    ) : SystemEntity, CharacterBound
+    ) : SystemEntity,
+        CharacterBound
 
     data class Ship(
-        val name: String,
+        val type: Type,
         val count: Int,
         val standing: Standing? = null,
-    ) : SystemEntity, CharacterBound
+    ) : SystemEntity,
+        CharacterBound
 
     data class Gate(
-        val system: String,
+        val system2: MapSolarSystem,
         val isAnsiblex: Boolean,
-    ) : SystemEntity, CharacterBound
+        val distanceKm: Int? = null,
+    ) : SystemEntity,
+        CharacterBound
+
+    data class Celestial(
+        val celestial: CelestialsRepository.Celestial,
+        val distanceKm: Int,
+    ) : SystemEntity,
+        CharacterBound
 
     data class Killmail(
         val url: String,
-        val ship: String?,
+        val ship: Type?,
         val typeName: String?,
         val victim: KillmailVictim,
-    ) : SystemEntity, Clearable
+    ) : SystemEntity,
+        Clearable
 
     data class KillmailVictim(
         val characterId: Int?,
@@ -58,7 +73,9 @@ sealed interface SystemEntity {
 }
 
 // Marker for system entities that go away if the character situation changes
-interface CharacterBound : SystemEntity, Clearable
+interface CharacterBound :
+    SystemEntity,
+    Clearable
 
 // Marker for entities that go away when a system is reported clear
 interface Clearable : SystemEntity

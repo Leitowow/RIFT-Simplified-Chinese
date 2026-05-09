@@ -9,7 +9,6 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ApplicationScope
 import androidx.compose.ui.window.LocalWindowExceptionHandlerFactory
 import androidx.compose.ui.window.application
-import dev.nohus.rift.compose.kamelConfig
 import dev.nohus.rift.compose.theme.RiftTheme
 import dev.nohus.rift.crash.RiftExceptionHandlerFactory
 import dev.nohus.rift.crash.handleFatalException
@@ -20,16 +19,15 @@ import dev.nohus.rift.notifications.NotificationsController
 import dev.nohus.rift.singleinstance.SingleInstanceWrapper
 import dev.nohus.rift.splash.SplashWindowWrapper
 import dev.nohus.rift.tray.RiftTray
-import dev.nohus.rift.utils.viewModel
 import dev.nohus.rift.windowing.WindowManager
 import dev.nohus.rift.wizard.WizardWindowWrapper
 import io.kamel.image.config.LocalKamelConfig
 
 fun main() {
     try {
-        application(exitProcessOnExit = true) {
-            initializeLogging()
-            startKoin()
+        initializeLogging()
+        startKoin()
+        application {
             riftApplication()
         }
     } catch (e: Throwable) {
@@ -42,7 +40,7 @@ fun main() {
 @Composable
 private fun ApplicationScope.riftApplication() {
     CompositionLocalProvider(
-        LocalKamelConfig provides kamelConfig,
+        LocalKamelConfig provides remember { koin.get() },
         LocalWindowExceptionHandlerFactory provides RiftExceptionHandlerFactory,
     ) {
         val viewModel: ApplicationViewModel = viewModel()
@@ -53,11 +51,10 @@ private fun ApplicationScope.riftApplication() {
         RiftTheme {
             if (state.isAnotherInstanceDialogShown) {
                 SingleInstanceWrapper(
-                    onRunAnywayClick = viewModel::onSingleInstanceRunAnywayClick,
                     onCloseRequest = viewModel::onQuit,
                 )
             } else {
-                RiftTray(viewModel, windowManager, state.isTrayIconShown)
+                RiftTray(state.isTrayIconShown)
                 windowManager.composeWindows()
                 SplashWindowWrapper(
                     isVisible = state.isSplashScreenShown,

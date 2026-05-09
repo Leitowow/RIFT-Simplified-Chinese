@@ -7,9 +7,9 @@ import dev.nohus.rift.settings.persistence.Settings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import org.koin.core.annotation.Single
+import org.koin.core.annotation.Factory
 
-@Single
+@Factory
 class ConfigurationPackReminderViewModel(
     private val configurationPackRepository: ConfigurationPackRepository,
     private val settings: Settings,

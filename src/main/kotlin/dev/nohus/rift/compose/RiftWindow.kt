@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.window.WindowDraggableArea
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -53,12 +52,16 @@ import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.zIndex
 import dev.nohus.rift.Event
 import dev.nohus.rift.compose.theme.Cursors
+import dev.nohus.rift.compose.theme.LocalRiftColors
 import dev.nohus.rift.compose.theme.RiftTheme
 import dev.nohus.rift.compose.theme.Spacing
+import dev.nohus.rift.compose.theme.getRiftColors
 import dev.nohus.rift.di.koin
 import dev.nohus.rift.generated.resources.Res
-import dev.nohus.rift.generated.resources.menu_close
 import dev.nohus.rift.generated.resources.window_background_dots
+import dev.nohus.rift.generated.resources.window_background_dots_light
+import dev.nohus.rift.generated.resources.window_light_background_off_16px
+import dev.nohus.rift.generated.resources.window_light_background_on_16px
 import dev.nohus.rift.generated.resources.window_locked_16px
 import dev.nohus.rift.generated.resources.window_overlay_fullscreen_off_16px
 import dev.nohus.rift.generated.resources.window_overlay_fullscreen_on_16px
@@ -70,10 +73,12 @@ import dev.nohus.rift.generated.resources.window_titlebar_minimize
 import dev.nohus.rift.generated.resources.window_titlebar_tune
 import dev.nohus.rift.generated.resources.window_unlocked_16px
 import dev.nohus.rift.get
+import dev.nohus.rift.utils.OperatingSystem
 import dev.nohus.rift.windowing.LocalRiftWindow
 import dev.nohus.rift.windowing.LocalRiftWindowState
 import dev.nohus.rift.windowing.WindowManager.RiftWindowState
 import dev.nohus.rift.windowing.WindowStatesController
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.imageResource
@@ -88,7 +93,7 @@ fun RiftWindow(
     onTuneClick: (() -> Unit)? = null,
     tuneContextMenuItems: List<ContextMenuItem>? = null,
     onCloseClick: () -> Unit,
-    titleBarStyle: TitleBarStyle = TitleBarStyle.Full,
+    titleBarStyle: TitleBarStyle? = TitleBarStyle.Full,
     titleBarContent: @Composable ((height: Dp) -> Unit)? = null,
     withContentPadding: Boolean = true,
     isResizable: Boolean = true,
@@ -96,50 +101,67 @@ fun RiftWindow(
     content: @Composable WindowScope.() -> Unit,
 ) {
     val uiScaleController: UiScaleController = remember { koin.get() }
+    val transparentWindowController: TransparentWindowController = remember { koin.get() }
     val windowStatesController: WindowStatesController = remember { koin.get() }
+    val smartAlwaysAboveRepository: SmartAlwaysAboveRepository = remember { koin.get() }
     val scope = rememberCoroutineScope()
-    val isAlwaysOnTop by windowStatesController.isAlwaysOnTop(state.window).collectAsState(false)
-    val isLocked by windowStatesController.isLocked(state.window).collectAsState(false)
-    val isMaximized by windowStatesController.isMaximized(state.window).collectAsState(false)
+    val isAlwaysOnTopActive by smartAlwaysAboveRepository.isActive.collectAsState(false)
+    val isAlwaysOnTop by windowStatesController.isAlwaysOnTop(state.window, state.uuid).collectAsState(false)
+    val isLocked by windowStatesController.isLocked(state.window, state.uuid).collectAsState(false)
+    val isTransparent by windowStatesController.isTransparent(state.window, state.uuid).collectAsState(false)
+    val isComposeWindowTransparent = transparentWindowController.isComposeWindowTransparent()
+    val isMaximized by windowStatesController.isMaximized(state.uuid).collectAsState(false)
+    val (effectiveAlwaysOnTop, isFocusable, bringToBackEvent) = alwaysOnTopHandler(isAlwaysOnTop, isAlwaysOnTopActive)
     Window(
         onCloseRequest = onCloseClick,
         state = state.windowState,
-        visible = state.isVisible,
         title = title,
         icon = painterResource(icon),
         undecorated = true,
+        focusable = isFocusable,
         resizable = isResizable && !isLocked,
-        alwaysOnTop = isAlwaysOnTop,
+        alwaysOnTop = effectiveAlwaysOnTop,
+        transparent = isComposeWindowTransparent,
     ) {
         uiScaleController.withScale {
+            transparentWindowController.setTransparency(window, isTransparent)
+            smartAlwaysAboveRepository.registerWindow(state)
             MinimumSizeHandler(state)
             BringToFrontHandler(state.bringToFrontEvent)
+            BringToBackHandler(bringToBackEvent)
             CompositionLocalProvider(
                 LocalRiftWindow provides window,
                 LocalRiftWindowState provides state,
+                LocalRiftColors provides getRiftColors(isTransparent && isComposeWindowTransparent),
             ) {
                 RiftWindowContent(
                     title = title,
                     icon = icon,
                     isAlwaysOnTop = isAlwaysOnTop,
                     isLocked = isLocked,
+                    isTransparent = isTransparent,
                     isMaximized = isMaximized,
                     isResizable = isResizable,
                     isMaximizeButtonShown = isMaximizeButtonShown,
                     onTuneClick = onTuneClick,
                     tuneContextMenuItems = tuneContextMenuItems,
                     onAlwaysOnTopClick = if (state.window != null) {
-                        { windowStatesController.toggleAlwaysOnTop(state.window) }
+                        { windowStatesController.toggleAlwaysOnTop(state.window, state.uuid) }
                     } else {
                         null
                     },
                     onLockClick = if (state.window != null) {
-                        { windowStatesController.toggleLocked(state.window) }
+                        { windowStatesController.toggleLocked(state.window, state.uuid) }
+                    } else {
+                        null
+                    },
+                    onTransparentClick = if (state.window != null && transparentWindowController.isEnabled) {
+                        { windowStatesController.toggleTransparent(state.window, state.uuid) }
                     } else {
                         null
                     },
                     onMaximizeClick = if (state.window != null && isResizable) {
-                        { scope.launch { window.placement = windowStatesController.toggleMaximized(state.window) } }
+                        { scope.launch { window.placement = windowStatesController.toggleMaximized(state.window, state.uuid) } }
                     } else {
                         null
                     },
@@ -155,6 +177,32 @@ fun RiftWindow(
             }
         }
     }
+}
+
+@Composable
+private fun alwaysOnTopHandler(
+    isAlwaysOnTop: Boolean,
+    isAlwaysOnTopActive: Boolean,
+): Triple<Boolean, Boolean, Event?> {
+    val alwaysOnTop = isAlwaysOnTop && isAlwaysOnTopActive
+    var effectiveAlwaysOnTop by remember { mutableStateOf(alwaysOnTop) }
+    var isFocusable by remember { mutableStateOf(true) }
+    var bringToBackEvent: Event? by remember { mutableStateOf(null) }
+    val operatingSystem: OperatingSystem = remember { koin.get() }
+    if (operatingSystem == OperatingSystem.Windows) {
+        LaunchedEffect(alwaysOnTop) {
+            isFocusable = false
+            effectiveAlwaysOnTop = alwaysOnTop
+            if (isAlwaysOnTop && !isAlwaysOnTopActive) {
+                bringToBackEvent = Event()
+            }
+            delay(100)
+            isFocusable = true
+        }
+    } else {
+        effectiveAlwaysOnTop = alwaysOnTop
+    }
+    return Triple(effectiveAlwaysOnTop, isFocusable, bringToBackEvent)
 }
 
 @Composable
@@ -185,6 +233,13 @@ private fun FrameWindowScope.BringToFrontHandler(event: Event?) {
 }
 
 @Composable
+private fun FrameWindowScope.BringToBackHandler(event: Event?) {
+    if (event.get()) {
+        window.toBack()
+    }
+}
+
+@Composable
 fun WindowScope.RiftDialog(
     title: String,
     icon: DrawableResource,
@@ -201,12 +256,16 @@ fun WindowScope.RiftDialog(
             usePlatformDefaultWidth = false,
         ),
     ) {
-        CompositionLocalProvider(LocalRiftWindowState provides parentState) {
+        CompositionLocalProvider(
+            LocalRiftWindowState provides parentState,
+            LocalRiftColors provides getRiftColors(isTransparent = false),
+        ) {
             RiftWindowContent(
                 title = title,
                 icon = icon,
                 isAlwaysOnTop = false,
                 isLocked = false,
+                isTransparent = false,
                 isMaximized = false,
                 isMaximizeButtonShown = false,
                 isResizable = false,
@@ -214,6 +273,7 @@ fun WindowScope.RiftDialog(
                 tuneContextMenuItems = null,
                 onAlwaysOnTopClick = null,
                 onLockClick = null,
+                onTransparentClick = null,
                 onMaximizeClick = null,
                 onMinimizeClick = { parentState.windowState.isMinimized = true },
                 onCloseClick = onCloseClick,
@@ -228,7 +288,9 @@ fun WindowScope.RiftDialog(
 }
 
 enum class TitleBarStyle {
-    Full, Small
+    Full,
+    Small,
+    Minimal,
 }
 
 @Composable
@@ -237,6 +299,7 @@ private fun WindowScope.RiftWindowContent(
     icon: DrawableResource,
     isAlwaysOnTop: Boolean,
     isLocked: Boolean,
+    isTransparent: Boolean,
     isMaximized: Boolean,
     isResizable: Boolean,
     isMaximizeButtonShown: Boolean,
@@ -244,20 +307,20 @@ private fun WindowScope.RiftWindowContent(
     tuneContextMenuItems: List<ContextMenuItem>?,
     onAlwaysOnTopClick: (() -> Unit)?,
     onLockClick: (() -> Unit)?,
+    onTransparentClick: (() -> Unit)?,
     onMaximizeClick: (() -> Unit)?,
     onMinimizeClick: () -> Unit,
     onCloseClick: () -> Unit,
     width: Dp,
     height: Dp,
-    titleBarStyle: TitleBarStyle,
+    titleBarStyle: TitleBarStyle?,
     titleBarContent: @Composable ((height: Dp) -> Unit)? = null,
     withContentPadding: Boolean,
     content: @Composable WindowScope.() -> Unit,
 ) {
     val activeTransition = updateTransition(LocalWindowInfo.current.isWindowFocused)
-    val backgroundColor by activeTransition.animateColor {
-        if (it) RiftTheme.colors.windowBackgroundActive else RiftTheme.colors.windowBackground
-    }
+    val transparentWindowController: TransparentWindowController = remember { koin.get() }
+    val backgroundColor = transparentWindowController.getWindowBackgroundColor(activeTransition, isTransparent)
 
     Box(
         modifier = Modifier
@@ -265,30 +328,34 @@ private fun WindowScope.RiftWindowContent(
             .size(width, height)
             .pointerHoverIcon(PointerIcon(Cursors.pointer)),
     ) {
-        BackgroundDots(activeTransition, width, height)
+        BackgroundDots(activeTransition, width, height, isTransparent)
         WindowBorder(activeTransition, width, height)
         Column(
             modifier = Modifier.padding(1.dp),
         ) {
-            TitleBar(
-                style = titleBarStyle,
-                title = title,
-                icon = icon,
-                titleBarContent = titleBarContent,
-                isAlwaysOnTop = isAlwaysOnTop,
-                isLocked = isLocked,
-                isMaximized = isMaximized,
-                isResizable = isResizable,
-                isMaximizeButtonShown = isMaximizeButtonShown,
-                onTuneClick = onTuneClick,
-                tuneContextMenuItems = tuneContextMenuItems,
-                onAlwaysOnTopClick = onAlwaysOnTopClick,
-                onLockClick = onLockClick,
-                onMaximizeClick = onMaximizeClick,
-                onMinimizeClick = onMinimizeClick,
-                onCloseClick = onCloseClick,
-                width = width,
-            )
+            if (titleBarStyle != null) {
+                TitleBar(
+                    style = titleBarStyle,
+                    title = title,
+                    icon = icon,
+                    titleBarContent = titleBarContent,
+                    isAlwaysOnTop = isAlwaysOnTop,
+                    isLocked = isLocked,
+                    isTransparent = isTransparent,
+                    isMaximized = isMaximized,
+                    isResizable = isResizable,
+                    isMaximizeButtonShown = isMaximizeButtonShown,
+                    onTuneClick = onTuneClick,
+                    tuneContextMenuItems = tuneContextMenuItems,
+                    onAlwaysOnTopClick = onAlwaysOnTopClick,
+                    onLockClick = onLockClick,
+                    onTransparentClick = onTransparentClick,
+                    onMaximizeClick = onMaximizeClick,
+                    onMinimizeClick = onMinimizeClick,
+                    onCloseClick = onCloseClick,
+                    width = width,
+                )
+            }
             Box(
                 modifier = Modifier
                     .zIndex(-1f)
@@ -310,7 +377,7 @@ private fun WindowBorder(
 ) {
     val transitionSpec = getActiveWindowTransitionSpec<Color>()
     val borderColor by activeTransition.animateColor(transitionSpec) {
-        if (it) Color(0xFF1E2022) else Color(0xFF1F1F1F)
+        if (it) RiftTheme.colors.windowBorderActive else RiftTheme.colors.windowBorder
     }
     val activeBorderColor by activeTransition.animateColor(transitionSpec) {
         if (it) RiftTheme.colors.borderPrimary else Color.Transparent
@@ -344,6 +411,7 @@ private fun WindowScope.TitleBar(
     width: Dp,
     isAlwaysOnTop: Boolean,
     isLocked: Boolean,
+    isTransparent: Boolean,
     isMaximized: Boolean,
     isResizable: Boolean,
     isMaximizeButtonShown: Boolean,
@@ -351,6 +419,7 @@ private fun WindowScope.TitleBar(
     tuneContextMenuItems: List<ContextMenuItem>?,
     onAlwaysOnTopClick: (() -> Unit)?,
     onLockClick: (() -> Unit)?,
+    onTransparentClick: (() -> Unit)?,
     onMaximizeClick: (() -> Unit)?,
     onMinimizeClick: () -> Unit,
     onCloseClick: () -> Unit,
@@ -358,10 +427,12 @@ private fun WindowScope.TitleBar(
     val contextMenuItems = getTitleBarContextMenuItems(
         isAlwaysOnTop = isAlwaysOnTop,
         isLocked = isLocked,
+        isTransparent = isTransparent,
         isMaximized = isMaximized,
         isResizable = isResizable,
         onAlwaysOnTopClick = onAlwaysOnTopClick,
         onLockClick = onLockClick,
+        onTransparentClick = onTransparentClick,
         onMinimizeClick = onMinimizeClick,
         onMaximizeClick = onMaximizeClick,
         onCloseClick = onCloseClick,
@@ -380,13 +451,15 @@ private fun WindowScope.TitleBar(
             isAlwaysOnTop = isAlwaysOnTop,
             onLockClick = onLockClick,
             isLocked = isLocked,
+            onTransparentClick = onTransparentClick,
+            isTransparent = isTransparent,
             onMaximizeClick = onMaximizeClick.takeIf { isMaximizeButtonShown || isMaximized },
             isMaximized = isMaximized,
             onMinimizeClick = onMinimizeClick,
             onCloseClick = onCloseClick,
         )
     } else {
-        WindowDraggableArea {
+        ImprovedWindowDraggableArea {
             TitleBar(
                 style = style,
                 width = width,
@@ -400,6 +473,8 @@ private fun WindowScope.TitleBar(
                 isAlwaysOnTop = isAlwaysOnTop,
                 onLockClick = onLockClick,
                 isLocked = isLocked,
+                onTransparentClick = onTransparentClick,
+                isTransparent = isTransparent,
                 onMaximizeClick = onMaximizeClick.takeIf { isMaximizeButtonShown || isMaximized },
                 isMaximized = isMaximized,
                 onMinimizeClick = onMinimizeClick,
@@ -423,6 +498,8 @@ private fun TitleBar(
     isAlwaysOnTop: Boolean,
     onLockClick: (() -> Unit)?,
     isLocked: Boolean,
+    onTransparentClick: (() -> Unit)?,
+    isTransparent: Boolean,
     onMaximizeClick: (() -> Unit)?,
     isMaximized: Boolean,
     onMinimizeClick: () -> Unit,
@@ -431,10 +508,12 @@ private fun TitleBar(
     val horizontalPadding = when (style) {
         TitleBarStyle.Full -> Spacing.mediumLarge
         TitleBarStyle.Small -> Spacing.medium
+        TitleBarStyle.Minimal -> Spacing.medium
     }
     val height = when (style) {
         TitleBarStyle.Full -> 48.dp
         TitleBarStyle.Small -> 32.dp
+        TitleBarStyle.Minimal -> 32.dp
     }
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -474,7 +553,8 @@ private fun TitleBar(
                         text = title,
                         style = when (style) {
                             TitleBarStyle.Full -> RiftTheme.typography.headlineHighlighted
-                            TitleBarStyle.Small -> RiftTheme.typography.titleHighlighted
+                            TitleBarStyle.Small -> RiftTheme.typography.headerHighlighted
+                            TitleBarStyle.Minimal -> RiftTheme.typography.headerHighlighted
                         },
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -536,6 +616,9 @@ private fun TitleBar(
                 if (onLockClick != null && isLocked) {
                     RiftImageButton(Res.drawable.window_locked_16px, 16.dp, onLockClick)
                 }
+                if (onTransparentClick != null && isTransparent) {
+                    RiftImageButton(Res.drawable.window_light_background_on_16px, 16.dp, onTransparentClick)
+                }
                 if (onMaximizeClick != null) {
                     val maximizeIcon = if (isMaximized) Res.drawable.window_titlebar_fullscreen else Res.drawable.window_titlebar_float
                     RiftImageButton(maximizeIcon, 16.dp, onMaximizeClick)
@@ -550,10 +633,12 @@ private fun TitleBar(
 private fun getTitleBarContextMenuItems(
     isAlwaysOnTop: Boolean,
     isLocked: Boolean,
+    isTransparent: Boolean,
     isMaximized: Boolean,
     isResizable: Boolean,
     onAlwaysOnTopClick: (() -> Unit)?,
     onLockClick: (() -> Unit)?,
+    onTransparentClick: (() -> Unit)?,
     onMaximizeClick: (() -> Unit)?,
     onMinimizeClick: () -> Unit,
     onCloseClick: () -> Unit,
@@ -597,7 +682,26 @@ private fun getTitleBarContextMenuItems(
                 )
             }
         }
-        if (onAlwaysOnTopClick != null || onLockClick != null) {
+        if (onTransparentClick != null) {
+            if (isTransparent) {
+                add(
+                    ContextMenuItem.TextItem(
+                        "Disable transparency",
+                        Res.drawable.window_light_background_on_16px,
+                        onClick = onTransparentClick,
+                    ),
+                )
+            } else {
+                add(
+                    ContextMenuItem.TextItem(
+                        "Enable transparency",
+                        Res.drawable.window_light_background_off_16px,
+                        onClick = onTransparentClick,
+                    ),
+                )
+            }
+        }
+        if (onAlwaysOnTopClick != null || onLockClick != null || onTransparentClick != null) {
             add(ContextMenuItem.DividerItem)
         }
         if (onMaximizeClick != null && isResizable) {
@@ -620,7 +724,7 @@ private fun getTitleBarContextMenuItems(
             }
         }
         add(ContextMenuItem.TextItem("Minimize", onClick = onMinimizeClick))
-        add(ContextMenuItem.TextItem("Close", Res.drawable.menu_close, onClick = onCloseClick))
+        add(ContextMenuItem.TextItem("Close", iconContent = { RiftMulticolorIcon(MulticolorIconType.Warning, it) }, onClick = onCloseClick))
     }
 }
 
@@ -629,11 +733,18 @@ private fun BackgroundDots(
     activeTransition: Transition<Boolean>,
     width: Dp,
     height: Dp,
+    isTransparent: Boolean,
 ) {
-    val bitmap = imageResource(Res.drawable.window_background_dots)
+    val bitmap = imageResource(if (isTransparent) Res.drawable.window_background_dots_light else Res.drawable.window_background_dots)
     val brush = remember(bitmap) { ShaderBrush(ImageShader(bitmap, TileMode.Repeated, TileMode.Repeated)) }
     val transitionSpec = getActiveWindowTransitionSpec<Float>()
-    val alpha by activeTransition.animateFloat(transitionSpec) { if (it) 1f else 0f }
+    val alpha by activeTransition.animateFloat(transitionSpec) {
+        if (it) {
+            if (isTransparent) 0.1f else 1f
+        } else {
+            0f
+        }
+    }
     Box(Modifier.alpha(alpha).size(width, height).background(brush))
 }
 

@@ -8,6 +8,7 @@ import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import dev.nohus.rift.compose.theme.RiftTheme
 import dev.nohus.rift.compose.theme.Spacing
@@ -15,12 +16,13 @@ import dev.nohus.rift.compose.theme.Spacing
 @Composable
 fun RiftCheckboxWithLabel(
     label: String,
+    labelStyle: TextStyle = RiftTheme.typography.bodyPrimary,
     tooltip: String? = null,
     isChecked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val row = remember(label, isChecked) {
+    val row = remember(label, isChecked, onCheckedChange) {
         movableContentOf {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -33,7 +35,7 @@ fun RiftCheckboxWithLabel(
                 )
                 Text(
                     text = label,
-                    style = RiftTheme.typography.bodyPrimary,
+                    style = labelStyle,
                 )
             }
         }

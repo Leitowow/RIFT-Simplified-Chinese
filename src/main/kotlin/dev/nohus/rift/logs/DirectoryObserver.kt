@@ -14,6 +14,7 @@ import kotlinx.coroutines.yield
 import org.koin.core.annotation.Factory
 import java.io.IOException
 import java.nio.file.FileSystemException
+import java.nio.file.InvalidPathException
 import java.nio.file.Path
 import java.nio.file.StandardWatchEventKinds.ENTRY_CREATE
 import java.nio.file.StandardWatchEventKinds.ENTRY_DELETE
@@ -36,10 +37,13 @@ private val logger = KotlinLogging.logger {}
 @Factory
 class DirectoryObserver(
     private val operatingSystem: OperatingSystem,
+    private val windowsFilePoker: WindowsFilePoker,
 ) {
 
     enum class FileEventType {
-        Created, Deleted, Modified
+        Created,
+        Deleted,
+        Modified,
     }
 
     sealed interface DirectoryObserverEvent {
@@ -61,7 +65,7 @@ class DirectoryObserver(
             directory.fileSystem.newWatchService().also {
                 directory.register(it, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE, OVERFLOW)
             }
-        } catch (e: FileSystemException) {
+        } catch (e: IOException) {
             logger.error { "Cannot register directory observer: $e" }
             stop()
             return@coroutineScope
@@ -71,7 +75,7 @@ class DirectoryObserver(
         watchJob = launch {
             if (operatingSystem == OperatingSystem.Windows) {
                 launch(Dispatchers.IO) {
-                    pokeFiles(directory)
+                    windowsFilePoker.pokeFiles(directory)
                 }
             } else if (operatingSystem == OperatingSystem.MacOs) {
                 launch(Dispatchers.IO) {
@@ -96,47 +100,35 @@ class DirectoryObserver(
     }
 
     /**
-     * On Windows the file modification events are not consistently delivered.
-     * Asking for the file size triggers Windows to deliver the event.
-     */
-    private suspend fun pokeFiles(path: Path) {
-        while (true) {
-            val recentFiles = path.toFile().listFiles()
-                ?.filter {
-                    Duration.between(Instant.ofEpochMilli(it.lastModified()), Instant.now()) < Duration.ofHours(2)
-                }
-                ?: emptyList()
-            repeat(100) { // 100 * 200 == 20 seconds
-                recentFiles.forEach { it.length() }
-                delay(200)
-            }
-        }
-    }
-
-    /**
      * On macOS the file modification events are not consistently delivered.
      * Checking the last modified timestamp to learn of modifications.
      */
     private suspend fun watchFileModification(path: Path, onUpdate: suspend (DirectoryObserverEvent) -> Unit) {
         val lastModifiedMap = mutableMapOf<Path, Long>()
         while (true) {
-            val recentFiles = path.listDirectoryEntries().filter {
-                Duration.between(it.getLastModifiedTime().toInstant(), Instant.now()) < Duration.ofHours(24)
-            }
-            repeat(100) { // 100 * 200 == 20 seconds
-                recentFiles.forEach { file ->
-                    val oldLastModified = lastModifiedMap[file] ?: 0L
-                    try {
-                        val newLastModified = file.getLastModifiedTime().toMillis()
-                        if (oldLastModified != newLastModified) {
-                            lastModifiedMap[file] = newLastModified
-                            onUpdate(FileEvent(file, FileEventType.Modified))
-                        }
-                    } catch (e: IOException) {
-                        logger.error { "Could not check last modification time of watched file: ${e.message}" }
-                    }
+            try {
+                val recentFiles = path.listDirectoryEntries().filter {
+                    Duration.between(it.getLastModifiedTime().toInstant(), Instant.now()) < Duration.ofHours(24)
                 }
-                delay(200)
+                // 100 * 200 == 20 seconds
+                repeat(100) {
+                    recentFiles.forEach { file ->
+                        val oldLastModified = lastModifiedMap[file] ?: 0L
+                        try {
+                            val newLastModified = file.getLastModifiedTime().toMillis()
+                            if (oldLastModified != newLastModified) {
+                                lastModifiedMap[file] = newLastModified
+                                onUpdate(FileEvent(file, FileEventType.Modified))
+                            }
+                        } catch (e: IOException) {
+                            logger.error { "Could not check last modification time of watched file: ${e.message}" }
+                        }
+                    }
+                    delay(200)
+                }
+            } catch (e: FileSystemException) {
+                logger.error { "Could not check file modification timestamps: ${e.message}" }
+                delay(2_000)
             }
         }
     }
@@ -155,9 +147,13 @@ class DirectoryObserver(
                     ENTRY_DELETE -> FileEventType.Deleted
                     else -> throw IllegalStateException()
                 }
-                val event = FileEvent(directory.resolve(context.name), type)
-                logger.debug { "File update event: ${event.file.name} ${event.type}" }
-                onUpdate(event)
+                try {
+                    val event = FileEvent(directory.resolve(context.name), type)
+                    logger.debug { "File update event: ${event.file.name} ${event.type}" }
+                    onUpdate(event)
+                } catch (e: InvalidPathException) {
+                    logger.error { "Invalid path in file event: ${e.message}" }
+                }
             }
             OVERFLOW -> {
                 onUpdate(OverflowEvent)

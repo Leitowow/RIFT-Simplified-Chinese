@@ -23,7 +23,7 @@ import dev.nohus.rift.configurationpack.ConfigurationPackReminderViewModel.UiSta
 import dev.nohus.rift.generated.resources.Res
 import dev.nohus.rift.generated.resources.window_info
 import dev.nohus.rift.get
-import dev.nohus.rift.utils.viewModel
+import dev.nohus.rift.viewModel
 import dev.nohus.rift.windowing.WindowManager
 
 @Composable

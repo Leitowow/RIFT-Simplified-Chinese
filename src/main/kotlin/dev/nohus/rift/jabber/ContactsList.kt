@@ -80,7 +80,7 @@ private fun ContactsListChats(
     if (chats.isNotEmpty()) {
         Text(
             text = "Chat rooms",
-            style = RiftTheme.typography.titleHighlighted,
+            style = RiftTheme.typography.headerHighlighted,
             modifier = Modifier.padding(Spacing.medium),
         )
         chats.forEach {
@@ -160,7 +160,7 @@ private fun ContactsListContacts(
             )
             Text(
                 text = group,
-                style = RiftTheme.typography.titleHighlighted,
+                style = RiftTheme.typography.headerHighlighted,
                 modifier = Modifier
                     .padding(end = Spacing.small),
             )

@@ -8,10 +8,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.koin.core.annotation.Single
+import org.koin.core.annotation.Factory
 import java.util.Locale
 
-@Single
+@Factory
 class PushViewModel(
     private val pushNotificationController: PushNotificationController,
     private val settings: Settings,
@@ -75,6 +75,7 @@ class PushViewModel(
             val result = pushNotificationController.sendNtfyNotification(
                 title = "RIFT Intel Fusion Tool",
                 message = "Congratulations, RIFT is setup correctly for push notifications.",
+                iconUrl = null,
             )
 
             val response = result.success

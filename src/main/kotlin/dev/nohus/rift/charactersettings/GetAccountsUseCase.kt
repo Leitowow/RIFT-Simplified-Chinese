@@ -25,8 +25,7 @@ class GetAccountsUseCase(
 
     data class Account(
         val id: Int,
-        val profile: String,
-        val path: Path,
+        val paths: Map<String, Path>, // Launcher profile name -> File
         val lastModified: Instant,
     )
 
@@ -40,12 +39,15 @@ class GetAccountsUseCase(
                     directory.listDirectoryEntries()
                         .filter { file -> file.isRegularFile() && file.extension == "dat" }
                         .filter { file -> file.nameWithoutExtension.matches(regex) }
-                }.mapNotNull { accountFile ->
-                    val id = accountFile.nameWithoutExtension.substringAfterLast("_").toIntOrNull()
-                        ?: return@mapNotNull null
-                    val lastModified = accountFile.getLastModifiedTime().toInstant()
-                    val profile = accountFile.parent.name.substringAfter("settings_")
-                    Account(id, profile, accountFile, lastModified)
+                }.groupBy { accountFile ->
+                    accountFile.nameWithoutExtension.substringAfterLast("_").toIntOrNull()
+                }.mapNotNull { (id, accountFiles) ->
+                    id ?: return@mapNotNull null
+                    val lastModified = accountFiles.maxOf { it.getLastModifiedTime() }.toInstant()
+                    val paths = accountFiles.associateBy { accountFile ->
+                        accountFile.parent.name.substringAfter("settings_")
+                    }
+                    Account(id, paths, lastModified)
                 }
         } catch (e: IOException) {
             logger.error(e) { "Failed reading account settings" }

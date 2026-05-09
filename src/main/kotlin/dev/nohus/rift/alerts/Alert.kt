@@ -42,6 +42,8 @@ sealed interface AlertTrigger {
         val channel: ChatMessageChannel,
         val sender: String?,
         val messageContaining: String?,
+        val isRegex: Boolean = false,
+        val isExcludingSelf: Boolean = false,
     ) : AlertTrigger
 
     @Serializable
@@ -50,6 +52,7 @@ sealed interface AlertTrigger {
         val channel: JabberMessageChannel,
         val sender: String?,
         val messageContaining: String?,
+        val isRegex: Boolean = false,
     ) : AlertTrigger
 
     @Serializable
@@ -89,6 +92,12 @@ sealed interface IntelReportType {
     ) : IntelReportType
 
     @Serializable
+    @SerialName("LabeledContacts")
+    data class LabeledContacts(
+        val labels: List<ContactLabel>,
+    ) : IntelReportType
+
+    @Serializable
     @SerialName("Wormhole")
     data object Wormhole : IntelReportType
 
@@ -99,7 +108,21 @@ sealed interface IntelReportType {
     @Serializable
     @SerialName("Bubbles")
     data object Bubbles : IntelReportType
+
+    @Serializable
+    @SerialName("Ess")
+    data object Ess : IntelReportType
+
+    @Serializable
+    @SerialName("Skyhook")
+    data object Skyhook : IntelReportType
 }
+
+@Serializable
+data class ContactLabel(
+    val ownerId: Int,
+    val id: Long,
+)
 
 @Serializable
 sealed interface IntelReportLocation {
@@ -114,6 +137,7 @@ sealed interface IntelReportLocation {
     @SerialName("AnyOwnedCharacter")
     data class AnyOwnedCharacter(
         val jumpsRange: JumpRange,
+        val onlyUndocked: Boolean = false,
     ) : IntelReportLocation
 
     @Serializable
@@ -121,6 +145,7 @@ sealed interface IntelReportLocation {
     data class OwnedCharacter(
         val characterId: Int,
         val jumpsRange: JumpRange,
+        val onlyUndocked: Boolean = false,
     ) : IntelReportLocation
 }
 
@@ -165,6 +190,17 @@ sealed interface GameActionType {
     data class CombatStopped(
         val nameContaining: String?,
         val durationSeconds: Int,
+    ) : GameActionType
+
+    @Serializable
+    @SerialName("RanOutOfCharges")
+    data object RanOutOfCharges : GameActionType
+
+    @Serializable
+    @SerialName("Custom")
+    data class Custom(
+        val messageContaining: String,
+        val isRegex: Boolean,
     ) : GameActionType
 }
 

@@ -21,6 +21,7 @@ import dev.nohus.rift.generated.resources.brackets_rookie_16
 import dev.nohus.rift.generated.resources.brackets_shuttle_16
 import dev.nohus.rift.generated.resources.brackets_supercarrier_16
 import dev.nohus.rift.generated.resources.brackets_titan_16
+import dev.nohus.rift.repositories.TypesRepository.Type
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.exposed.sql.selectAll
 import org.koin.core.annotation.Single
@@ -28,14 +29,12 @@ import org.koin.core.annotation.Single
 @Single
 class ShipTypesRepository(
     staticDatabase: StaticDatabase,
+    private val typesRepository: TypesRepository,
 ) {
 
-    private val shipNames: Set<String>
     private val lowercaseShipNames: Map<String, String>
+    private val shipClasses: Map<Int, String> // Ship ID -> Ship class
     private val shipNicknames: Map<String, String>
-    private val shipTypes: Map<String, Int>
-    private val shipNameById: Map<Int, String>
-    private val shipClasses: Map<String, String> // Ship name -> Ship class
     private val navyVariants: Map<String, String>
     private val fleetVariants: Map<String, String>
 
@@ -43,11 +42,9 @@ class ShipTypesRepository(
         val rows = staticDatabase.transaction {
             Ships.selectAll().toList()
         }
-        shipNames = rows.map { it[Ships.name] }.toSet()
-        shipTypes = rows.associate { it[Ships.name] to it[Ships.typeId] }
-        shipNameById = rows.associate { it[Ships.typeId] to it[Ships.name] }
-        shipClasses = rows.associate { it[Ships.name] to it[Ships.shipClass] }
+        val shipNames = rows.map { it[Ships.name] }.toSet()
         lowercaseShipNames = shipNames.associateBy { it.lowercase() }
+        shipClasses = rows.associate { it[Ships.typeId] to it[Ships.shipClass] }
         shipNicknames = mapOf(
             "kiki" to "Kikimora",
             "iki" to "Ikitursa",
@@ -67,6 +64,8 @@ class ShipTypesRepository(
             "trasher" to "Thrasher",
             "auguror" to "Augoror",
             "porp" to "Porpoise",
+            "bni" to "Brutix Navy Issue",
+            "eni" to "Exequror Navy Issue",
         )
         navyVariants = mapOf(
             "Slicer" to "Imperial Navy Slicer",
@@ -118,11 +117,20 @@ class ShipTypesRepository(
         ).mapKeys { (k, _) -> k.lowercase() }
     }
 
+    fun getFuzzyShip(name: String): Type? {
+        val fullShipName = getFuzzyShipName(name) ?: return null
+        return if (fullShipName == "Shuttle") {
+            typesRepository.getType(672) // Caldari Shuttle
+        } else {
+            typesRepository.getType(fullShipName)
+        }
+    }
+
     /**
      * @param name Potential ship name
      * @return Full name of the ship or null if it's not a ship name
      */
-    fun getShip(name: String): String? {
+    private fun getFuzzyShipName(name: String): String? {
         val lowercase = name.lowercase()
         val isNavy = lowercase.startsWith("navy ") xor lowercase.endsWith(" navy")
         val isFleet = lowercase.startsWith("fleet ")
@@ -147,25 +155,16 @@ class ShipTypesRepository(
         }
     }
 
-    fun getShipTypeId(name: String): Int {
-        if (name == "Shuttle") return 672 // Caldari Shuttle
-        return shipTypes[name] ?: throw IllegalArgumentException("No ship name: \"$name\"")
-    }
-
-    fun getShipName(id: Int?): String? {
-        return shipNameById[id]
-    }
-
-    fun getShipClass(name: String): String? {
-        return shipClasses[name]
+    fun getShipClass(id: Int): String? {
+        return shipClasses[id]
     }
 
     fun getShipClasses(): List<String> {
         return shipClasses.values.distinct()
     }
 
-    fun getShipBracketIcon(ship: String): DrawableResource? {
-        val shipClass = getShipClass(ship) ?: return null
+    fun getShipBracketIcon(id: Int): DrawableResource? {
+        val shipClass = getShipClass(id) ?: return null
         return getShipClassBracket(shipClass)
     }
 
@@ -216,6 +215,7 @@ class ShipTypesRepository(
             "Freighter" -> Res.drawable.brackets_freighter_16
             "Jump Freighter" -> Res.drawable.brackets_freighter_16
             "Capital Industrial Ship" -> Res.drawable.brackets_freighter_16
+            "Expedition Command Ship" -> Res.drawable.brackets_battlecruiser_16
             else -> null
         }
     }

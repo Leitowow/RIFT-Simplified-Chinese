@@ -45,28 +45,31 @@ import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberWindowState
 import dev.nohus.rift.alerts.AlertsTriggerController
 import dev.nohus.rift.characters.repositories.LocalCharactersRepository
-import dev.nohus.rift.compose.AsyncPlayerPortrait
 import dev.nohus.rift.compose.AsyncTypeIcon
-import dev.nohus.rift.compose.ClickablePlayer
+import dev.nohus.rift.compose.ClickableCharacter
 import dev.nohus.rift.compose.ClickableSystem
+import dev.nohus.rift.compose.FlagIcon
 import dev.nohus.rift.compose.RiftImageButton
 import dev.nohus.rift.compose.ScrollbarColumn
 import dev.nohus.rift.compose.SystemEntities
+import dev.nohus.rift.compose.SystemIllustrationIconSmall
 import dev.nohus.rift.compose.UiScaleController
 import dev.nohus.rift.compose.modifyIfNotNull
 import dev.nohus.rift.compose.theme.Cursors
 import dev.nohus.rift.compose.theme.RiftTheme
 import dev.nohus.rift.compose.theme.Spacing
 import dev.nohus.rift.di.koin
+import dev.nohus.rift.dynamicportraits.DynamicCharacterPortraitParallax
+import dev.nohus.rift.dynamicportraits.DynamicCharacterPortraitStandings
 import dev.nohus.rift.generated.resources.Res
 import dev.nohus.rift.generated.resources.window_loudspeaker_icon
 import dev.nohus.rift.generated.resources.window_titlebar_close
 import dev.nohus.rift.notifications.NotificationsController.Notification
-import dev.nohus.rift.repositories.SolarSystemsRepository
+import dev.nohus.rift.repositories.SolarSystemsRepository.MapSolarSystem
+import dev.nohus.rift.standings.Standing
 import dev.nohus.rift.utils.Pos
 import dev.nohus.rift.utils.withColor
 import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.exposed.sql.not
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -177,7 +180,7 @@ fun NotificationContent(
                         text = buildAnnotatedString {
                             val annotations = notification.message
                                 .getStringAnnotations(
-                                    Notification.TextNotification.styleTag,
+                                    Notification.TextNotification.STYLE_TAG,
                                     0,
                                     notification.message.length,
                                 )
@@ -193,7 +196,7 @@ fun NotificationContent(
                             }
                             append(styledMessage)
                         },
-                        style = RiftTheme.typography.titlePrimary,
+                        style = RiftTheme.typography.headerPrimary,
                     )
                 }
             }
@@ -220,23 +223,27 @@ fun NotificationContent(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         if (message.senderCharacterId != null) {
-                            ClickablePlayer(message.senderCharacterId) {
+                            ClickableCharacter(message.senderCharacterId) {
                                 Row(
                                     horizontalArrangement = Arrangement.spacedBy(Spacing.small),
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    AsyncPlayerPortrait(
+                                    DynamicCharacterPortraitStandings(
                                         characterId = message.senderCharacterId,
-                                        size = 32,
-                                        modifier = Modifier.size(32.dp),
+                                        size = 32.dp,
+                                        standingLevel = message.senderStanding ?: Standing.Neutral,
+                                        isAnimated = true,
                                     )
                                     Text(
                                         text = message.sender,
-                                        style = RiftTheme.typography.titlePrimary,
+                                        style = RiftTheme.typography.headerPrimary,
                                     )
+                                    if (message.senderStanding != null) {
+                                        FlagIcon(message.senderStanding)
+                                    }
                                     Text(
                                         text = " >",
-                                        style = RiftTheme.typography.titlePrimary,
+                                        style = RiftTheme.typography.headerPrimary,
                                     )
                                 }
                             }
@@ -249,7 +256,7 @@ fun NotificationContent(
                                 }
                                 appendMessageWithHighlight(message.message, message.highlight)
                             },
-                            style = RiftTheme.typography.titlePrimary,
+                            style = RiftTheme.typography.headerPrimary,
                         )
                     }
                 }
@@ -287,7 +294,7 @@ fun NotificationContent(
                             }
                             appendMessageWithHighlight(notification.message, notification.highlight)
                         },
-                        style = RiftTheme.typography.titlePrimary,
+                        style = RiftTheme.typography.headerPrimary,
                     )
                 }
             }
@@ -314,7 +321,7 @@ fun NotificationContent(
                                 else -> "$distance jumps away"
                             }
                             SolarSystem(notification.solarSystem, systemSubtext)
-                            SolarSystem(notification.locationMatch.systemId, "Reference system")
+                            SolarSystem(notification.locationMatch.system, "Reference system")
                         }
                     }
 
@@ -339,6 +346,35 @@ fun NotificationContent(
                     system = notification.solarSystem,
                     rowHeight = 32.dp,
                 )
+            }
+        }
+
+        is Notification.SovereigntyUpgradeImportNotification -> {
+            NotificationTitle(
+                title = AnnotatedString("Sovereignty upgrades saved"),
+                onCloseClick = onCloseClick,
+            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(Spacing.medium),
+                modifier = Modifier.padding(horizontal = Spacing.medium),
+            ) {
+                SolarSystem(notification.system, "Sovereignty Hub")
+                notification.upgrades.forEach { upgrade ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.small),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        AsyncTypeIcon(
+                            type = upgrade,
+                            modifier = Modifier.size(32.dp),
+                        )
+                        Text(
+                            text = upgrade.name,
+                            style = RiftTheme.typography.headerHighlighted,
+                        )
+                    }
+                }
             }
         }
     }
@@ -373,7 +409,7 @@ private fun NotificationTitle(
         Text(
             text = title,
             textAlign = TextAlign.Center,
-            style = RiftTheme.typography.titlePrimary,
+            style = RiftTheme.typography.headerPrimary,
             modifier = Modifier
                 .weight(1f)
                 .padding(start = 16.dp)
@@ -386,28 +422,19 @@ private fun NotificationTitle(
 }
 
 @Composable
-private fun SolarSystem(systemId: Int, subtext: String?) {
-    val repository: SolarSystemsRepository by koin.inject()
-    val systemName = repository.getSystemName(systemId) ?: return
-    SolarSystem(systemName, subtext)
-}
-
-@Composable
-private fun SolarSystem(system: String, subtext: String?) {
-    val repository: SolarSystemsRepository by koin.inject()
-    ClickableSystem(system) {
+private fun SolarSystem(system: MapSolarSystem, subtext: String?) {
+    ClickableSystem(system.id) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.small),
         ) {
-            val sunTypeId = repository.getSystemSunTypeId(system)
-            AsyncTypeIcon(
-                typeId = sunTypeId,
-                modifier = Modifier.size(32.dp),
+            SystemIllustrationIconSmall(
+                solarSystemId = system.id,
+                size = 32.dp,
             )
             Column {
                 Text(
-                    text = system,
+                    text = system.name,
                     style = RiftTheme.typography.bodyLink,
                 )
                 if (subtext != null) {
@@ -424,16 +451,17 @@ private fun SolarSystem(system: String, subtext: String?) {
 @Composable
 private fun Character(characterId: Int, subtext: String) {
     val localCharactersRepository: LocalCharactersRepository by koin.inject()
-    val name = localCharactersRepository.characters.value.firstOrNull { it.characterId == characterId }?.info?.success?.name ?: "Character"
-    ClickablePlayer(characterId) {
+    val name = localCharactersRepository.characters.value.firstOrNull { it.characterId == characterId }?.info?.name ?: "Character"
+    ClickableCharacter(characterId) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.small),
         ) {
-            AsyncPlayerPortrait(
+            DynamicCharacterPortraitParallax(
                 characterId = characterId,
-                size = 32,
-                modifier = Modifier.size(32.dp),
+                size = 32.dp,
+                enterTimestamp = null,
+                pointerInteractionStateHolder = null,
             )
             Column {
                 Text(

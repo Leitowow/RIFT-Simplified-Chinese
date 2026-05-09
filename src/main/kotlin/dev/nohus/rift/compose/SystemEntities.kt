@@ -21,16 +21,17 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import dev.nohus.rift.compose.theme.RiftTheme
 import dev.nohus.rift.compose.theme.Spacing
 import dev.nohus.rift.di.koin
+import dev.nohus.rift.dynamicportraits.DynamicCharacterPortraitStandings
 import dev.nohus.rift.generated.resources.Res
 import dev.nohus.rift.generated.resources.keywords_combat_probe
 import dev.nohus.rift.generated.resources.keywords_ess
@@ -44,7 +45,9 @@ import dev.nohus.rift.generated.resources.keywords_wormhole
 import dev.nohus.rift.intel.state.CharacterBound
 import dev.nohus.rift.intel.state.Clearable
 import dev.nohus.rift.intel.state.SystemEntity
-import dev.nohus.rift.repositories.ShipTypesRepository
+import dev.nohus.rift.repositories.IdRanges
+import dev.nohus.rift.repositories.SolarSystemsRepository.MapSolarSystem
+import dev.nohus.rift.repositories.StarGatesRepository
 import dev.nohus.rift.repositories.TypesRepository
 import dev.nohus.rift.repositories.character.CharacterDetailsRepository.CharacterDetails
 import dev.nohus.rift.standings.getColor
@@ -54,11 +57,12 @@ import dev.nohus.rift.utils.plural
 import dev.nohus.rift.utils.toURIOrNull
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
+import java.time.Instant
 
 @Composable
 fun SystemEntities(
     entities: List<SystemEntity>,
-    system: String,
+    system: MapSolarSystem,
     rowHeight: Dp,
     isHorizontal: Boolean = false,
     isGroupingCharacters: Boolean = false,
@@ -75,14 +79,12 @@ fun SystemEntities(
                 )
             }
             if (killmail.ship != null) {
-                val repository: ShipTypesRepository by koin.inject()
-                val shipTypeId = repository.getShipTypeId(killmail.ship)
-                ClickableShip(killmail.ship, shipTypeId) {
+                ClickableShip(killmail.ship) {
                     RiftTooltipArea(
-                        text = killmail.ship,
+                        text = killmail.ship.name,
                     ) {
                         AsyncTypeIcon(
-                            typeId = shipTypeId,
+                            typeId = killmail.ship.id,
                             modifier = Modifier.size(rowHeight),
                         )
                     }
@@ -139,19 +141,17 @@ fun SystemEntities(
                     )
                     Text(
                         text = ticket,
-                        style = RiftTheme.typography.bodySecondary,
+                        style = RiftTheme.typography.detailSecondary,
                     )
                 }
             }
         }
     }
     entities.filterIsInstance<SystemEntity.Ship>().forEach { ship ->
-        val repository: ShipTypesRepository by koin.inject()
-        val shipTypeId = repository.getShipTypeId(ship.name)
-        ClickableShip(ship.name, shipTypeId) {
+        ClickableShip(ship.type) {
             SystemEntityInfoRow(rowHeight, isHorizontal) {
                 AsyncTypeIcon(
-                    typeId = shipTypeId,
+                    typeId = ship.type.id,
                     modifier = Modifier.size(rowHeight),
                 )
 
@@ -159,9 +159,9 @@ fun SystemEntities(
                 ship.standing?.getColor()?.let { nameStyle = nameStyle.copy(color = it) }
 
                 val text = if (ship.count > 1) {
-                    "${ship.count}x ${ship.name}"
+                    "${ship.count}x ${ship.type.name}"
                 } else {
-                    ship.name
+                    ship.type.name
                 }
                 Text(
                     text = text,
@@ -209,7 +209,7 @@ fun SystemEntities(
                             )
                             Text(
                                 text = ticker,
-                                style = RiftTheme.typography.bodySecondary,
+                                style = RiftTheme.typography.detailSecondary,
                             )
                         }
                     }
@@ -220,74 +220,7 @@ fun SystemEntities(
             .sortedWith(compareBy({ it.details.allianceId }, { it.details.corporationId }))
             .forEach { character ->
                 SystemEntityInfoRow(rowHeight, isHorizontal) {
-                    ClickablePlayer(character.characterId) {
-                        AsyncPlayerPortrait(
-                            characterId = character.characterId,
-                            size = 32,
-                            modifier = Modifier.size(rowHeight),
-                        )
-                    }
-                    ClickableCorporation(character.details.corporationId) {
-                        RiftTooltipArea(
-                            text = character.details.corporationName ?: "",
-                        ) {
-                            AsyncCorporationLogo(
-                                corporationId = character.details.corporationId,
-                                size = 32,
-                                modifier = Modifier.size(rowHeight),
-                            )
-                        }
-                    }
-                    if (character.details.allianceId != null) {
-                        ClickableAlliance(character.details.allianceId) {
-                            RiftTooltipArea(
-                                text = character.details.allianceName ?: "",
-                            ) {
-                                AsyncAllianceLogo(
-                                    allianceId = character.details.allianceId,
-                                    size = 32,
-                                    modifier = Modifier.size(rowHeight),
-                                )
-                            }
-                        }
-                    }
-
-                    ClickablePlayer(character.characterId) {
-                        val ticker = buildString {
-                            character.details.corporationTicker?.let { append("$it ") }
-                            character.details.allianceTicker?.let { append(it) }
-                        }
-                        var nameStyle = RiftTheme.typography.bodyHighlighted.copy(fontWeight = FontWeight.Bold)
-                        character.details.standingLevel.getColor()?.let { nameStyle = nameStyle.copy(color = it) }
-                        if (rowHeight < 32.dp) {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(Spacing.small),
-                                modifier = Modifier.padding(horizontal = Spacing.small),
-                            ) {
-                                Text(
-                                    text = ticker,
-                                    style = RiftTheme.typography.bodySecondary,
-                                )
-                                Text(
-                                    text = character.name,
-                                    style = nameStyle,
-                                )
-                            }
-                        } else {
-                            Column(
-                                modifier = Modifier.padding(horizontal = 4.dp),
-                            ) {
-                                Text(
-                                    text = character.name,
-                                    style = nameStyle,
-                                )
-                                Text(
-                                    text = ticker,
-                                    style = RiftTheme.typography.bodySecondary,
-                                )
-                            }
-                        }
-                    }
+                    CharacterDetails(character.details, rowHeight, isAnimated = true)
                 }
             }
     }
@@ -317,6 +250,7 @@ fun SystemEntities(
             SystemEntity.Ess -> IconInfoRow(Res.drawable.keywords_ess, "ESS", rowHeight, isHorizontal)
             SystemEntity.Skyhook -> IconInfoRow(Res.drawable.keywords_skyhook, "Skyhook", rowHeight, isHorizontal)
             is SystemEntity.Gate -> GateInfoRow(system, entity, rowHeight, isHorizontal)
+            is SystemEntity.Celestial -> CelestialInfoRow(entity, rowHeight, isHorizontal)
             SystemEntity.GateCamp -> IconInfoRow(Res.drawable.keywords_gatecamp, "Gate camp", rowHeight, isHorizontal)
             SystemEntity.NoVisual -> NoVisualRow(rowHeight, isHorizontal)
             SystemEntity.Spike -> IconInfoRow(Res.drawable.keywords_spike, "Spike", rowHeight, isHorizontal)
@@ -338,19 +272,22 @@ private fun CharactersPortraits(
 ) {
     Row {
         if (characters.size > 3) {
+            val enterTimestamp = remember { Instant.now() }
             InfiniteScrollingCarousel(
                 items = characters,
+                delay = 2_000,
                 modifier = Modifier.height(rowHeight).width(rowHeight * 3),
             ) { character ->
-                ClickablePlayer(character.characterId) {
+                ClickableCharacter(character.characterId) {
                     RiftTooltipArea(
                         text = character.name,
                     ) {
-                        AsyncPlayerPortrait(
+                        DynamicCharacterPortraitStandings(
                             characterId = character.characterId,
-                            size = 32,
-                            withAnimatedLoading = false,
-                            modifier = Modifier.size(rowHeight),
+                            size = rowHeight,
+                            standingLevel = character.standingLevel,
+                            enterTimestamp = enterTimestamp,
+                            isAnimated = true,
                         )
                     }
                 }
@@ -358,14 +295,16 @@ private fun CharactersPortraits(
         } else {
             Row {
                 characters.forEach { character ->
-                    ClickablePlayer(character.characterId) {
+                    ClickableCharacter(character.characterId) {
                         RiftTooltipArea(
                             text = character.name,
                         ) {
-                            AsyncPlayerPortrait(
+                            val now = remember(character.characterId) { Instant.now() }
+                            DynamicCharacterPortraitStandings(
                                 characterId = character.characterId,
-                                size = 32,
-                                modifier = Modifier.size(rowHeight),
+                                size = rowHeight,
+                                standingLevel = character.standingLevel,
+                                isAnimated = true,
                             )
                         }
                     }
@@ -479,16 +418,85 @@ private fun WormholeInfoRow(rowHeight: Dp, isHorizontal: Boolean) {
 }
 
 @Composable
-private fun GateInfoRow(system: String, entity: SystemEntity.Gate, rowHeight: Dp, isHorizontal: Boolean) {
-    SystemEntityInfoRow(rowHeight, isHorizontal) {
-        GateIcon(entity.isAnsiblex, system, entity.system, rowHeight)
-        VerticalDivider(color = RiftTheme.colors.borderGreyLight, modifier = Modifier.height(rowHeight))
-        val gateText = if (entity.isAnsiblex) "Ansiblex" else "Gate"
-        Text(
-            text = "${entity.system} $gateText",
-            style = RiftTheme.typography.bodyHighlighted,
-            modifier = Modifier.padding(4.dp),
-        )
+private fun GateInfoRow(system: MapSolarSystem, entity: SystemEntity.Gate, rowHeight: Dp, isHorizontal: Boolean) {
+    val starGatesRepository: StarGatesRepository = remember { koin.get() }
+    val gate = starGatesRepository.getGate(entity.isAnsiblex, system.id, entity.system2.id)
+    val gateText = if (entity.isAnsiblex) "Ansiblex" else "Gate"
+    val name = "${entity.system2.name} $gateText"
+    ClickableLocation(
+        systemId = system.id,
+        locationId = gate.locationId,
+        locationTypeId = gate.typeId,
+        locationName = name,
+    ) {
+        SystemEntityInfoRow(rowHeight, isHorizontal) {
+            AsyncTypeIcon(
+                typeId = gate.typeId,
+                modifier = Modifier.size(rowHeight),
+            )
+            VerticalDivider(color = RiftTheme.colors.borderGreyLight, modifier = Modifier.height(rowHeight))
+            Column(
+                modifier = Modifier.padding(horizontal = Spacing.small),
+            ) {
+                Text(
+                    text = name,
+                    style = RiftTheme.typography.bodyHighlighted,
+                )
+                if (entity.distanceKm != null && rowHeight >= 32.dp) {
+                    Text(
+                        text = "${entity.distanceKm}km",
+                        style = RiftTheme.typography.detailSecondary,
+                    )
+                }
+            }
+            if (entity.distanceKm != null && rowHeight < 32.dp) {
+                Text(
+                    text = "${entity.distanceKm}km",
+                    style = RiftTheme.typography.bodySecondary,
+                    modifier = Modifier.padding(4.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CelestialInfoRow(entity: SystemEntity.Celestial, rowHeight: Dp, isHorizontal: Boolean) {
+    ClickableLocation(
+        systemId = entity.celestial.solarSystemId,
+        locationId = entity.celestial.id.toLong(),
+        locationTypeId = entity.celestial.type.id,
+        locationName = entity.celestial.name,
+    ) {
+        SystemEntityInfoRow(rowHeight, isHorizontal) {
+            AsyncTypeIcon(
+                type = entity.celestial.type,
+                modifier = Modifier.size(rowHeight),
+            )
+
+            VerticalDivider(color = RiftTheme.colors.borderGreyLight, modifier = Modifier.height(rowHeight))
+            Column(
+                modifier = Modifier.padding(horizontal = Spacing.small),
+            ) {
+                Text(
+                    text = entity.celestial.name,
+                    style = RiftTheme.typography.bodyHighlighted,
+                )
+                if (rowHeight >= 32.dp) {
+                    Text(
+                        text = "${entity.distanceKm}km",
+                        style = RiftTheme.typography.detailSecondary,
+                    )
+                }
+            }
+            if (rowHeight < 32.dp) {
+                Text(
+                    text = "${entity.distanceKm}km",
+                    style = RiftTheme.typography.bodySecondary,
+                    modifier = Modifier.padding(4.dp),
+                )
+            }
+        }
     }
 }
 
@@ -505,7 +513,7 @@ private fun NoVisualRow(
         )
         Text(
             text = "No visual",
-            style = RiftTheme.typography.bodyPrimary.copy(fontSize = 11.sp),
+            style = RiftTheme.typography.detailPrimary,
             modifier = Modifier.padding(horizontal = 4.dp),
         )
     }
@@ -532,4 +540,4 @@ private fun NoVisualRow(
     }
 }
 
-private fun Int.isNpcCorp(): Boolean = this in 1000001..1000441
+private fun Int.isNpcCorp(): Boolean = IdRanges.isNpcCorporation(this)

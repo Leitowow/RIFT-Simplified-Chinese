@@ -1,6 +1,6 @@
 package dev.nohus.rift.wizard
 
-import androidx.compose.foundation.text.isTypedEvent
+import androidx.compose.ui.awt.awtEventOrNull
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.utf16CodePoint
 import dev.nohus.rift.Event
@@ -65,7 +65,9 @@ class WizardViewModel(
     }
 
     enum class EveInstallationState {
-        None, Detected, Set
+        None,
+        Detected,
+        Set,
     }
 
     private val _state = MutableStateFlow(UiState())
@@ -152,12 +154,12 @@ class WizardViewModel(
             }
 
             is WizardStep.EveInstallation -> {
-                windowManager.onWindowClose(RiftWindow.Settings)
+                windowManager.onWindowClose(RiftWindow.Settings, uuid = null)
                 _state.update { it.copy(step = getCharactersStep()) }
             }
 
             is WizardStep.Characters -> {
-                windowManager.onWindowClose(RiftWindow.Characters)
+                windowManager.onWindowClose(RiftWindow.Characters, uuid = null)
                 val suggestedPack = configurationPackRepository.getSuggestedPack()
                 if (suggestedPack != null) {
                     _state.update { it.copy(step = WizardStep.ConfigurationPacks(pack = suggestedPack)) }
@@ -172,7 +174,7 @@ class WizardViewModel(
             }
 
             is WizardStep.IntelChannels -> {
-                windowManager.onWindowClose(RiftWindow.Settings)
+                windowManager.onWindowClose(RiftWindow.Settings, uuid = null)
                 settings.isSetupWizardFinished = true
                 settings.isShowSetupWizardOnNextStart = false
                 _state.update { it.copy(step = WizardStep.Finish) }
@@ -186,7 +188,7 @@ class WizardViewModel(
     }
 
     fun onKeyEvent(event: KeyEvent) {
-        if (event.isTypedEvent) {
+        if (event.awtEventOrNull?.id == java.awt.event.KeyEvent.KEY_TYPED) {
             val character = event.utf16CodePoint.toChar()
             if (character.isLetter()) {
                 typedText += character
@@ -213,7 +215,7 @@ class WizardViewModel(
     private fun getCharactersStep(): WizardStep.Characters {
         val characters = localCharactersRepository.characters.value
         val characterCount = characters.count()
-        val authenticatedCharacterCount = characters.count { it.isAuthenticated }
+        val authenticatedCharacterCount = characters.count { it.scopes.isNotEmpty() }
         return WizardStep.Characters(characterCount, authenticatedCharacterCount)
     }
 

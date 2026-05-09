@@ -1,7 +1,7 @@
 package dev.nohus.rift.map.systemcolor.strategies
 
 import dev.nohus.rift.map.systemcolor.PercentageSystemColorStrategy
-import dev.nohus.rift.network.esi.IndustryActivity
+import dev.nohus.rift.network.esi.models.IndustryActivity
 import dev.nohus.rift.repositories.MapStatusRepository.SolarSystemStatus
 
 class IndustryIndicesSystemColorStrategy(

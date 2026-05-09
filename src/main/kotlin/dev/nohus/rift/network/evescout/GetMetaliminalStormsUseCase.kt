@@ -4,10 +4,9 @@ import dev.nohus.rift.network.Result.Failure
 import dev.nohus.rift.network.Result.Success
 import dev.nohus.rift.network.evescout.GetMetaliminalStormsUseCase.StormStrength.Strong
 import dev.nohus.rift.network.evescout.GetMetaliminalStormsUseCase.StormStrength.Weak
+import dev.nohus.rift.network.requests.Originator
 import dev.nohus.rift.repositories.GetSystemsInRangeUseCase
-import dev.nohus.rift.repositories.SolarSystemsRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.jsoup.Jsoup
 import org.koin.core.annotation.Single
 
 private val logger = KotlinLogging.logger {}
@@ -15,16 +14,19 @@ private val logger = KotlinLogging.logger {}
 @Single
 class GetMetaliminalStormsUseCase(
     private val eveScoutRescueApi: EveScoutRescueApi,
-    private val solarSystemsRepository: SolarSystemsRepository,
     private val getSystemsInRangeUseCase: GetSystemsInRangeUseCase,
 ) {
 
     enum class StormType {
-        Gamma, Electric, Plasma, Exotic
+        Gamma,
+        Electric,
+        Plasma,
+        Exotic,
     }
 
     enum class StormStrength {
-        Strong, Weak
+        Strong,
+        Weak,
     }
 
     data class Storm(
@@ -32,8 +34,8 @@ class GetMetaliminalStormsUseCase(
         val strength: StormStrength,
     )
 
-    suspend operator fun invoke(): Map<Int, List<Storm>> {
-        val storms = getStormCenters()
+    suspend operator fun invoke(originator: Originator): Map<Int, List<Storm>> {
+        val storms = getStormCenters(originator)
         return storms.flatMap { storm ->
             val core = getSystemsInRangeUseCase(storm.key, 1)
             val periphery = getSystemsInRangeUseCase(storm.key, 3) - core
@@ -41,32 +43,18 @@ class GetMetaliminalStormsUseCase(
         }.groupBy({ it.first }, { it.second })
     }
 
-    private suspend fun getStormCenters(): Map<Int, StormType> {
-        return when (val response = eveScoutRescueApi.getStormTrack()) {
+    private suspend fun getStormCenters(originator: Originator): Map<Int, StormType> {
+        return when (val response = eveScoutRescueApi.getObservations(originator)) {
             is Success -> {
-                val document = Jsoup.parse(response.data)
-                val rows = document.select("table > tbody > tr")
-                rows.mapNotNull { row ->
-                    val cells = row.getElementsByTag("td").map { it.text() }
-                    if (cells.size == 7) {
-                        val system = solarSystemsRepository.getSystemId(cells[1]) ?: run {
-                            logger.warn { "Unknown storm system: ${cells[1]}" }
-                            return@mapNotNull null
-                        }
-                        val type = when (cells[3]) {
-                            "Gamma" -> StormType.Gamma
-                            "Electric" -> StormType.Electric
-                            "Plasma" -> StormType.Plasma
-                            "Exotic" -> StormType.Exotic
-                            else -> {
-                                logger.warn { "Unknown storm type: ${cells[3]}" }
-                                return@mapNotNull null
-                            }
-                        }
-                        system to type
-                    } else {
-                        null
+                response.data.mapNotNull { observation ->
+                    val type = when (observation.observationType) {
+                        ObservationType.ElectricA, ObservationType.ElectricB -> StormType.Electric
+                        ObservationType.ExoticA, ObservationType.ExoticB -> StormType.Exotic
+                        ObservationType.GammaA, ObservationType.GammaB -> StormType.Gamma
+                        ObservationType.PlasmaA, ObservationType.PlasmaB -> StormType.Plasma
+                        ObservationType.TomsShuttle -> return@mapNotNull null
                     }
+                    observation.systemId to type
                 }.toMap()
             }
             is Failure -> {

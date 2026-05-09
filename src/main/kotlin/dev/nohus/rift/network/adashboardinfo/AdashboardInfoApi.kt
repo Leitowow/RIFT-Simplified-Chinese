@@ -1,15 +1,17 @@
 package dev.nohus.rift.network.adashboardinfo
 
-import dev.nohus.rift.network.RequestExecutor
 import dev.nohus.rift.network.Result
+import dev.nohus.rift.network.requests.Originator
+import dev.nohus.rift.network.requests.RequestExecutor
 import okhttp3.OkHttpClient
+import org.koin.core.annotation.Named
 import org.koin.core.annotation.Single
 import retrofit2.Retrofit
 import retrofit2.converter.scalars.ScalarsConverterFactory
 
 @Single
 class AdashboardInfoApi(
-    client: OkHttpClient,
+    @Named("api") client: OkHttpClient,
     requestExecutor: RequestExecutor,
 ) : RequestExecutor by requestExecutor {
 
@@ -20,7 +22,7 @@ class AdashboardInfoApi(
         .build()
     private val service = retrofit.create(AdashboardInfoService::class.java)
 
-    suspend fun getScan(scanId: String): Result<String> {
-        return execute { service.getScan(scanId) }
+    suspend fun getScan(originator: Originator, scanId: String): Result<String> {
+        return execute { service.getScan(originator, scanId) }
     }
 }
