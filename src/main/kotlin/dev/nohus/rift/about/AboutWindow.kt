@@ -165,22 +165,22 @@ private fun AboutWindowContent(
                         modifier = Modifier.padding(top = Spacing.medium),
                     )
                     LinkText(
-                        text = "https://riftforeve.online/",
-                        onClick = { "https://riftforeve.online/".toURIOrNull()?.openBrowser() },
+                        text = "RIFT中文版",
+                        onClick = { "https://github.com/Leitowow/RIFT-Simplified-Chinese".toURIOrNull()?.openBrowser() },
                     )
 
                     Text(
-                        text = "Join the Discord!",
+                        text = "QQ交流群",
                         style = RiftTheme.typography.headerPrimary,
                         modifier = Modifier.padding(top = Spacing.medium),
                     )
                     LinkText(
-                        text = "Invite link",
-                        onClick = { "https://discord.gg/FQPVs5hnaZ".toURIOrNull()?.openBrowser() },
+                        text = "加入QQ交流群1037664416",
+                        onClick = { "点击链接加入群聊【RIFT汉化版测试群】：http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=Y85CLpCv017bSKia2mSzHmu5n2SoTwHh&authKey=%2B3CVxg5Sk89GR8ICJVYyHoAyHRVeY4U%2BIwkVngbIOGWMMrHahgBgSiGQWT0k92Ld&noverify=0&group_code=1037664416".toURIOrNull()?.openBrowser() },
                     )
 
                     Text(
-                        text = "© 2023–2026 Nohus",
+                        text = "© 2023–2026 Nohus 2025-2026 Leito",
                         style = RiftTheme.typography.bodySecondary,
                         modifier = Modifier.padding(top = Spacing.medium),
                     )
