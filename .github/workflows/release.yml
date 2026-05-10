@@ -1,0 +1,125 @@
+name: Build and Publish Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (example: v5.18.1)"
+        required: true
+        default: "v5.18.1"
+      title:
+        description: "Release title (optional)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: gradle
+
+      - name: Build Windows distributable
+        run: .\gradlew.bat createReleaseDistributable
+
+      - name: Pack Windows zip
+        shell: pwsh
+        run: |
+          $distPath = "build\compose\binaries\main-release\app\rift"
+          if (!(Test-Path $distPath)) {
+            throw "Windows distributable folder not found: $distPath"
+          }
+          $zipPath = Join-Path $env:RUNNER_TEMP ("rift-windows-" + "${{ github.event.inputs.tag }}" + ".zip")
+          Compress-Archive -Path (Join-Path $distPath "*") -DestinationPath $zipPath -Force
+          "ZIP_PATH=$zipPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-zip
+          path: ${{ env.ZIP_PATH }}
+          if-no-files-found: error
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: gradle
+
+      - name: Build macOS package
+        run: ./gradlew packageReleaseDistributionForCurrentOS
+
+      - name: Find DMG
+        shell: bash
+        run: |
+          set -euo pipefail
+          dmg_path="$(find build/compose/binaries/main-release -type f -name '*.dmg' | head -n 1)"
+          if [[ -z "${dmg_path}" ]]; then
+            echo "No DMG produced."
+            exit 1
+          fi
+          out_path="${RUNNER_TEMP}/rift-macos-${{ github.event.inputs.tag }}.dmg"
+          cp "${dmg_path}" "${out_path}"
+          echo "DMG_PATH=${out_path}" >> "$GITHUB_ENV"
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          path: ${{ env.DMG_PATH }}
+          if-no-files-found: error
+
+  publish-release:
+    needs:
+      - build-windows
+      - build-macos
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Publish to GitHub Releases
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="${{ github.event.inputs.tag }}"
+          title="${{ github.event.inputs.title }}"
+          if [[ -z "$title" ]]; then
+            title="$tag"
+          fi
+
+          mapfile -t assets < <(find dist -type f \( -name '*.zip' -o -name '*.dmg' \))
+          if [[ "${#assets[@]}" -eq 0 ]]; then
+            echo "No release assets found."
+            exit 1
+          fi
+
+          if gh release view "$tag" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            gh release upload "$tag" "${assets[@]}" --clobber --repo "${{ github.repository }}"
+            gh release edit "$tag" --title "$title" --repo "${{ github.repository }}"
+          else
+            gh release create "$tag" "${assets[@]}" --title "$title" --notes "Automated cross-platform release assets." --repo "${{ github.repository }}"
+          fi
