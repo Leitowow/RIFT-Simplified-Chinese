@@ -9,6 +9,10 @@ RIFT是一个EVE Online的第三方工具。
 - 游戏内：Leito Arthur
 - QQ：15667921
 
+### 下载地址
+
+在[Releases](https://github.com/Leitowow/RIFT-Simplified-Chinese/releases)中下载最新版本。
+
 ### 构建方法
 
 运行项目，执行：`./gradlew run`。这将下载所有依赖，构建并运行项目。
