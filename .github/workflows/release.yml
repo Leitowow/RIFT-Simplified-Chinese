@@ -18,6 +18,7 @@ permissions:
 jobs:
   build-windows:
     runs-on: windows-latest
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,14 +31,17 @@ jobs:
           cache: gradle
 
       - name: Build Windows distributable
-        run: .\gradlew.bat createReleaseDistributable
+        run: .\gradlew.bat createDistributable
 
       - name: Pack Windows zip
         shell: pwsh
         run: |
-          $distPath = "build\compose\binaries\main-release\app\rift"
-          if (!(Test-Path $distPath)) {
-            throw "Windows distributable folder not found: $distPath"
+          $distPath = Get-ChildItem "build\compose\binaries" -Directory -Recurse |
+            Where-Object { $_.Name -eq "rift" -and (Test-Path (Join-Path $_.FullName "app")) } |
+            Select-Object -First 1 -ExpandProperty FullName
+          if (-not $distPath) {
+            Get-ChildItem "build\compose\binaries" -Directory -Recurse | Select-Object -First 50 FullName
+            throw "Windows distributable folder not found under build\\compose\\binaries"
           }
           $zipPath = Join-Path $env:RUNNER_TEMP ("rift-windows-" + "${{ github.event.inputs.tag }}" + ".zip")
           Compress-Archive -Path (Join-Path $distPath "*") -DestinationPath $zipPath -Force
@@ -52,6 +56,7 @@ jobs:
 
   build-macos:
     runs-on: macos-latest
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -63,20 +68,20 @@ jobs:
           java-version: "25"
           cache: gradle
 
-      - name: Build macOS package
-        run: ./gradlew packageReleaseDistributionForCurrentOS
+      - name: Build macOS distributable
+        run: ./gradlew createDistributable
 
-      - name: Find DMG
+      - name: Build DMG
         shell: bash
         run: |
           set -euo pipefail
-          dmg_path="$(find build/compose/binaries/main-release -type f -name '*.dmg' | head -n 1)"
-          if [[ -z "${dmg_path}" ]]; then
-            echo "No DMG produced."
+          app_path="$(find build/compose/binaries -type d -name 'rift.app' | head -n 1)"
+          if [[ -z "${app_path}" ]]; then
+            echo "No macOS app bundle produced."
             exit 1
           fi
           out_path="${RUNNER_TEMP}/rift-macos-${{ github.event.inputs.tag }}.dmg"
-          cp "${dmg_path}" "${out_path}"
+          hdiutil create -volname "RIFT" -srcfolder "${app_path}" -ov -format UDZO "${out_path}"
           echo "DMG_PATH=${out_path}" >> "$GITHUB_ENV"
 
       - name: Upload macOS artifact
