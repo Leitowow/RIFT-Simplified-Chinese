@@ -53,7 +53,7 @@ fun PingsWindow(
     val viewModel: PingsViewModel = viewModel()
     val state by viewModel.state.collectAsState()
     RiftWindow(
-        title = "Pings",
+        title = "集结通知",
         icon = Res.drawable.window_sovereignty,
         state = windowState,
         onCloseClick = onCloseRequest,
@@ -101,9 +101,9 @@ private fun PingsWindowContent(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 val text = if (state.isJabberConnected) {
-                    "No pings received yet.\nClear skies."
+                    "目前没有接收到集结通知。\n安心刷怪挖矿吧。"
                 } else {
-                    "You need to be connected to Jabber to receive pings."
+                    "需要登陆Jabber才能接受集结通知"
                 }
                 Text(
                     text = text,
@@ -115,7 +115,7 @@ private fun PingsWindowContent(
                 )
                 if (!state.isJabberConnected) {
                     RiftButton(
-                        text = "Check Jabber",
+                        text = "登陆Jabber",
                         onClick = onOpenJabberClick,
                     )
                 }

@@ -130,7 +130,7 @@ class GameUiController(
             ?: onlineCharactersRepository.onlineCharacters.value.firstOrNull()
         if (targetCharacterId == null) {
             showError(
-                title = "No Character Online",
+                title = "没有角色在线",
                 text = "Cannot open a window in-game because you are not in-game".toFormattedText(),
             )
             return null
@@ -140,7 +140,7 @@ class GameUiController(
             ?: return null
         if (ScopeGroups.openWindow !in targetCharacter.scopes) {
             showError(
-                title = "Insufficient Permissions",
+                title = "权限不足",
                 text = buildFormattedText {
                     appendLine("Cannot open a window in-game because you haven't allowed RIFT to do so.")
                     appendLine()
@@ -161,7 +161,7 @@ class GameUiController(
     private fun Result<Unit>.handleError() {
         if (this is Result.Failure) {
             showError(
-                title = "Could Not Open Window",
+                title = "无法打开窗口",
                 text = buildFormattedText {
                     appendLine("The ESI request has failed.")
                     appendLine()

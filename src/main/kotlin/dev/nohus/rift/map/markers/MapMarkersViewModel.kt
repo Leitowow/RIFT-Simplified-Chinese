@@ -60,8 +60,8 @@ class MapMarkersViewModel(
             MapMarkerItem(
                 id = it.id,
                 systemId = it.systemId,
-                systemName = solarSystemsRepository.getSystemName(it.systemId) ?: "Unknown",
-                regionName = solarSystemsRepository.getRegionBySystemId(it.systemId)?.name ?: "Unknown",
+                systemName = solarSystemsRepository.getSystemName(it.systemId) ?: "未知",
+                regionName = solarSystemsRepository.getRegionBySystemId(it.systemId)?.name ?: "未知",
                 label = it.label,
                 color = it.color,
                 iconName = it.icon,
@@ -82,10 +82,10 @@ class MapMarkersViewModel(
                 addMarker(system, input)
                 return true
             } else {
-                showError("System \"${input.system}\" does not exist")
+                showError("星系 \"${input.system}\" 不存在")
             }
         } else {
-            showError("You need to enter a system name")
+            showError("请输入星系名")
         }
         return false
     }
@@ -140,7 +140,7 @@ class MapMarkersViewModel(
         _state.update {
             it.copy(
                 dialog = DialogMessage(
-                    title = "Cannot create marker",
+                    title = "无法创建标记",
                     message = text,
                     type = MessageDialogType.Info,
                 ),

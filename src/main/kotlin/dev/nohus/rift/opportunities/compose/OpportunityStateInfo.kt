@@ -43,17 +43,17 @@ fun OpportunityStateInfo(state: OpportunityState) {
         OpportunityState.Unspecified -> null
         OpportunityState.Active -> null
         OpportunityState.Closed -> OpportunityState(
-            text = "Closed",
+            text = "已关闭",
             color = EveColors.warningOrange,
             icon = Res.drawable.corporation_project_state_close_16px,
         )
         OpportunityState.Completed -> OpportunityState(
-            text = "Completed",
+            text = "已完成",
             color = EveColors.successGreen,
             icon = Res.drawable.checkmark_16px,
         )
         OpportunityState.Expired -> OpportunityState(
-            text = "Expired",
+            text = "已过期",
             color = EveColors.dangerRed,
             icon = Res.drawable.corporation_project_state_time_16px,
         )

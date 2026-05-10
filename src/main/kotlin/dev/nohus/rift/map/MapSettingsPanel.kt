@@ -76,7 +76,6 @@ import dev.nohus.rift.repositories.TypesRepository.Type
 import dev.nohus.rift.settings.persistence.MapSystemInfoType
 import dev.nohus.rift.sovupgrades.MapSovereigntyUpgradesController.MapSovereigntyUpgradesState
 import dev.nohus.rift.sovupgrades.SovereigntyUpgradesRepository
-import dev.nohus.rift.utils.plural
 import org.jetbrains.compose.resources.painterResource
 import dev.nohus.rift.settings.persistence.MapType as SettingsMapType
 
@@ -182,7 +181,7 @@ fun MapSettingsPanel(
                                     horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
                                 ) {
                                     Text(
-                                        text = "System:",
+                                        text = "星系：",
                                         style = RiftTheme.typography.headerPrimary,
                                     )
                                     SystemColorPills(
@@ -203,7 +202,7 @@ fun MapSettingsPanel(
                                     horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
                                 ) {
                                     Text(
-                                        text = "Background:",
+                                        text = "背景：",
                                         style = RiftTheme.typography.headerPrimary,
                                     )
                                     SystemColorPills(
@@ -224,11 +223,11 @@ fun MapSettingsPanel(
                                     horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
                                 ) {
                                     Text(
-                                        text = "Indicators:",
+                                        text = "指示：",
                                         style = RiftTheme.typography.headerPrimary,
                                     )
                                     val text = systemInfoTypes.indicators[settingsMapType].orEmpty().let {
-                                        if (it.isEmpty()) "None" else "${it.size} enabled"
+                                        if (it.isEmpty()) "无" else "${it.size} 项已启用"
                                     }
                                     RiftPill(
                                         text = text,
@@ -242,11 +241,11 @@ fun MapSettingsPanel(
                                     horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
                                 ) {
                                     Text(
-                                        text = "Info box:",
+                                        text = "信息框：",
                                         style = RiftTheme.typography.headerPrimary,
                                     )
                                     val text = systemInfoTypes.infoBox[settingsMapType].orEmpty().let {
-                                        if (it.isEmpty()) "None" else "${it.size} enabled"
+                                        if (it.isEmpty()) "无" else "${it.size} 项已启用"
                                     }
                                     RiftPill(
                                         text = text,
@@ -281,7 +280,7 @@ fun MapSettingsPanel(
                             modifier = Modifier.padding(Spacing.medium),
                         ) {
                             SettingsPanelTitle(
-                                title = "System color",
+                                title = "星系颜色",
                                 onBack = { panelState = Expanded },
                             )
                             SystemColorPills(
@@ -308,7 +307,7 @@ fun MapSettingsPanel(
                             modifier = Modifier.padding(Spacing.medium),
                         ) {
                             SettingsPanelTitle(
-                                title = "System background color",
+                                title = "星系背景色",
                                 onBack = { panelState = Expanded },
                             )
                             SystemColorPills(
@@ -335,7 +334,7 @@ fun MapSettingsPanel(
                             modifier = Modifier.padding(Spacing.medium),
                         ) {
                             SettingsPanelTitle(
-                                title = "Indicators (always visible)",
+                                title = "指示（始终显示）",
                                 onBack = { panelState = Expanded },
                             )
                             SystemIndicatorsPills(
@@ -362,7 +361,7 @@ fun MapSettingsPanel(
                             modifier = Modifier.padding(Spacing.medium),
                         ) {
                             SettingsPanelTitle(
-                                title = "Info box details (visible on hover)",
+                                title = "信息框详情（悬停显示）",
                                 onBack = { panelState = Expanded },
                             )
                             SystemIndicatorsPills(
@@ -432,7 +431,7 @@ private fun JumpRangePanel(
         modifier = Modifier.padding(Spacing.medium),
     ) {
         SettingsPanelTitle(
-            title = "Jump range",
+            title = "旗舰跳跃范围",
             onBack = onBack,
         )
         Row(
@@ -462,14 +461,14 @@ private fun JumpRangePanel(
             }
 
             Text(
-                text = "From:",
+                text = "起点：",
                 style = RiftTheme.typography.bodyPrimary,
                 modifier = Modifier.padding(end = Spacing.small),
             )
             RiftAutocompleteTextField(
                 text = targetText,
                 suggestions = suggestions.take(5),
-                placeholder = "System or character",
+                placeholder = "星系或角色",
                 onTextChanged = {
                     targetText = it
                     onJumpRangeTargetUpdate(it)
@@ -481,22 +480,22 @@ private fun JumpRangePanel(
                 RequirementIcon(
                     isFulfilled = mapJumpRangeState.target != null,
                     fulfilledTooltip = when (mapJumpRangeState.target) {
-                        is MapJumpRangeController.MapJumpRangeTarget.Character -> "Valid character"
-                        is MapJumpRangeController.MapJumpRangeTarget.System -> "Valid system"
+                        is MapJumpRangeController.MapJumpRangeTarget.Character -> "有效角色"
+                        is MapJumpRangeController.MapJumpRangeTarget.System -> "有效星系"
                         null -> ""
                     },
-                    notFulfilledTooltip = "No such system or character",
+                    notFulfilledTooltip = "未找到该星系或角色",
                 )
             }
         }
         val ranges = listOf(
-            "6ly – Supercarriers, Titans" to 6.0,
-            "7ly – Carriers, Dreadnoughts, Faxes" to 7.0,
-            "8ly – Black Ops" to 8.0,
-            "10ly – Jump Freighters, Rorquals" to 10.0,
+            "6 光年 — 超旗、泰坦" to 6.0,
+            "7 光年 — 航母、无畏、力航" to 7.0,
+            "8 光年 — 黑隐" to 8.0,
+            "10 光年 — 跳货、长须鲸" to 10.0,
         )
         RiftDropdownWithLabel(
-            label = "Range:",
+            label = "范围：",
             items = ranges,
             selectedItem = ranges.firstOrNull { it.second == mapJumpRangeState.distanceLy } ?: ranges.first(),
             onItemSelected = { onJumpRangeDistanceUpdate(it.second) },
@@ -517,7 +516,7 @@ private fun PlanetsPanel(
         modifier = Modifier.padding(Spacing.medium),
     ) {
         SettingsPanelTitle(
-            title = "Planet types",
+            title = "行星类型",
             onBack = onBack,
         )
         FlowRow(
@@ -557,7 +556,7 @@ private fun SovereigntyUpgradesPanel(
         modifier = Modifier.padding(Spacing.medium),
     ) {
         SettingsPanelTitle(
-            title = "Sovereignty upgrade types",
+            title = "主权升级类型",
             onBack = onBack,
         )
         FlowRow(
@@ -609,7 +608,7 @@ private fun DistanceMapPanel(
         modifier = Modifier.padding(Spacing.medium),
     ) {
         SettingsPanelTitle(
-            title = "Distance map",
+            title = "距离图",
             onBack = onBack,
         )
         Row(
@@ -639,14 +638,14 @@ private fun DistanceMapPanel(
             }
 
             Text(
-                text = "Centered on:",
+                text = "中心：",
                 style = RiftTheme.typography.bodyPrimary,
                 modifier = Modifier.padding(end = Spacing.small),
             )
             RiftAutocompleteTextField(
                 text = targetText,
                 suggestions = suggestions.take(5),
-                placeholder = "System or character",
+                placeholder = "星系或角色",
                 onTextChanged = {
                     targetText = it
                     isEdited = true
@@ -659,19 +658,19 @@ private fun DistanceMapPanel(
                 RequirementIcon(
                     isFulfilled = state.isEditedCenterValid || !isEdited,
                     fulfilledTooltip = when {
-                        state.followingCharacterId != null -> "Valid character"
-                        else -> "Valid system"
+                        state.followingCharacterId != null -> "有效角色"
+                        else -> "有效星系"
                     },
-                    notFulfilledTooltip = "No such system or character",
+                    notFulfilledTooltip = "未找到该星系或角色",
                 )
             }
         }
         val ranges = List(5) {
             val range = it + 1
-            "$range jump${range.plural}" to range
+            "$range 跳" to range
         }
         RiftDropdownWithLabel(
-            label = "Range:",
+            label = "范围：",
             items = ranges,
             selectedItem = ranges.firstOrNull { it.second == state.distance } ?: ranges.first(),
             onItemSelected = { onDistanceMapRangeUpdate(it.second) },
@@ -715,7 +714,7 @@ private fun AlternativeLayoutsPills(
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
         Text(
-            text = "Alternative maps:",
+            text = "备用布局：",
             style = RiftTheme.typography.headerPrimary,
         )
         alternativeLayouts.forEach { layout ->
@@ -745,7 +744,7 @@ private fun DistanceMapPills(
             horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
         ) {
             Text(
-                text = "Centered on:",
+                text = "中心：",
                 style = RiftTheme.typography.headerPrimary,
             )
             if (state.followingCharacterId != null) {
@@ -765,11 +764,11 @@ private fun DistanceMapPills(
             horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
         ) {
             Text(
-                text = "Range:",
+                text = "范围：",
                 style = RiftTheme.typography.headerPrimary,
             )
             RiftPill(
-                text = "${state.distance} jump${state.distance.plural}",
+                text = "${state.distance} 跳",
                 onClick = onDistanceMapRangeClick,
             )
         }
@@ -851,39 +850,39 @@ private fun SystemIndicatorsPills(
  */
 private fun getMapStarInfoTypeColorName(color: MapSystemInfoType?): Pair<String, String> {
     return when (color) {
-        MapSystemInfoType.StarColor -> "Actual color" to "Colored with the\nactual color of the star"
-        MapSystemInfoType.Security -> "Security Status" to "Colored according to the\nsecurity status"
-        MapSystemInfoType.NullSecurity -> "Null-Sec Status" to "Colored according to the\nnegative security status"
-        MapSystemInfoType.IntelHostiles -> "Hostiles count" to "Colored according to the\nnumber of reported hostiles"
-        MapSystemInfoType.Jumps -> "Jumps" to "Colored according to the\nnumber of jumps in the last hour"
-        MapSystemInfoType.Kills -> "Kills" to "Colored according to the\nnumber of ship and pod kills in the last hour"
-        MapSystemInfoType.NpcKills -> "NPC Kills" to "Colored according to the\nnumber of NPCs killed in the last hour"
-        MapSystemInfoType.Assets -> "Assets" to "Colored according to the\nnumber of owned assets located here"
-        MapSystemInfoType.Incursions -> "Incursions" to "Colored according to the\nincursion status"
-        MapSystemInfoType.Stations -> "Stations" to "Colored according to the\nnumber of stations"
-        MapSystemInfoType.FactionWarfare -> "Faction Warfare" to "Colored according to the\nfaction warfare occupier"
-        MapSystemInfoType.Sovereignty -> "Sovereignty" to "Colored according to the\nsovereignty holder"
-        MapSystemInfoType.SovereigntyUpgrades -> "Sovereignty Upgrades" to "Colored according to the\ninstalled sovereignty upgrades"
-        MapSystemInfoType.MetaliminalStorms -> "Metaliminal Storms" to "Colored according to the\npresence of metaliminal storms"
-        MapSystemInfoType.JumpRange -> "Jump Range" to "Colored according to\njump range"
-        MapSystemInfoType.Planets -> throw IllegalArgumentException("Not used for colors")
-        MapSystemInfoType.JoveObservatories -> "Jove Observatories" to "Colored when a\nJove Observatory is present"
-        MapSystemInfoType.Wormholes -> "Wormholes" to "Colored when a\nThera or Turnur wormhole is present"
-        MapSystemInfoType.Colonies -> "PI Colonies" to "Colored when you have a\nPI colony present"
-        MapSystemInfoType.Clones -> "Clones" to "Colored when you have\njump clones present"
-        MapSystemInfoType.Standings -> "Standings" to "Colored based on standings\ntowards the sovereignty holder.\nLow and high sec are always yellow and green."
-        MapSystemInfoType.RatsType -> "Rats" to "Colored according to the\nfaction of rats in the system"
-        MapSystemInfoType.AsteroidBelts -> "Asteroid Belts" to "Colored when\nasteroid belts are present"
-        MapSystemInfoType.IceFields -> "Ice Fields" to "Colored when\nice fields are present"
-        MapSystemInfoType.Region -> throw IllegalArgumentException("Not used for colors")
-        MapSystemInfoType.Constellation -> throw IllegalArgumentException("Not used for colors")
-        MapSystemInfoType.IndustryIndexCopying -> "Copying Index" to "Colored according to the\nindustry cost index of Copying"
-        MapSystemInfoType.IndustryIndexInvention -> "Invention Index" to "Colored according to the\nindustry cost index of Invention"
-        MapSystemInfoType.IndustryIndexManufacturing -> "Manufacturing Index" to "Colored according to the\nindustry cost index of Manufacturing"
-        MapSystemInfoType.IndustryIndexReaction -> "Reactions Index" to "Colored according to the\nindustry cost index of Reactions"
-        MapSystemInfoType.IndustryIndexMaterialEfficiency -> "Material Efficiency Index" to "Colored according to the\nindustry cost index of Researching Material Efficiency"
-        MapSystemInfoType.IndustryIndexTimeEfficiency -> "Time Efficiency Index" to "Colored according to the\nindustry cost index of Researching Time Efficiency"
-        null -> "None" to "No background color"
+        MapSystemInfoType.StarColor -> "恒星实际颜色" to "按恒星的实际颜色着色"
+        MapSystemInfoType.Security -> "安等状态" to "按安等状态着色"
+        MapSystemInfoType.NullSecurity -> "零安状态" to "按负安等状态着色"
+        MapSystemInfoType.IntelHostiles -> "敌对数量" to "按上报敌对数量着色"
+        MapSystemInfoType.Jumps -> "跃迁数" to "按最近一小时跃迁数着色"
+        MapSystemInfoType.Kills -> "击杀数" to "按最近一小时舰船与蛋击杀数着色"
+        MapSystemInfoType.NpcKills -> "NPC 击杀数" to "按最近一小时 NPC 击杀数着色"
+        MapSystemInfoType.Assets -> "资产" to "按此处资产数量着色"
+        MapSystemInfoType.Incursions -> "入侵" to "按入侵状态着色"
+        MapSystemInfoType.Stations -> "空间站" to "按空间站数量着色"
+        MapSystemInfoType.FactionWarfare -> "势力战争" to "按势力战争占领方着色"
+        MapSystemInfoType.Sovereignty -> "主权" to "按主权持有者着色"
+        MapSystemInfoType.SovereigntyUpgrades -> "主权升级" to "按已安装主权升级着色"
+        MapSystemInfoType.MetaliminalStorms -> "亚稳风暴" to "按是否存在亚稳风暴着色"
+        MapSystemInfoType.JumpRange -> "跳驱范围" to "按跳驱距离着色"
+        MapSystemInfoType.Planets -> throw IllegalArgumentException("不用于着色")
+        MapSystemInfoType.JoveObservatories -> "尤瓦观测站" to "存在尤瓦观测站时着色"
+        MapSystemInfoType.Wormholes -> "虫洞" to "存在 Thera 或 Turnur 虫洞时着色"
+        MapSystemInfoType.Colonies -> "PI 殖民地" to "存在你的 PI 殖民地时着色"
+        MapSystemInfoType.Clones -> "克隆体" to "存在你的跳克隆时着色"
+        MapSystemInfoType.Standings -> "声望" to "按你对主权持有者的声望着色。\n低安和高安始终为黄绿色。"
+        MapSystemInfoType.RatsType -> "海盗势力" to "按星系内海盗势力着色"
+        MapSystemInfoType.AsteroidBelts -> "小行星带" to "存在小行星带时着色"
+        MapSystemInfoType.IceFields -> "冰矿带" to "存在冰矿带时着色"
+        MapSystemInfoType.Region -> throw IllegalArgumentException("不用于着色")
+        MapSystemInfoType.Constellation -> throw IllegalArgumentException("不用于着色")
+        MapSystemInfoType.IndustryIndexCopying -> "复制指数" to "按复制工业成本指数着色"
+        MapSystemInfoType.IndustryIndexInvention -> "发明指数" to "按发明工业成本指数着色"
+        MapSystemInfoType.IndustryIndexManufacturing -> "制造指数" to "按制造工业成本指数着色"
+        MapSystemInfoType.IndustryIndexReaction -> "反应指数" to "按反应工业成本指数着色"
+        MapSystemInfoType.IndustryIndexMaterialEfficiency -> "材料效率指数" to "按材料效率研究工业成本指数着色"
+        MapSystemInfoType.IndustryIndexTimeEfficiency -> "时间效率指数" to "按时间效率研究工业成本指数着色"
+        null -> "无" to "不显示背景色"
     }
 }
 
@@ -893,38 +892,38 @@ private fun getMapStarInfoTypeColorName(color: MapSystemInfoType?): Pair<String,
 private fun getMapStarInfoTypeIndicatorName(color: MapSystemInfoType?): Pair<String, String> {
     return when (color) {
         MapSystemInfoType.StarColor -> "" to ""
-        MapSystemInfoType.Security -> "Security status" to "Security status of the system"
+        MapSystemInfoType.Security -> "安等状态" to "星系安等状态"
         MapSystemInfoType.NullSecurity -> "" to ""
         MapSystemInfoType.IntelHostiles -> "" to ""
-        MapSystemInfoType.Jumps -> "Jumps" to "Number of jumps in the last hour"
-        MapSystemInfoType.Kills -> "Kills" to "Number of ship and pod kills in the last hour"
-        MapSystemInfoType.NpcKills -> "NPC Kills" to "Number of NPCs killed in the last hour"
-        MapSystemInfoType.Assets -> "Assets" to "Number of owned assets located here"
-        MapSystemInfoType.Incursions -> "Incursions" to "Indicator for systems with an incursion"
-        MapSystemInfoType.Stations -> "Stations" to "Number of stations"
+        MapSystemInfoType.Jumps -> "跃迁数" to "最近一小时跃迁数"
+        MapSystemInfoType.Kills -> "击杀数" to "最近一小时舰船与蛋击杀数"
+        MapSystemInfoType.NpcKills -> "NPC 击杀数" to "最近一小时 NPC 击杀数"
+        MapSystemInfoType.Assets -> "资产" to "此处资产数量"
+        MapSystemInfoType.Incursions -> "入侵" to "显示有入侵的星系"
+        MapSystemInfoType.Stations -> "空间站" to "空间站数量"
         MapSystemInfoType.FactionWarfare -> "" to ""
-        MapSystemInfoType.Sovereignty -> "Sovereignty" to "Sovereignty holder logo"
-        MapSystemInfoType.SovereigntyUpgrades -> "Sovereignty Upgrades" to "Indicators for installed sovereignty upgrades"
-        MapSystemInfoType.MetaliminalStorms -> "Metaliminal Storms" to "Indicator for systems with a storm"
-        MapSystemInfoType.JumpRange -> "Jump Range" to "Indicator for systems in jump range"
-        MapSystemInfoType.Planets -> "Planets" to "Indicators for planets"
-        MapSystemInfoType.JoveObservatories -> "Jove Observatories" to "Indicators for Jove Observatories"
-        MapSystemInfoType.Wormholes -> "Wormholes" to "Indicators for Thera and Turnur wormholes"
-        MapSystemInfoType.Colonies -> "PI Colonies" to "Indicators for PI colonies"
-        MapSystemInfoType.Clones -> "Clones" to "Indicators for jump clones"
-        MapSystemInfoType.Standings -> "Standings" to "Standings towards the sovereignty holder"
+        MapSystemInfoType.Sovereignty -> "主权" to "主权持有者标识"
+        MapSystemInfoType.SovereigntyUpgrades -> "主权升级" to "已安装主权升级标识"
+        MapSystemInfoType.MetaliminalStorms -> "亚稳风暴" to "显示有风暴的星系"
+        MapSystemInfoType.JumpRange -> "跳驱范围" to "显示位于跳驱范围内的星系"
+        MapSystemInfoType.Planets -> "行星" to "行星指示"
+        MapSystemInfoType.JoveObservatories -> "尤瓦观测站" to "尤瓦观测站指示"
+        MapSystemInfoType.Wormholes -> "虫洞" to "Thera 与 Turnur 虫洞指示"
+        MapSystemInfoType.Colonies -> "PI 殖民地" to "PI 殖民地指示"
+        MapSystemInfoType.Clones -> "克隆体" to "跳克隆指示"
+        MapSystemInfoType.Standings -> "声望" to "对主权持有者的声望"
         MapSystemInfoType.RatsType -> "" to ""
-        MapSystemInfoType.AsteroidBelts -> "Asteroid Belts" to "Indicators for asteroid belts"
-        MapSystemInfoType.IceFields -> "Ice Fields" to "Indicators for ice fields"
-        MapSystemInfoType.Region -> "Region" to "Region name"
-        MapSystemInfoType.Constellation -> "Constellation" to "Constellation name"
-        MapSystemInfoType.IndustryIndexCopying -> "Copying Index" to "Industry cost index of Copying"
-        MapSystemInfoType.IndustryIndexInvention -> "Invention Index" to "Industry cost index of Invention"
-        MapSystemInfoType.IndustryIndexManufacturing -> "Manufacturing Index" to "Industry cost index of Manufacturing"
-        MapSystemInfoType.IndustryIndexReaction -> "Reactions Index" to "Industry cost index of Reactions"
-        MapSystemInfoType.IndustryIndexMaterialEfficiency -> "Material Efficiency Index" to "Industry cost index of Researching Material Efficiency"
-        MapSystemInfoType.IndustryIndexTimeEfficiency -> "Time Efficiency Index" to "Industry cost index of Researching Time Efficiency"
-        null -> "None" to "No background color"
+        MapSystemInfoType.AsteroidBelts -> "小行星带" to "小行星带指示"
+        MapSystemInfoType.IceFields -> "冰矿带" to "冰矿带指示"
+        MapSystemInfoType.Region -> "星域" to "星域名称"
+        MapSystemInfoType.Constellation -> "星座" to "星座名称"
+        MapSystemInfoType.IndustryIndexCopying -> "复制指数" to "复制工业成本指数"
+        MapSystemInfoType.IndustryIndexInvention -> "发明指数" to "发明工业成本指数"
+        MapSystemInfoType.IndustryIndexManufacturing -> "制造指数" to "制造工业成本指数"
+        MapSystemInfoType.IndustryIndexReaction -> "反应指数" to "反应工业成本指数"
+        MapSystemInfoType.IndustryIndexMaterialEfficiency -> "材料效率指数" to "材料效率研究工业成本指数"
+        MapSystemInfoType.IndustryIndexTimeEfficiency -> "时间效率指数" to "时间效率研究工业成本指数"
+        null -> "无" to "不显示背景色"
     }
 }
 
@@ -934,37 +933,37 @@ private fun getMapStarInfoTypeIndicatorName(color: MapSystemInfoType?): Pair<Str
 private fun getMapStarInfoTypeInfoBoxName(color: MapSystemInfoType?): Pair<String, String> {
     return when (color) {
         MapSystemInfoType.StarColor -> "" to ""
-        MapSystemInfoType.Security -> "Security status" to "Security status of the system"
+        MapSystemInfoType.Security -> "安等状态" to "星系安等状态"
         MapSystemInfoType.NullSecurity -> "" to ""
         MapSystemInfoType.IntelHostiles -> "" to ""
-        MapSystemInfoType.Jumps -> "Jumps" to "Number of jumps in the last hour"
-        MapSystemInfoType.Kills -> "Kills" to "Number of ship and pod kills in the last hour"
-        MapSystemInfoType.NpcKills -> "NPC Kills" to "Number of NPCs killed in the last hour"
-        MapSystemInfoType.Assets -> "Assets" to "Number of owned assets located here"
-        MapSystemInfoType.Incursions -> "Incursions" to "Incursion status"
-        MapSystemInfoType.Stations -> "Stations" to "Number of stations"
-        MapSystemInfoType.FactionWarfare -> "Faction Warfare" to "Faction warfare details"
-        MapSystemInfoType.Sovereignty -> "Sovereignty" to "Sovereignty holder"
-        MapSystemInfoType.SovereigntyUpgrades -> "Sovereignty Upgrades" to "Installed sovereignty upgrades"
-        MapSystemInfoType.MetaliminalStorms -> "Metaliminal Storms" to "Metaliminal storm type"
-        MapSystemInfoType.JumpRange -> "Jump Range" to "Jump distance to system"
-        MapSystemInfoType.Planets -> "Planets" to "Planets information"
-        MapSystemInfoType.JoveObservatories -> "Jove Observatories" to "Jove Observatory presence information"
-        MapSystemInfoType.Wormholes -> "Wormholes" to "Thera and Turnur wormholes information"
-        MapSystemInfoType.Colonies -> "PI Colonies" to "PI colonies information"
-        MapSystemInfoType.Clones -> "Clones" to "Jump clones information"
-        MapSystemInfoType.Standings -> "Standings" to "Standings towards the sovereignty holder"
-        MapSystemInfoType.RatsType -> "Rats" to "Faction of rats in the system"
-        MapSystemInfoType.AsteroidBelts -> "Asteroid Belts" to "Asteroid belts presence information"
-        MapSystemInfoType.IceFields -> "Ice Fields" to "Ice fields presence information"
-        MapSystemInfoType.Region -> "Region" to "Region name"
-        MapSystemInfoType.Constellation -> "Constellation" to "Constellation name"
-        MapSystemInfoType.IndustryIndexCopying -> "Copying Index" to "Industry cost index of Copying"
-        MapSystemInfoType.IndustryIndexInvention -> "Invention Index" to "Industry cost index of Invention"
-        MapSystemInfoType.IndustryIndexManufacturing -> "Manufacturing Index" to "Industry cost index of Manufacturing"
-        MapSystemInfoType.IndustryIndexReaction -> "Reactions Index" to "Industry cost index of Reactions"
-        MapSystemInfoType.IndustryIndexMaterialEfficiency -> "Material Efficiency Index" to "Industry cost index of Researching Material Efficiency"
-        MapSystemInfoType.IndustryIndexTimeEfficiency -> "Time Efficiency Index" to "Industry cost index of Researching Time Efficiency"
-        null -> "None" to "No background color"
+        MapSystemInfoType.Jumps -> "跃迁数" to "最近一小时跃迁数"
+        MapSystemInfoType.Kills -> "击杀数" to "最近一小时舰船与蛋击杀数"
+        MapSystemInfoType.NpcKills -> "NPC 击杀数" to "最近一小时 NPC 击杀数"
+        MapSystemInfoType.Assets -> "资产" to "此处资产数量"
+        MapSystemInfoType.Incursions -> "入侵" to "入侵状态"
+        MapSystemInfoType.Stations -> "空间站" to "空间站数量"
+        MapSystemInfoType.FactionWarfare -> "势力战争" to "势力战争详情"
+        MapSystemInfoType.Sovereignty -> "主权" to "主权持有者"
+        MapSystemInfoType.SovereigntyUpgrades -> "主权升级" to "已安装主权升级"
+        MapSystemInfoType.MetaliminalStorms -> "亚稳风暴" to "亚稳风暴类型"
+        MapSystemInfoType.JumpRange -> "跳驱范围" to "到该星系的跳驱距离"
+        MapSystemInfoType.Planets -> "行星" to "行星信息"
+        MapSystemInfoType.JoveObservatories -> "尤瓦观测站" to "尤瓦观测站存在信息"
+        MapSystemInfoType.Wormholes -> "虫洞" to "Thera 与 Turnur 虫洞信息"
+        MapSystemInfoType.Colonies -> "PI 殖民地" to "PI 殖民地信息"
+        MapSystemInfoType.Clones -> "克隆体" to "跳克隆信息"
+        MapSystemInfoType.Standings -> "声望" to "对主权持有者的声望"
+        MapSystemInfoType.RatsType -> "海盗势力" to "星系内海盗势力"
+        MapSystemInfoType.AsteroidBelts -> "小行星带" to "小行星带存在信息"
+        MapSystemInfoType.IceFields -> "冰矿带" to "冰矿带存在信息"
+        MapSystemInfoType.Region -> "星域" to "星域名称"
+        MapSystemInfoType.Constellation -> "星座" to "星座名称"
+        MapSystemInfoType.IndustryIndexCopying -> "复制指数" to "复制工业成本指数"
+        MapSystemInfoType.IndustryIndexInvention -> "发明指数" to "发明工业成本指数"
+        MapSystemInfoType.IndustryIndexManufacturing -> "制造指数" to "制造工业成本指数"
+        MapSystemInfoType.IndustryIndexReaction -> "反应指数" to "反应工业成本指数"
+        MapSystemInfoType.IndustryIndexMaterialEfficiency -> "材料效率指数" to "材料效率研究工业成本指数"
+        MapSystemInfoType.IndustryIndexTimeEfficiency -> "时间效率指数" to "时间效率研究工业成本指数"
+        null -> "无" to "不显示背景色"
     }
 }

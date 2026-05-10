@@ -83,14 +83,14 @@ fun SideNavigation(
                     modifier = Modifier.padding(end = 8.dp, top = 8.dp),
                 ) {
                     RiftToggleButton(
-                        text = "Current",
+                        text = "当前",
                         isSelected = state.lifecycleFilter == OpportunityLifecycleFilter.Active,
                         type = ToggleButtonType.Left,
                         onClick = { onLifecycleFilterChange(OpportunityLifecycleFilter.Active) },
                         modifier = Modifier.weight(1f),
                     )
                     RiftToggleButton(
-                        text = "History",
+                        text = "历史",
                         isSelected = state.lifecycleFilter == OpportunityLifecycleFilter.History,
                         type = ToggleButtonType.Right,
                         onClick = { onLifecycleFilterChange(OpportunityLifecycleFilter.History) },
@@ -103,11 +103,11 @@ fun SideNavigation(
             val primaryFilter = if (state.participatingFilter) null else state.primaryFilter
 
             item {
-                Header("Features")
+                Header("功能")
             }
             item {
                 Item(
-                    text = "All",
+                    text = "全部",
                     count = state.categoryFilters.opportunityCount[null] ?: 0,
                     icon = Res.drawable.house_16px,
                     isSelected = primaryFilter == null,
@@ -121,7 +121,7 @@ fun SideNavigation(
             }
 
             item {
-                Header("Career Paths")
+                Header("职业路径")
             }
             val careerPaths = allFilters.filter { it.type == OpportunityCategoryFilterType.CareerPath }
             items(careerPaths, key = { it }) {
@@ -129,7 +129,7 @@ fun SideNavigation(
             }
 
             item {
-                Header("Other Tags")
+                Header("其他标签")
             }
             val activities = allFilters
                 .filter { it.type == OpportunityCategoryFilterType.Activity }
@@ -268,7 +268,7 @@ private fun LoadingFooter(
             .padding(Spacing.medium),
     ) {
         AnimatedVisibility(isLoading) {
-            RiftTooltipArea("Loading opportunities…") {
+            RiftTooltipArea("正在加载机遇…") {
                 LoadingSpinner(
                     modifier = Modifier.size(36.dp),
                 )

@@ -113,7 +113,7 @@ fun ColonyTitle(
             Spacer(Modifier.weight(1f))
             ExpiresIn(item, isViewingFastForward, onViewFastForwardChange)
             RiftButton(
-                text = if (isExpanded) "Return" else "Details",
+                text = if (isExpanded) "返回" else "详情",
                 onClick = onDetailsClick,
             )
         }
@@ -150,7 +150,7 @@ private fun ViewingFastForward(
             .padding(vertical = Spacing.medium),
     ) {
         RiftButton(
-            text = "Now",
+            text = "当前",
             icon = Res.drawable.clock_16,
             type = ButtonType.Primary,
             cornerCut = ButtonCornerCut.BottomLeft,
@@ -163,7 +163,7 @@ private fun ViewingFastForward(
             modifier = Modifier.weight(1f),
         ) {
             Text(
-                text = "Time fast-forward",
+                text = "时间快进",
                 style = RiftTheme.typography.headerPrimary,
             )
 
@@ -216,7 +216,7 @@ private fun ViewingFastForward(
         }
 
         RiftButton(
-            text = "Expires",
+            text = "到期",
             icon = Res.drawable.fastforward,
             type = ButtonType.Primary,
             cornerCut = ButtonCornerCut.BottomRight,
@@ -234,15 +234,15 @@ private fun getFutureColonyStatusDescription(status: ColonyStatus): String? {
             val inactive = status.pins.count { it.status == ExtractorInactive }
             val full = status.pins.filter { it.status == StorageFull }
             buildList {
-                if (expired > 0) add("Extractor${expired.plural} expire${expired.invertedPlural}")
-                if (inactive > 0) add("Extractor${inactive.plural} become${inactive.invertedPlural} inactive")
-                full.forEach { add("${it.getName()} becomes full") }
+                if (expired > 0) add("$expired 个采集器到期")
+                if (inactive > 0) add("$inactive 个采集器变为未激活")
+                full.forEach { add("${it.getName()}已满仓") }
             }.joinToString()
         }
-        is Idle -> "All production stops"
-        is NotSetup -> "Not setup"
-        is Producing -> "Producing"
-        is Extracting -> "Extracting"
+        is Idle -> "全部生产已停止"
+        is NotSetup -> "未设置"
+        is Producing -> "生产中"
+        is Extracting -> "开采中"
     }
     return state
 }
@@ -269,7 +269,7 @@ private fun ExpiresIn(
                         modifier = Modifier.size(16.dp),
                     )
                     Text(
-                        text = if (isViewingFastForward) "Return to present" else "Fast-forward",
+                        text = if (isViewingFastForward) "返回当前时间" else "快进",
                         style = RiftTheme.typography.bodyPrimary,
                     )
                 }
@@ -287,7 +287,7 @@ private fun ExpiresIn(
                     .onClick { onViewFastForwardChange(!isViewingFastForward) },
             ) {
                 TitledText(
-                    title = "Expires in",
+                    title = "到期剩余",
                     text = formatDurationCompact(expiresIn),
                 )
             }
@@ -367,7 +367,7 @@ private fun ColonyOwner(
             )
         }
         Text(
-            text = characterName ?: "Loading…",
+            text = characterName ?: "加载中…",
             style = RiftTheme.typography.headerPrimary,
         )
     }

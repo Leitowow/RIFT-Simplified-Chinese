@@ -50,7 +50,7 @@ fun IntelReportsWindow(
     val viewModel: IntelReportsViewModel = viewModel()
     val state by viewModel.state.collectAsState()
     RiftWindow(
-        title = "Intel Reports",
+        title = "预警报告",
         icon = Res.drawable.window_bleedchannel,
         state = windowState,
         tuneContextMenuItems = getTuneContextMenuItems(state, viewModel),
@@ -76,13 +76,13 @@ private fun getTuneContextMenuItems(
     val isShowingChannel = state.settings.isShowingChannel
     val isShowingRegion = state.settings.isShowingRegion
     return buildList {
-        add(HeaderItem("User interface"))
-        add(CheckboxItem("Compact mode", isSelected = isUsingCompactMode, onClick = { viewModel.onIsUsingCompactModeChange(!isUsingCompactMode) }))
-        add(CheckboxItem("Show newest on top", isSelected = isUsingReverseOrder, onClick = { viewModel.onIsUsingReverseOrderChange(!isUsingReverseOrder) }))
-        add(HeaderItem("Shown information"))
-        add(CheckboxItem("Show reporter name", isSelected = isShowingReporter, onClick = { viewModel.onIsShowingReporterChange(!isShowingReporter) }))
-        add(CheckboxItem("Show channel name", isSelected = isShowingChannel, onClick = { viewModel.onIsShowingChannelChange(!isShowingChannel) }))
-        add(CheckboxItem("Show channel region", isSelected = isShowingRegion, onClick = { viewModel.onIsShowingRegionChange(!isShowingRegion) }))
+        add(HeaderItem("界面"))
+        add(CheckboxItem("紧凑模式", isSelected = isUsingCompactMode, onClick = { viewModel.onIsUsingCompactModeChange(!isUsingCompactMode) }))
+        add(CheckboxItem("最新消息在上", isSelected = isUsingReverseOrder, onClick = { viewModel.onIsUsingReverseOrderChange(!isUsingReverseOrder) }))
+        add(HeaderItem("显示信息"))
+        add(CheckboxItem("显示报告人", isSelected = isShowingReporter, onClick = { viewModel.onIsShowingReporterChange(!isShowingReporter) }))
+        add(CheckboxItem("显示频道名", isSelected = isShowingChannel, onClick = { viewModel.onIsShowingChannelChange(!isShowingChannel) }))
+        add(CheckboxItem("显示频道星域", isSelected = isShowingRegion, onClick = { viewModel.onIsShowingRegionChange(!isShowingRegion) }))
     }.takeIf { it.isNotEmpty() }
 }
 
@@ -108,17 +108,17 @@ private fun IntelReportsWindowContent(
         )
         if (state.channelChatMessages.isEmpty()) {
             val text = if (state.intelChannels.isEmpty()) {
-                "No intel channels configured.\nSet some up in the settings."
+                "尚未配置预警频道。\n请在设置中添加。"
             } else if (state.hasOnlineCharacters) {
                 if (state.search != null) {
-                    "No intel messages found.\nChange your search term to see others."
+                    "未找到匹配的预警消息。\n请更换搜索关键词。"
                 } else if (state.filteredChannel != null) {
-                    "No intel messages received in ${state.filteredChannel.name}.\nChange your filter to see others."
+                    "在 ${state.filteredChannel.name} 中暂无预警消息。\n请更换筛选。"
                 } else {
-                    "No intel messages received.\nMake sure you have your intel channels open in-game."
+                    "尚未收到预警消息。\n请确保游戏内已打开预警频道。"
                 }
             } else {
-                "No intel messages received.\nLog in to the game."
+                "尚未收到预警消息。\n请先登录游戏。"
             }
             Text(
                 text = text,
@@ -145,9 +145,9 @@ private fun FiltersRow(
             .fillMaxWidth()
             .padding(start = padding, end = padding, bottom = Spacing.medium),
     ) {
-        val allChannelsOption = "All channels"
+        val allChannelsOption = "全部频道"
         RiftDropdownWithLabel(
-            label = "Filter:",
+            label = "筛选：",
             items = listOf(allChannelsOption) + state.intelChannels.map { it.name }.toSet(),
             selectedItem = state.filteredChannel?.name ?: allChannelsOption,
             onItemSelected = onIntelChannelFilterSelect,

@@ -12,7 +12,6 @@ import dev.nohus.rift.compose.theme.RiftTheme
 import dev.nohus.rift.generated.resources.Res
 import dev.nohus.rift.generated.resources.contact_tag
 import dev.nohus.rift.repositories.character.CharacterDetailsRepository
-import dev.nohus.rift.utils.plural
 import org.jetbrains.compose.resources.painterResource
 import kotlin.text.appendLine
 
@@ -23,19 +22,19 @@ fun ContactLabelTag(details: CharacterDetailsRepository.CharacterDetails, modifi
             text = buildAnnotatedString {
                 if (details.characterLabels.isNotEmpty()) {
                     withStyle(RiftTheme.typography.detailSecondary.toSpanStyle()) {
-                        appendLine("Character label${details.characterLabels.size.plural}")
+                        appendLine("${details.characterLabels.size} 个角色标签")
                     }
                     appendLine(details.characterLabels.joinToString(", "))
                 }
                 if (details.corporationLabels.isNotEmpty()) {
                     withStyle(RiftTheme.typography.detailSecondary.toSpanStyle()) {
-                        appendLine("Corporation label${details.corporationLabels.size.plural}")
+                        appendLine("${details.corporationLabels.size} 个军团标签")
                     }
                     appendLine(details.corporationLabels.joinToString(", "))
                 }
                 if (details.allianceLabels.isNotEmpty()) {
                     withStyle(RiftTheme.typography.detailSecondary.toSpanStyle()) {
-                        appendLine("Alliance label${details.allianceLabels.size.plural}")
+                        appendLine("${details.allianceLabels.size} 个联盟标签")
                     }
                     appendLine(details.allianceLabels.joinToString(", "))
                 }
@@ -57,13 +56,13 @@ fun ContactLabelTag(details: CharacterDetailsRepository.CorporationDetails, modi
             text = buildAnnotatedString {
                 if (details.corporationLabels.isNotEmpty()) {
                     withStyle(RiftTheme.typography.detailSecondary.toSpanStyle()) {
-                        appendLine("Corporation label${details.corporationLabels.size.plural}")
+                        appendLine("${details.corporationLabels.size} 个军团标签")
                     }
                     appendLine(details.corporationLabels.joinToString(", "))
                 }
                 if (details.allianceLabels.isNotEmpty()) {
                     withStyle(RiftTheme.typography.detailSecondary.toSpanStyle()) {
-                        appendLine("Alliance label${details.allianceLabels.size.plural}")
+                        appendLine("${details.allianceLabels.size} 个联盟标签")
                     }
                     appendLine(details.allianceLabels.joinToString(", "))
                 }
@@ -85,7 +84,7 @@ fun ContactLabelTag(details: CharacterDetailsRepository.AllianceDetails, modifie
             text = buildAnnotatedString {
                 if (details.allianceLabels.isNotEmpty()) {
                     withStyle(RiftTheme.typography.detailSecondary.toSpanStyle()) {
-                        appendLine("Alliance label${details.allianceLabels.size.plural}")
+                        appendLine("${details.allianceLabels.size} 个联盟标签")
                     }
                     appendLine(details.allianceLabels.joinToString(", "))
                 }

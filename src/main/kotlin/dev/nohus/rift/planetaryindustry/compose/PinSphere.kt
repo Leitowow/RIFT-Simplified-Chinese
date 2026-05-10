@@ -241,7 +241,7 @@ private fun StorageTooltip(pin: Pin) {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "${formatNumberCompact(quantity)} x",
+                        text = "${formatNumberCompact(quantity)} 个",
                         style = RiftTheme.typography.bodyPrimary,
                     )
                     AsyncTypeIcon(
@@ -255,7 +255,7 @@ private fun StorageTooltip(pin: Pin) {
         Text(String.format("%.0f/%.0f m3", pin.capacityUsed, capacity.toFloat()))
     } else {
         Text(
-            text = "Storage empty",
+            text = "仓储为空",
             style = RiftTheme.typography.bodySecondary,
         )
     }

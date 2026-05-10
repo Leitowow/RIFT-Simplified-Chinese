@@ -35,7 +35,7 @@ fun Routes(
         modifier = Modifier.padding(top = Spacing.medium),
     ) {
         Text(
-            text = "Routes",
+            text = "路线",
             style = RiftTheme.typography.bodyHighlighted,
             modifier = Modifier.padding(bottom = Spacing.small),
         )
@@ -76,7 +76,7 @@ private fun Route(
                 horizontalArrangement = Arrangement.spacedBy(Spacing.verySmall),
             ) {
                 Text(
-                    text = "${route.quantity.toInt()} x",
+                    text = "${route.quantity.toInt()} 个",
                     style = RiftTheme.typography.bodyPrimary,
                 )
                 AsyncTypeIcon(
@@ -86,7 +86,7 @@ private fun Route(
             }
         }
         Text(
-            text = if (isOutgoing) " exporting to" else " importing from",
+            text = if (isOutgoing) " 输出到" else " 输入自",
             style = RiftTheme.typography.bodyPrimary,
             modifier = Modifier.padding(end = Spacing.small),
         )

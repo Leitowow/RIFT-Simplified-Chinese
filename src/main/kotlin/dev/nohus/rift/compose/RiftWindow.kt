@@ -648,7 +648,7 @@ private fun getTitleBarContextMenuItems(
             if (isAlwaysOnTop) {
                 add(
                     ContextMenuItem.TextItem(
-                        "Disable always above",
+                        "取消置顶",
                         Res.drawable.window_overlay_fullscreen_on_16px,
                         onClick = onAlwaysOnTopClick,
                     ),
@@ -656,7 +656,7 @@ private fun getTitleBarContextMenuItems(
             } else {
                 add(
                     ContextMenuItem.TextItem(
-                        "Enable always above",
+                        "置顶",
                         Res.drawable.window_overlay_fullscreen_off_16px,
                         onClick = onAlwaysOnTopClick,
                     ),
@@ -667,7 +667,7 @@ private fun getTitleBarContextMenuItems(
             if (isLocked) {
                 add(
                     ContextMenuItem.TextItem(
-                        "Unlock window size and position",
+                        "解锁窗口大小与位置",
                         Res.drawable.window_locked_16px,
                         onClick = onLockClick,
                     ),
@@ -675,7 +675,7 @@ private fun getTitleBarContextMenuItems(
             } else {
                 add(
                     ContextMenuItem.TextItem(
-                        "Lock window size and position",
+                        "锁定窗口大小与位置",
                         Res.drawable.window_unlocked_16px,
                         onClick = onLockClick,
                     ),
@@ -686,7 +686,7 @@ private fun getTitleBarContextMenuItems(
             if (isTransparent) {
                 add(
                     ContextMenuItem.TextItem(
-                        "Disable transparency",
+                        "禁用透明",
                         Res.drawable.window_light_background_on_16px,
                         onClick = onTransparentClick,
                     ),
@@ -694,7 +694,7 @@ private fun getTitleBarContextMenuItems(
             } else {
                 add(
                     ContextMenuItem.TextItem(
-                        "Enable transparency",
+                        "启用透明",
                         Res.drawable.window_light_background_off_16px,
                         onClick = onTransparentClick,
                     ),
@@ -708,7 +708,7 @@ private fun getTitleBarContextMenuItems(
             if (isMaximized) {
                 add(
                     ContextMenuItem.TextItem(
-                        "Restore to floating",
+                        "还原为窗口",
                         Res.drawable.window_titlebar_fullscreen,
                         onClick = onMaximizeClick,
                     ),
@@ -716,15 +716,15 @@ private fun getTitleBarContextMenuItems(
             } else {
                 add(
                     ContextMenuItem.TextItem(
-                        "Maximize",
+                        "最大化",
                         Res.drawable.window_titlebar_float,
                         onClick = onMaximizeClick,
                     ),
                 )
             }
         }
-        add(ContextMenuItem.TextItem("Minimize", onClick = onMinimizeClick))
-        add(ContextMenuItem.TextItem("Close", iconContent = { RiftMulticolorIcon(MulticolorIconType.Warning, it) }, onClick = onCloseClick))
+        add(ContextMenuItem.TextItem("最小化", onClick = onMinimizeClick))
+        add(ContextMenuItem.TextItem("关闭", iconContent = { RiftMulticolorIcon(MulticolorIconType.Warning, it) }, onClick = onCloseClick))
     }
 }
 

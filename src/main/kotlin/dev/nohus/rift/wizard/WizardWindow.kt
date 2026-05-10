@@ -63,7 +63,7 @@ fun WizardWindow(
     val viewModel: WizardViewModel = viewModel()
     val state by viewModel.state.collectAsState()
     RiftWindow(
-        title = "RIFT Intel Fusion Tool",
+        title = "设置向导",
         icon = Res.drawable.window_agent,
         state = windowState,
         onCloseClick = onCloseRequest,
@@ -173,12 +173,11 @@ private fun WelcomeStep(
     ) {
         val text = buildAnnotatedString {
             withStyle(SpanStyle(color = RiftTheme.colors.textHighlighted, fontSize = RiftTheme.typography.headlineHighlighted.fontSize)) {
-                append("Welcome, capsuleer!")
+                append("欢迎，克隆飞行员！")
             }
             append(
-                "\n\nYou are now in possession of RIFT, a prototype military system that will " +
-                    "aid your situational awareness with additional intel.\n\n" +
-                    "I will get you started.",
+                "\n\n你已安装 RIFT——一套用于增强态势感知的原型军用系统，可整合额外预警信息。\n\n" +
+                    "下面由我引导你完成初始化。",
             )
         }
         TypingText(
@@ -211,26 +210,26 @@ private fun EveInstallationStep(
             when (step.state) {
                 EveInstallationState.None -> {
                     withStyle(SpanStyle(color = RiftTheme.colors.textHighlighted, fontSize = RiftTheme.typography.headlineHighlighted.fontSize)) {
-                        append("EVE Online not detected")
+                        append("未检测到《星战前夜》客户端")
                     }
                     append(
-                        "\n\nTo set up RIFT properly, I need to know the location of your EVE installation.",
+                        "\n\n要正确配置 RIFT，需要知道本机 EVE 安装路径。",
                     )
                 }
                 EveInstallationState.Detected -> {
                     withStyle(SpanStyle(color = RiftTheme.colors.textHighlighted, fontSize = RiftTheme.typography.headlineHighlighted.fontSize)) {
-                        append("EVE Online detected")
+                        append("已检测到《星战前夜》")
                     }
                     append(
-                        "\n\nI have located your installation of EVE.",
+                        "\n\n已找到你的 EVE 安装目录。",
                     )
                 }
                 EveInstallationState.Set -> {
                     withStyle(SpanStyle(color = RiftTheme.colors.textHighlighted, fontSize = RiftTheme.typography.headlineHighlighted.fontSize)) {
-                        append("EVE Online located")
+                        append("已设置《星战前夜》路径")
                     }
                     append(
-                        "\n\nYour installation of EVE is now set up correctly.",
+                        "\n\nEVE 安装路径已正确保存。",
                     )
                 }
             }
@@ -248,9 +247,9 @@ private fun EveInstallationStep(
                 .align(Alignment.CenterHorizontally),
         ) {
             val (type, buttonText) = when (step.state) {
-                EveInstallationState.None -> ButtonType.Primary to "Select installation"
-                EveInstallationState.Detected -> ButtonType.Secondary to "Check installation"
-                EveInstallationState.Set -> ButtonType.Secondary to "Change installation"
+                EveInstallationState.None -> ButtonType.Primary to "选择安装目录"
+                EveInstallationState.Detected -> ButtonType.Secondary to "检查安装"
+                EveInstallationState.Set -> ButtonType.Secondary to "更改安装路径"
             }
             RiftButton(
                 text = buttonText,
@@ -277,34 +276,33 @@ private fun CharactersStep(
         val text = buildAnnotatedString {
             if (step.characterCount == 0) {
                 withStyle(SpanStyle(color = RiftTheme.colors.textHighlighted, fontSize = RiftTheme.typography.headlineHighlighted.fontSize)) {
-                    append("No characters detected")
+                    append("未检测到角色")
                 }
                 append(
-                    "\n\nI did not detect any characters that were used on this device.",
+                    "\n\n未在本机检测到曾登录过的角色记录。",
                 )
             } else {
                 if (step.authenticatedCharacterCount == 0) {
                     withStyle(SpanStyle(color = RiftTheme.colors.textHighlighted, fontSize = RiftTheme.typography.headlineHighlighted.fontSize)) {
-                        append("Characters detected")
+                        append("已检测到角色")
                     }
                     append(
-                        "\n\nI have detected ${step.characterCount} of your characters.\n\n" +
-                            "Let's authenticate them in order to use them with RIFT.",
+                        "\n\n在本机检测到 ${step.characterCount} 个角色。\n\n" +
+                            "请通过 ESI 完成授权以便在 RIFT 中使用。",
                     )
                 } else if (step.authenticatedCharacterCount < step.characterCount) {
                     withStyle(SpanStyle(color = RiftTheme.colors.textHighlighted, fontSize = RiftTheme.typography.headlineHighlighted.fontSize)) {
-                        append("Characters partially set up")
+                        append("角色授权未完成")
                     }
                     append(
-                        "\n\nI have detected ${step.characterCount} of your characters, " +
-                            "but you have only authenticated ${step.authenticatedCharacterCount} of them.",
+                        "\n\n共检测到 ${step.characterCount} 个角色，但仅有 ${step.authenticatedCharacterCount} 个已完成授权。",
                     )
                 } else {
                     withStyle(SpanStyle(color = RiftTheme.colors.textHighlighted, fontSize = RiftTheme.typography.headlineHighlighted.fontSize)) {
-                        append("Characters set up")
+                        append("角色已就绪")
                     }
                     append(
-                        "\n\nAll of your characters are authenticated and ready to use with RIFT.",
+                        "\n\n所有角色均已完成授权，可在 RIFT 中使用。",
                     )
                 }
             }
@@ -322,9 +320,9 @@ private fun CharactersStep(
                 .align(Alignment.CenterHorizontally),
         ) {
             val (type, buttonText) = if (step.authenticatedCharacterCount < step.characterCount) {
-                ButtonType.Primary to "Authenticate characters"
+                ButtonType.Primary to "授权角色"
             } else {
-                ButtonType.Secondary to "Check characters"
+                ButtonType.Secondary to "检查角色"
             }
             RiftButton(
                 text = buttonText,
@@ -349,15 +347,15 @@ private fun ConfigurationPacksStep(
     ) {
         val text = buildAnnotatedString {
             withStyle(SpanStyle(color = RiftTheme.colors.textHighlighted, fontSize = RiftTheme.typography.headlineHighlighted.fontSize)) {
-                append("Alliance features")
+                append("联盟向功能")
             }
             if (step.pack != null) {
                 append(
-                    "\n\nDo you want to enable features specific to ${getPackName(step.pack)}?",
+                    "\n\n是否启用针对 ${getPackName(step.pack)} 的定制功能？",
                 )
             } else {
                 append(
-                    "\n\nYou selected default settings.",
+                    "\n\n你已选择默认配置。",
                 )
             }
         }
@@ -374,7 +372,7 @@ private fun ConfigurationPacksStep(
                 .align(Alignment.CenterHorizontally),
         ) {
             RiftDropdownWithLabel(
-                label = "Configuration pack:",
+                label = "配置方案：",
                 items = listOf(null) + ConfigurationPack.entries,
                 selectedItem = step.pack,
                 onItemSelected = onConfigurationPackChange,
@@ -395,22 +393,22 @@ private fun IntelChannelsStep(
         onContinueClick = onContinueClick,
         isContinueVisible = hasFinishedTyping,
         isWarning = !step.hasChannels,
-        warningButtonText = "Skip",
+        warningButtonText = "跳过",
     ) {
         val text = buildAnnotatedString {
             if (step.hasChannels) {
                 withStyle(SpanStyle(color = RiftTheme.colors.textHighlighted, fontSize = RiftTheme.typography.headlineHighlighted.fontSize)) {
-                    append("Intel channels set up")
+                    append("预警频道已配置")
                 }
                 append(
-                    "\n\nYou have configured your intel channels.",
+                    "\n\n你已设置预警频道。",
                 )
             } else {
                 withStyle(SpanStyle(color = RiftTheme.colors.textHighlighted, fontSize = RiftTheme.typography.headlineHighlighted.fontSize)) {
-                    append("Intel channels")
+                    append("预警频道")
                 }
                 append(
-                    "\n\nIf you are in an alliance with intel channels, you can have RIFT monitor them for intel reports.",
+                    "\n\n若联盟提供预警频道，可让 RIFT 监听其中的预警报告。",
                 )
             }
         }
@@ -427,9 +425,9 @@ private fun IntelChannelsStep(
                 .align(Alignment.CenterHorizontally),
         ) {
             val (type, buttonText) = if (!step.hasChannels) {
-                ButtonType.Primary to "Add intel channels"
+                ButtonType.Primary to "添加预警频道"
             } else {
-                ButtonType.Secondary to "Change intel channels"
+                ButtonType.Secondary to "更改预警频道"
             }
             RiftButton(
                 text = buttonText,
@@ -452,10 +450,10 @@ private fun FinishStep(
     ) {
         val text = buildAnnotatedString {
             withStyle(SpanStyle(color = RiftTheme.colors.textHighlighted, fontSize = RiftTheme.typography.headlineHighlighted.fontSize)) {
-                append("All done!")
+                append("全部就绪！")
             }
             append(
-                "\n\nRIFT is now ready to enhance your capabilities. Look for this tray icon to access all features:",
+                "\n\nRIFT 已就绪。点击托盘图标即可使用全部功能：",
             )
         }
         TypingText(
@@ -482,7 +480,7 @@ private fun StepContent(
     onContinueClick: () -> Unit,
     isContinueVisible: Boolean = true,
     isWarning: Boolean = false,
-    warningButtonText: String = "Continue anyway",
+    warningButtonText: String = "仍要继续",
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
@@ -495,7 +493,7 @@ private fun StepContent(
             enter = fadeIn(),
             modifier = Modifier.align(Alignment.End),
         ) {
-            val text = if (isWarning) warningButtonText else "Continue"
+            val text = if (isWarning) warningButtonText else "继续"
             val type = if (isWarning) ButtonType.Negative else ButtonType.Primary
             RiftButton(
                 text = text,

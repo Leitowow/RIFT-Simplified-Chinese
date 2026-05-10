@@ -95,7 +95,7 @@ class SystemsMapPainter(
         maxCellScale = 6f / LocalDensity.current.density
         density = LocalDensity.current.density
         val nodeSafeZoneRadius = when (mapType) {
-            ClusterRegionsMap -> throw IllegalStateException("ClusterRegionsMap doesn't draw systems")
+            ClusterRegionsMap -> throw IllegalStateException("ClusterRegionsMap 不绘制星系")
             is ClusterSystemsMap -> LocalDensity.current.run { 5.dp.toPx() }
             is DistanceMap -> LocalDensity.current.run { 20.dp.toPx() }
             is RegionMap -> LocalDensity.current.run { 20.dp.toPx() }
@@ -284,7 +284,7 @@ class SystemsMapPainter(
 
         val autopilotPathEffect = getAutopilotPathEffect(connection.from.id, connection.to.id, animation, zoom)
         val isDrawingConnection = when (mapType) {
-            ClusterRegionsMap -> throw IllegalStateException("ClusterRegionsMap doesn't draw systems")
+            ClusterRegionsMap -> throw IllegalStateException("ClusterRegionsMap 不绘制星系")
             is ClusterSystemsMap -> connection.type == MapGateConnectionsRepository.ConnectionType.Region || scale < 4
             is DistanceMap -> true
             is RegionMap -> true
@@ -312,7 +312,7 @@ class SystemsMapPainter(
                     )
                 } else {
                     val isActiveColor = when (mapType) {
-                        ClusterRegionsMap -> throw IllegalStateException("ClusterRegionsMap doesn't draw systems")
+                        ClusterRegionsMap -> throw IllegalStateException("ClusterRegionsMap 不绘制星系")
                         is ClusterSystemsMap -> if (mapType.is2D) scale <= 0.8 else scale <= 0.5
                         is DistanceMap, is RegionMap -> true
                     }
@@ -389,7 +389,7 @@ class SystemsMapPainter(
             val alphaModifier = jumpBridgeNetworkOpacity / 100f
             val toColorFilter: Color.(isBidirectional: Boolean) -> Color = { if (it) this else this.copy(alpha = 0.1f) }
             val isActiveColor = when (mapType) {
-                ClusterRegionsMap -> throw IllegalStateException("ClusterRegionsMap doesn't draw systems")
+                ClusterRegionsMap -> throw IllegalStateException("ClusterRegionsMap 不绘制星系")
                 is ClusterSystemsMap -> if (mapType.is2D) scale <= 0.8 else scale <= 0.5
                 is DistanceMap, is RegionMap -> true
             }

@@ -45,7 +45,6 @@ import dev.nohus.rift.generated.resources.window_characters
 import dev.nohus.rift.generated.resources.window_chatchannels
 import dev.nohus.rift.generated.resources.window_contacts
 import dev.nohus.rift.generated.resources.window_evemailtag
-import dev.nohus.rift.generated.resources.window_jukebox
 import dev.nohus.rift.generated.resources.window_loudspeaker_icon
 import dev.nohus.rift.generated.resources.window_map
 import dev.nohus.rift.generated.resources.window_opportunities
@@ -85,27 +84,26 @@ fun NeocomWindow(
         isResizable = true,
     ) {
         val buttons = buildList {
-            add(ButtonModel(icon = Res.drawable.window_loudspeaker_icon, name = "Alerts") { viewModel.onButtonClick(RiftWindow.Alerts) })
-            add(ButtonModel(icon = Res.drawable.window_map, name = "Map") { viewModel.onButtonClick(RiftWindow.Map) })
-            add(ButtonModel(icon = Res.drawable.window_satellite, name = "Intel Feed", shortName = "Feed") { viewModel.onButtonClick(RiftWindow.IntelFeed) })
-            add(ButtonModel(icon = Res.drawable.window_bleedchannel, name = "Intel Reports", shortName = "Reports") { viewModel.onButtonClick(RiftWindow.IntelReports) })
-            add(ButtonModel(icon = Res.drawable.window_characters, name = "Characters", "Chars") { viewModel.onButtonClick(RiftWindow.Characters) })
-            add(ButtonModel(icon = Res.drawable.window_assets, name = "Assets") { viewModel.onButtonClick(RiftWindow.Assets) })
-            add(ButtonModel(icon = Res.drawable.window_wallet, name = "Wallets") { viewModel.onButtonClick(RiftWindow.Wallet) })
-            add(ButtonModel(icon = Res.drawable.window_planets, name = "Planetary Industry", "Planets") { viewModel.onButtonClick(RiftWindow.PlanetaryIndustry) })
-            add(ButtonModel(icon = Res.drawable.window_opportunities, name = "Opportunities") { viewModel.onButtonClick(RiftWindow.Opportunities) })
-            add(ButtonModel(icon = Res.drawable.window_contacts, name = "Contacts") { viewModel.onButtonClick(RiftWindow.Contacts) })
+            add(ButtonModel(icon = Res.drawable.window_loudspeaker_icon, name = "告警") { viewModel.onButtonClick(RiftWindow.Alerts) })
+            add(ButtonModel(icon = Res.drawable.window_map, name = "星图") { viewModel.onButtonClick(RiftWindow.Map) })
+            add(ButtonModel(icon = Res.drawable.window_satellite, name = "预警流", shortName = "预警") { viewModel.onButtonClick(RiftWindow.IntelFeed) })
+            add(ButtonModel(icon = Res.drawable.window_bleedchannel, name = "预警报告", shortName = "报告") { viewModel.onButtonClick(RiftWindow.IntelReports) })
+            add(ButtonModel(icon = Res.drawable.window_characters, name = "角色", "角色") { viewModel.onButtonClick(RiftWindow.Characters) })
+            add(ButtonModel(icon = Res.drawable.window_assets, name = "资产") { viewModel.onButtonClick(RiftWindow.Assets) })
+            add(ButtonModel(icon = Res.drawable.window_wallet, name = "钱包") { viewModel.onButtonClick(RiftWindow.Wallet) })
+            add(ButtonModel(icon = Res.drawable.window_planets, name = "行星工业", "行星") { viewModel.onButtonClick(RiftWindow.PlanetaryIndustry) })
+            add(ButtonModel(icon = Res.drawable.window_opportunities, name = "机遇") { viewModel.onButtonClick(RiftWindow.Opportunities) })
+            add(ButtonModel(icon = Res.drawable.window_contacts, name = "联系人") { viewModel.onButtonClick(RiftWindow.Contacts) })
             if (BuildConfig.isDevEnvironment) {
-                add(ButtonModel(icon = Res.drawable.window_chatchannels, name = "Chat") { viewModel.onButtonClick(RiftWindow.Chat) })
+                add(ButtonModel(icon = Res.drawable.window_chatchannels, name = "聊天") { viewModel.onButtonClick(RiftWindow.Chat) })
             }
             if (state.isJabberEnabled) {
-                add(ButtonModel(icon = Res.drawable.window_sovereignty, name = "Pings") { viewModel.onButtonClick(RiftWindow.Pings) })
+                add(ButtonModel(icon = Res.drawable.window_sovereignty, name = "集结通知") { viewModel.onButtonClick(RiftWindow.Pings) })
                 add(ButtonModel(icon = Res.drawable.window_chatchannels, name = "Jabber") { viewModel.onButtonClick(RiftWindow.Jabber) })
             }
-            add(ButtonModel(icon = Res.drawable.window_jukebox, name = "Jukebox") { viewModel.onButtonClick(RiftWindow.Jukebox) })
-            add(ButtonModel(icon = Res.drawable.window_settings, name = "Settings") { viewModel.onButtonClick(RiftWindow.Settings) })
-            add(ButtonModel(icon = Res.drawable.window_evemailtag, name = "About") { viewModel.onButtonClick(RiftWindow.About) })
-            add(ButtonModel(icon = Res.drawable.window_quitgame, name = "Quit") { viewModel.onQuitClick() })
+            add(ButtonModel(icon = Res.drawable.window_settings, name = "设置") { viewModel.onButtonClick(RiftWindow.Settings) })
+            add(ButtonModel(icon = Res.drawable.window_evemailtag, name = "关于") { viewModel.onButtonClick(RiftWindow.About) })
+            add(ButtonModel(icon = Res.drawable.window_quitgame, name = "退出") { viewModel.onQuitClick() })
         }
 
         BoxWithConstraints(

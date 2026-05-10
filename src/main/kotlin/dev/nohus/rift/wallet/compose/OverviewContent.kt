@@ -115,7 +115,7 @@ fun OverviewContent(
                         )
                         Column {
                             Text(
-                                text = "Income",
+                                text = "收入",
                                 style = RiftTheme.typography.bodyPrimary,
                             )
                             Text(
@@ -143,7 +143,7 @@ fun OverviewContent(
                         )
                         Column {
                             Text(
-                                text = "Expenses",
+                                text = "支出",
                                 style = RiftTheme.typography.bodyPrimary,
                             )
                             Text(
@@ -162,7 +162,7 @@ fun OverviewContent(
                         Spacer(Modifier.width(20.dp))
                         Column {
                             Text(
-                                text = "Balance",
+                                text = "结余",
                                 style = RiftTheme.typography.bodyPrimary,
                             )
                             Text(
@@ -222,7 +222,7 @@ fun OverviewContent(
                             verticalArrangement = Arrangement.spacedBy(Spacing.small),
                         ) {
                             Spacer(Modifier.height(Spacing.medium))
-                            RiftTooltipArea("Back", modifier = Modifier.align(Alignment.End)) {
+                            RiftTooltipArea("返回", modifier = Modifier.align(Alignment.End)) {
                                 RiftIconButton(
                                     icon = Res.drawable.navigate_back_16px,
                                     onClick = { selectedGroup = null },

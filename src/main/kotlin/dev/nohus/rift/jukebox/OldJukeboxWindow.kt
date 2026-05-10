@@ -49,7 +49,7 @@ fun OldJukeboxWindow(
     Window(
         onCloseRequest = onCloseClick,
         state = state,
-        title = "Jukebox",
+        title = "点唱机",
         icon = painterResource(Res.drawable.window_jukebox),
         undecorated = true,
         resizable = false,

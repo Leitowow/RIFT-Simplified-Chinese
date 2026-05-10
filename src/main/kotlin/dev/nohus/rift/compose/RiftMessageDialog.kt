@@ -70,7 +70,7 @@ fun WindowScope.RiftMessageDialog(
                 modifier = Modifier.heightIn(min = 60.dp),
             )
             RiftButton(
-                text = "OK",
+                text = "确定",
                 cornerCut = ButtonCornerCut.Both,
                 onClick = onDismiss,
                 modifier = Modifier

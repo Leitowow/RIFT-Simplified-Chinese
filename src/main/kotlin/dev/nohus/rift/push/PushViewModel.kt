@@ -66,7 +66,7 @@ class PushViewModel(
 
         val topic = settings.ntfy.topic
         if (topic.isNullOrEmpty()) {
-            showDialog("No Topic", "You need to enter a ntfy topic name.")
+            showDialog("缺少主题", "You need to enter a ntfy topic name.")
             return
         }
 
@@ -80,9 +80,9 @@ class PushViewModel(
 
             val response = result.success
             if (response != null) {
-                showDialog("Success", "Notification sent successfully!")
+                showDialog("成功", "Notification sent successfully!")
             } else {
-                showDialog("Failed to send", result.failure?.message ?: "Unknown error")
+                showDialog("发送失败", result.failure?.message ?: "Unknown error")
             }
             _state.update { it.copy(isLoading = false) }
         }
@@ -94,11 +94,11 @@ class PushViewModel(
         val token = settings.pushover.apiToken
         val key = settings.pushover.userKey
         if (token.isNullOrEmpty()) {
-            showDialog("No API Token", "You need to enter a Pushover API Token.")
+            showDialog("缺少 API Token", "You need to enter a Pushover API Token.")
             return
         }
         if (key.isNullOrEmpty()) {
-            showDialog("No User Key", "You need to enter your Pushover User Key.")
+            showDialog("缺少 User Key", "You need to enter your Pushover User Key.")
             return
         }
 
@@ -112,15 +112,15 @@ class PushViewModel(
             val response = result.success
             if (response != null) {
                 if (response.status == 1) {
-                    showDialog("Success", "Notification sent successfully!")
+                    showDialog("成功", "Notification sent successfully!")
                 } else {
                     val reason = response.errors
                         ?.joinToString("\n") { it.replaceFirstChar { it.titlecase(Locale.US) } }
                         ?: "Unknown error"
-                    showDialog("Failed to send", reason)
+                    showDialog("发送失败", reason)
                 }
             } else {
-                showDialog("Failed to send", result.failure?.message ?: "Unknown error")
+                showDialog("发送失败", result.failure?.message ?: "Unknown error")
             }
             _state.update { it.copy(isLoading = false) }
         }

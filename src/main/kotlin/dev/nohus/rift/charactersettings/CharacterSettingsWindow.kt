@@ -69,7 +69,7 @@ fun CharacterSettingsWindow(
     val viewModel: CharacterSettingsViewModel = viewModel()
     val state by viewModel.state.collectAsState()
     RiftWindow(
-        title = "Character Settings Copy",
+        title = "角色设置复制",
         icon = Res.drawable.window_character_settings,
         state = windowState,
         onCloseClick = onCloseRequest,

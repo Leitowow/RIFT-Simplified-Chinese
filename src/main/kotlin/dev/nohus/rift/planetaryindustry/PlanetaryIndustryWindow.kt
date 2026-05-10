@@ -111,7 +111,7 @@ fun PlanetaryIndustryWindow(
     val viewModel: PlanetaryIndustryViewModel = viewModel()
     val state by viewModel.state.collectAsState()
     RiftWindow(
-        title = "Planetary Industry",
+        title = "行星工业",
         icon = Res.drawable.window_planets,
         state = windowState,
         onCloseClick = onCloseRequest,
@@ -152,12 +152,12 @@ private fun PlanetaryIndustryWindowContent(
                 modifier = Modifier.fillMaxWidth().padding(Spacing.large),
             ) {
                 Text(
-                    text = "Could not load your colonies",
+                    text = "无法加载你的殖民地",
                     style = RiftTheme.typography.headerPrimary,
                     textAlign = TextAlign.Center,
                 )
                 RiftButton(
-                    text = "Try again",
+                    text = "重试",
                     type = ButtonType.Primary,
                     onClick = onReloadClick,
                 )
@@ -172,7 +172,7 @@ private fun PlanetaryIndustryWindowContent(
             ) {
                 LoadingSpinnerAmbient()
                 Text(
-                    text = "Loading colonies…",
+                    text = "正在加载殖民地…",
                     style = RiftTheme.typography.headerPrimary,
                     textAlign = TextAlign.Center,
                 )
@@ -343,7 +343,7 @@ private fun MainColoniesContent(
                             items.groupBy { it.colony.characterId }.entries.forEachIndexed { index, (characterId, items) ->
                                 item(key = characterId) {
                                     RiftTooltipArea(
-                                        text = items.first().characterName ?: "Loading…",
+                                        text = items.first().characterName ?: "加载中…",
                                     ) {
                                         Box(
                                             contentAlignment = Alignment.Center,
@@ -383,7 +383,7 @@ private fun MainColoniesContent(
                                 repeat(6 - items.size) {
                                     item(key = "$characterId-empty-$it") {
                                         RiftTooltipArea(
-                                            text = "Unestablished Colony",
+                                            text = "未建立殖民地",
                                             modifier = Modifier.animateItem(),
                                         ) {
                                             Box(
@@ -428,7 +428,7 @@ private fun getLayoutBoundsOverlayClip(sharedTransitionLayoutSize: Offset): Shar
 @Composable
 private fun EmptyState() {
     Text(
-        text = "No established planetary colonies.",
+        text = "没有已建立的行星殖民地。",
         style = RiftTheme.typography.headerPrimary,
         textAlign = TextAlign.Center,
         modifier = Modifier
@@ -520,17 +520,17 @@ private fun FiltersRow(
     ) {
         val viewItems = listOf<ContextMenuItem>(
             ContextMenuItem.TextItem(
-                text = "Details view",
+                text = "详情视图",
                 iconResource = Res.drawable.list_view_16px,
                 onClick = { onViewChange(ColonyView.List) },
             ),
             ContextMenuItem.TextItem(
-                text = "List view",
+                text = "列表视图",
                 iconResource = Res.drawable.details_view_16px,
                 onClick = { onViewChange(ColonyView.Rows) },
             ),
             ContextMenuItem.TextItem(
-                text = "Grid view",
+                text = "网格视图",
                 iconResource = Res.drawable.grid_view_16px,
                 onClick = { onViewChange(ColonyView.Grid) },
             ),
@@ -538,7 +538,7 @@ private fun FiltersRow(
         AnimatedContent(state.view) { view ->
             var isShown by remember { mutableStateOf(false) }
             RiftTooltipArea(
-                text = "View mode",
+                text = "视图模式",
             ) {
                 val resource = when (view) {
                     is DetailsView -> Res.drawable.details_view_16px
@@ -566,22 +566,22 @@ private fun FiltersRow(
 
         val sortingFilterItems = listOf<ContextMenuItem>(
             ContextMenuItem.TextItem(
-                text = "By status",
+                text = "按状态",
                 iconResource = Res.drawable.checkmark_16px.takeIf { ColonySortingFilter.Status == state.sortingFilter },
                 onClick = { onSortingFilterChange(ColonySortingFilter.Status) },
             ),
             ContextMenuItem.TextItem(
-                text = "By expiry time",
+                text = "按到期时间",
                 iconResource = Res.drawable.checkmark_16px.takeIf { ColonySortingFilter.ExpiryTime == state.sortingFilter },
                 onClick = { onSortingFilterChange(ColonySortingFilter.ExpiryTime) },
             ),
             ContextMenuItem.TextItem(
-                text = "By character account and age",
+                text = "按角色账号与时长",
                 iconResource = Res.drawable.checkmark_16px.takeIf { ColonySortingFilter.Character == state.sortingFilter },
                 onClick = { onSortingFilterChange(ColonySortingFilter.Character) },
             ),
             ContextMenuItem.TextItem(
-                text = "By character name",
+                text = "按角色名称",
                 iconResource = Res.drawable.checkmark_16px.takeIf { ColonySortingFilter.CharacterAlphabetical == state.sortingFilter },
                 onClick = { onSortingFilterChange(ColonySortingFilter.CharacterAlphabetical) },
             ),
@@ -589,7 +589,7 @@ private fun FiltersRow(
         Box(contentAlignment = Alignment.BottomStart) {
             var isShown by remember { mutableStateOf(false) }
             RiftTooltipArea(
-                text = "Sort By",
+                text = "排序方式",
             ) {
                 RiftImageButton(
                     resource = Res.drawable.bars_sort_ascending_16px,
@@ -611,17 +611,17 @@ private fun FiltersRow(
 
         val copyItems = listOf<ContextMenuItem>(
             ContextMenuItem.TextItem(
-                text = "Copy for Google Sheets",
+                text = "复制为 Google Sheets 格式",
                 iconResource = Res.drawable.menu_googlesheets,
                 onClick = { onCopyData(CopyType.GoogleSheets) },
             ),
             ContextMenuItem.TextItem(
-                text = "Copy for Excel",
+                text = "复制为 Excel 格式",
                 iconResource = Res.drawable.menu_excel,
                 onClick = { onCopyData(CopyType.Excel) },
             ),
             ContextMenuItem.TextItem(
-                text = "Copy for Excel with EVE Online add-in",
+                text = "复制为 Excel（EVE Online 插件）格式",
                 iconResource = Res.drawable.menu_excel_addin,
                 onClick = { onCopyData(CopyType.ExcelWithAddin) },
             ),
@@ -629,7 +629,7 @@ private fun FiltersRow(
         Box(contentAlignment = Alignment.BottomStart) {
             var isShown by remember { mutableStateOf(false) }
             RiftTooltipArea(
-                text = "Copy to spreadsheet",
+                text = "复制到电子表格",
             ) {
                 RiftImageButton(
                     resource = Res.drawable.copy_16px,
@@ -656,12 +656,12 @@ private fun FiltersRow(
             val needsAttentionCount = items.count { it.colony.status is NotSetup || it.colony.status is NeedsAttention }
             if (colonyCount > 0) {
                 val text = buildString {
-                    append("$colonyCount planet${colonyCount.plural}")
+                    append("$colonyCount 个行星")
                     if (idleCount > 0) {
-                        append(", $idleCount idle")
+                        append("，$idleCount 个闲置")
                     }
                     if (needsAttentionCount > 0) {
-                        append(", $needsAttentionCount need${needsAttentionCount.invertedPlural} attention")
+                        append("，$needsAttentionCount 个需要注意")
                     }
                 }
                 Text(

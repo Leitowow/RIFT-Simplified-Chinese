@@ -52,7 +52,7 @@ fun WalletsContent(
 ) {
     Column {
         Text(
-            text = "Choose wallets to filter transactions and insights",
+            text = "选择钱包以筛选流水和分析数据",
             style = RiftTheme.typography.bodySecondary,
             modifier = Modifier.padding(bottom = Spacing.medium),
         )
@@ -87,7 +87,7 @@ fun WalletsContent(
                             )
                         }
                     },
-                    name = "All character wallets",
+                    name = "全部角色钱包",
                     isSelected = WalletType.Character in filters,
                     onClick = {
                         val updated = filters

@@ -79,7 +79,7 @@ private fun ContactsListChats(
 ) {
     if (chats.isNotEmpty()) {
         Text(
-            text = "Chat rooms",
+            text = "聊天室",
             style = RiftTheme.typography.headerHighlighted,
             modifier = Modifier.padding(Spacing.medium),
         )
@@ -102,7 +102,7 @@ private fun Chat(
 ) {
     RiftContextMenuArea(
         items = listOf(
-            ContextMenuItem.TextItem("Remove", onClick = onRemoveClick),
+            ContextMenuItem.TextItem("移除", onClick = onRemoveClick),
         ),
     ) {
         Row(
@@ -180,7 +180,7 @@ private fun ContactsListContacts(
 }
 
 private fun groupUsers(users: List<RosterUser>): Map<String, List<RosterUser>> {
-    val noGroup = "No group"
+    val noGroup = "未分组"
     val otherDirectors = "Director Team - Other"
     val groups = users.flatMap { it.groups }.distinct() + otherDirectors + noGroup
     return groups
@@ -211,7 +211,7 @@ private fun Contact(
 ) {
     RiftContextMenuArea(
         items = listOf(
-            ContextMenuItem.TextItem("Remove", onClick = onRemoveClick),
+            ContextMenuItem.TextItem("移除", onClick = onRemoveClick),
         ),
     ) {
         Row(
@@ -227,7 +227,7 @@ private fun Contact(
             val tooltip = buildString {
                 appendLine(user.jid.toString())
                 user.vCard?.nickname?.let {
-                    appendLine("Nickname: $it")
+                    appendLine("昵称：$it")
                 }
                 if (!user.isSubscriptionPending) {
                     user.presences.forEach {
@@ -268,7 +268,7 @@ private fun Contact(
                 }
                 if (user.isSubscriptionPending) {
                     Text(
-                        text = "Unknown status",
+                        text = "状态未知",
                         style = RiftTheme.typography.bodySecondary,
                     )
                 }

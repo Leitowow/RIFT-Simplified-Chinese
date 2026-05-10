@@ -31,20 +31,20 @@ fun TimespanDropdown(
             onItemSelected = { onFiltersUpdate(state.filters.copy(timeSpan = it)) },
             getItemName = {
                 if (it < Duration.ofDays(2)) {
-                    "Last ${it.toHours()} hours"
+                    "最近 ${it.toHours()} 小时"
                 } else {
-                    "Last ${it.toDays()} days"
+                    "最近 ${it.toDays()} 天"
                 }
             },
         )
 
         RiftTooltipArea(
             text = """
-                ESI only provides wallet transactions from the last 30 days,
-                but RIFT will remember them indefinitely.
+                ESI 仅提供最近 30 天的钱包流水，
+                但 RIFT 会长期保存这些记录。
                 
-                This means if you use RIFT for a year,
-                you will have complete wallet history for the last year.
+                这意味着如果你使用 RIFT 一年，
+                你就能拥有过去一整年的完整钱包历史。
             """.trimIndent(),
         ) {
             RiftMulticolorIcon(

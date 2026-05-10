@@ -30,7 +30,7 @@ fun RiftSearchField(
         text = search,
         suggestions = suggestions,
         icon = Res.drawable.search_16px,
-        placeholder = "Search",
+        placeholder = "搜索",
         onTextChanged = {
             search = it
             onSearchChange(it)

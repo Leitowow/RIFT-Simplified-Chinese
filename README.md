@@ -1,17 +1,18 @@
 ### RIFT Intel Fusion Tool
 
-RIFT is a third party tool for the video game EVE Online.
-For more details and downloads see the project website: [riftforeve.online](https://riftforeve.online)
+RIFT是一个EVE Online的第三方工具。
+本项目是RIFT的汉化版，由Leito维护。但在功能性上与原版并未完全一致。删除掉了部分功能，并添加了部分功能。
+此版本不会与RIFT进行同步更新，但会在主体功能上尽量保持与RIFT的版本同步。
 
-### Contact
+### 联系方式
 
-- Email: developer@riftforeve.online
-- Discord: See the website for an invite link to the project's support server
+- 游戏内：Leito Arthur
+- QQ：15667921
 
-### Building
+### 构建方法
 
-To run the project, execute: `./gradlew run`. This will download all dependencies, build and run the project.
+运行项目，执行：`./gradlew run`。这将下载所有依赖，构建并运行项目。
 
-### Tooling
+### 工具
 
-This project is developed using [IntelliJ IDEA](https://www.jetbrains.com/idea/).
+本项目使用[IntelliJ IDEA](https://www.jetbrains.com/idea/)开发。

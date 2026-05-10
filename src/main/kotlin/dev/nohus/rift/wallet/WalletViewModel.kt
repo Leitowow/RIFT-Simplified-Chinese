@@ -489,13 +489,13 @@ class WalletViewModel(
                 val (itemsWithTransactions, itemsWithoutTransactions) = items.partition { it.transaction != null }
                 val segmentsWithTransactions = itemsWithTransactions
                     .groupingBy({
-                        val transaction = it.transaction ?: return@groupingBy "No transaction"
+                        val transaction = it.transaction ?: return@groupingBy "无交易明细"
                         val categoryId = (transaction.type as? TypeDetail.Type)?.type?.categoryId
-                        val categoryName = categoryId?.let { id -> typesRepository.getCategoryName(id) } ?: return@groupingBy "No category"
+                        val categoryName = categoryId?.let { id -> typesRepository.getCategoryName(id) } ?: return@groupingBy "无分类"
                         if (transaction.isBuy) {
-                            "Purchase: $categoryName"
+                            "购买：$categoryName"
                         } else {
-                            "Sale: $categoryName"
+                            "出售：$categoryName"
                         }
                     })
                     .fold(0.0) { acc, item -> acc + item.amount }

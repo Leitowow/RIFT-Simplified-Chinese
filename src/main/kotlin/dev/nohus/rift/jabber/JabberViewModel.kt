@@ -150,7 +150,7 @@ class JabberViewModel(
         if (jidLocalPart.isNotBlank() && password.isNotBlank()) {
             connect(jidLocalPart, password)
         } else {
-            _state.update { UiState.Login(errorMessage = "You need to enter a username and password") }
+            _state.update { UiState.Login(errorMessage = "请输入用户名和密码") }
         }
     }
 
@@ -202,9 +202,9 @@ class JabberViewModel(
             val contactListState = state.contactListState
             if (contactListState is ContactListState.AddContact) {
                 if (jidLocalPart.isBlank()) {
-                    _state.update { state.copy(contactListState = contactListState.copy(error = "Enter the Jabber ID")) }
+                    _state.update { state.copy(contactListState = contactListState.copy(error = "请输入Jabber用户名")) }
                 } else if (name.isBlank()) {
-                    _state.update { state.copy(contactListState = contactListState.copy(error = "Enter the nickname")) }
+                    _state.update { state.copy(contactListState = contactListState.copy(error = "请输入昵称")) }
                 } else {
                     viewModelScope.launch {
                         jabberClient.addContact(jidLocalPart, name, groups)
@@ -221,7 +221,7 @@ class JabberViewModel(
             val contactListState = state.contactListState
             if (contactListState is ContactListState.AddChatRoom) {
                 if (jidLocalPart.isBlank()) {
-                    _state.update { state.copy(contactListState = contactListState.copy(error = "Enter the room name")) }
+                    _state.update { state.copy(contactListState = contactListState.copy(error = "请输入聊天室名称")) }
                 } else {
                     viewModelScope.launch {
                         jabberClient.addChatRoom(jidLocalPart)
@@ -277,26 +277,26 @@ class JabberViewModel(
                 setLoggedInState(jabberClient.state.value)
             }
             LoginResult.IncorrectPassword -> {
-                _state.update { UiState.Login(errorMessage = "Couldn't connect because your password is incorrect") }
+                _state.update { UiState.Login(errorMessage = "未连接，密码错误") }
                 jabberAccountRepository.clearAccount()
             }
             LoginResult.AuthenticationFailure -> {
-                _state.update { UiState.Login(errorMessage = "Couldn't connect due to an authentication failure") }
+                _state.update { UiState.Login(errorMessage = "未连接，认证失败") }
             }
             LoginResult.ConnectionFailure -> {
-                _state.update { UiState.Login(errorMessage = "Couldn't connect to the server") }
+                _state.update { UiState.Login(errorMessage = "未连接到服务器") }
             }
             is LoginResult.Error -> {
                 val cause = result.cause
                 if (cause is SmackException) {
                     val detailsCause = cause.cause
                     if (detailsCause is CertificateException) {
-                        _state.update { UiState.Login(errorMessage = "Secure connection failed, because the Jabber server presented an invalid certificate. This typically happens when the certificate is expired or misconfigured.\n\nCheck forums or with your corp, as the server may be undergoing maintenance.") }
+                        _state.update { UiState.Login(errorMessage = "安全连接失败：Jabber 服务器提供了无效证书。通常是证书过期或配置错误导致。\n\n请查看论坛或联系军团确认服务器是否正在维护。") }
                     } else {
-                        _state.update { UiState.Login(errorMessage = "Couldn't connect") }
+                        _state.update { UiState.Login(errorMessage = "未连接") }
                     }
                 } else {
-                    _state.update { UiState.Login(errorMessage = "Couldn't connect") }
+                    _state.update { UiState.Login(errorMessage = "未连接") }
                 }
             }
             LoginResult.NoAccount -> {

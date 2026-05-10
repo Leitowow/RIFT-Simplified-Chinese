@@ -527,7 +527,7 @@ class WalletRepository(
                                 LoadingCorporationDivision(
                                     corporationId = corporation.id,
                                     divisionId = divisionId,
-                                    name = "${corporation.name}, Division $divisionId",
+                                    name = "${corporation.name}，分账 $divisionId",
                                 )
                             }
                         },

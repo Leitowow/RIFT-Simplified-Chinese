@@ -70,9 +70,9 @@ fun LoyaltyPointsContent(
         if (data.loyaltyPointBalances.isNotEmpty()) {
             var isShowingTotal by remember { mutableStateOf(false) }
             val text = if (isShowingTotal) {
-                "Loyalty points totals from all your characters"
+                "全部角色的忠诚点总计"
             } else {
-                "Loyalty points and the closest loyalty point store for each character"
+                "各角色忠诚点及最近的忠诚点商店"
             }
             Text(
                 text = text,
@@ -83,14 +83,14 @@ fun LoyaltyPointsContent(
                 horizontalArrangement = Arrangement.spacedBy(Spacing.small),
             ) {
                 RiftToggleButton(
-                    text = "By character",
+                    text = "按角色",
                     isSelected = !isShowingTotal,
                     type = ToggleButtonType.Left,
                     onClick = { isShowingTotal = false },
                     modifier = Modifier.width(150.dp),
                 )
                 RiftToggleButton(
-                    text = "Total",
+                    text = "总计",
                     isSelected = isShowingTotal,
                     type = ToggleButtonType.Right,
                     onClick = { isShowingTotal = true },
@@ -200,12 +200,12 @@ fun LoyaltyPointsContent(
                         item {
                             if (balances.isEmpty()) {
                                 Text(
-                                    text = "No loyalty points",
+                                    text = "无忠诚点",
                                     style = RiftTheme.typography.bodySecondary,
                                 )
                             } else {
                                 Text(
-                                    text = "No loyalty points matching your search",
+                                    text = "没有匹配搜索的忠诚点",
                                     style = RiftTheme.typography.bodySecondary,
                                 )
                             }
@@ -215,7 +215,7 @@ fun LoyaltyPointsContent(
             }
         } else {
             Text(
-                text = "No characters with loyalty points",
+                text = "没有拥有忠诚点的角色",
                 style = RiftTheme.typography.displaySecondary,
                 textAlign = TextAlign.Center,
                 modifier = Modifier

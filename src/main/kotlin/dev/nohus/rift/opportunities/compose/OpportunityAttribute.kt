@@ -116,7 +116,7 @@ private fun OpportunityAttributeValuesGrid(
                 }
 
                 is OpportunityContributionAttribute.Type -> OpportunityAttributeValuesGridItem(
-                    type = "Type",
+                    type = "类型",
                     name = value.type.name,
                     icon = {
                         AsyncTypeIcon(
@@ -127,12 +127,12 @@ private fun OpportunityAttributeValuesGrid(
                 )
 
                 is OpportunityContributionAttribute.TypeGroup -> OpportunityAttributeValuesGridItem(
-                    type = "Group",
+                    type = "组别",
                     name = value.name,
                 )
 
                 is OpportunityContributionAttribute.Ship -> OpportunityAttributeValuesGridItem(
-                    type = "Ship Type",
+                    type = "舰船类型",
                     name = value.type.name,
                     icon = {
                         AsyncTypeIcon(
@@ -148,7 +148,7 @@ private fun OpportunityAttributeValuesGrid(
                 )
 
                 is OpportunityContributionAttribute.ShipGroup -> OpportunityAttributeValuesGridItem(
-                    type = "Ship Group",
+                    type = "舰船组",
                     name = value.name,
                     icon = {
                         Image(
@@ -161,7 +161,7 @@ private fun OpportunityAttributeValuesGrid(
                 )
 
                 is OpportunityContributionAttribute.SolarSystem -> OpportunityAttributeValuesGridItem(
-                    type = "Solar System",
+                    type = "星系",
                     name = buildAnnotatedString {
                         append(value.solarSystem.name)
                         append(" ")
@@ -181,7 +181,7 @@ private fun OpportunityAttributeValuesGrid(
                 )
 
                 is OpportunityContributionAttribute.Constellation -> OpportunityAttributeValuesGridItem(
-                    type = "Constellation",
+                    type = "星座",
                     name = value.constellation.name,
                     icon = {
                         ConstellationIllustrationIconSmall(value.constellation.id)
@@ -189,7 +189,7 @@ private fun OpportunityAttributeValuesGrid(
                 )
 
                 is OpportunityContributionAttribute.Region -> OpportunityAttributeValuesGridItem(
-                    type = "Region",
+                    type = "星域",
                     name = value.region.name,
                     icon = {
                         RegionIllustrationIconSmall(value.region.id)
@@ -206,7 +206,7 @@ private fun OpportunityAttributeValuesGrid(
                                 append(" ")
                             }
                         }
-                        append(value.station?.name ?: "Unknown Station")
+                        append(value.station?.name ?: "未知空间站")
                     },
                     decorator = {
                         ClickableLocation(
@@ -230,7 +230,7 @@ private fun OpportunityAttributeValuesGrid(
                                 append(" ")
                             }
                         }
-                        append(value.structure?.name ?: "Unknown Structure")
+                        append(value.structure?.name ?: "未知建筑")
                     },
                     decorator = {
                         ClickableLocation(
@@ -245,7 +245,7 @@ private fun OpportunityAttributeValuesGrid(
                 )
 
                 is OpportunityContributionAttribute.Character -> OpportunityAttributeValuesGridItem(
-                    type = "Capsuleer",
+                    type = "克隆飞行员",
                     name = value.character?.name ?: "${value.id}",
                     icon = {
                         DynamicCharacterPortraitStandings(
@@ -263,7 +263,7 @@ private fun OpportunityAttributeValuesGrid(
                 )
 
                 is OpportunityContributionAttribute.Corporation -> OpportunityAttributeValuesGridItem(
-                    type = "Corporation",
+                    type = "军团",
                     name = value.name ?: "${value.id}",
                     icon = {
                         AsyncCorporationLogo(
@@ -280,7 +280,7 @@ private fun OpportunityAttributeValuesGrid(
                 )
 
                 is OpportunityContributionAttribute.Alliance -> OpportunityAttributeValuesGridItem(
-                    type = "Alliance",
+                    type = "联盟",
                     name = value.name ?: "${value.id}",
                     icon = {
                         AsyncAllianceLogo(
@@ -297,7 +297,7 @@ private fun OpportunityAttributeValuesGrid(
                 )
 
                 is OpportunityContributionAttribute.Faction -> OpportunityAttributeValuesGridItem(
-                    type = "Faction",
+                    type = "势力",
                     name = value.name,
                     icon = {
                         AsyncCorporationLogo(

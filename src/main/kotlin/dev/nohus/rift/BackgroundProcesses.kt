@@ -30,7 +30,6 @@ import dev.nohus.rift.repositories.character.ZkillboardRecentActivityRepository
 import dev.nohus.rift.settings.persistence.Settings
 import dev.nohus.rift.sovupgrades.SovereigntyUpgradesHackWatcher
 import dev.nohus.rift.standings.StandingsRepository
-import dev.nohus.rift.utils.ResetSparkleUpdateCheckUseCase
 import dev.nohus.rift.utils.activewindow.ActiveEveWindowRepository
 import dev.nohus.rift.utils.sound.SoundPlayer
 import dev.nohus.rift.wallet.WalletRepository
@@ -48,7 +47,6 @@ class BackgroundProcesses(
     private val gameLogWatcher: GameLogWatcher,
     private val chatLogsWatcher: ChatLogWatcher,
     private val alertsTriggerController: AlertsTriggerController,
-    private val resetSparkleUpdateCheckUseCase: ResetSparkleUpdateCheckUseCase,
     private val startJabberUseCase: StartJabberUseCase,
     private val pingsRepository: PingsRepository,
     private val zkillboardR2Z2Observer: ZkillboardR2Z2Observer,
@@ -77,12 +75,7 @@ class BackgroundProcesses(
 ) {
 
     suspend fun start() = supervisorScope {
-        launch {
-            resetSparkleUpdateCheckUseCase()
-        }
-        launch {
-            checkForUpdatesUseCase()
-        }
+        launch { checkForUpdatesUseCase() }
         if (!settings.isDemoMode) {
             launch {
                 localCharactersRepository.load()

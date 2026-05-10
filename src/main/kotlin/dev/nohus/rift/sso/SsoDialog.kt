@@ -61,7 +61,7 @@ fun WindowScope.SsoDialog(
     }
 
     val title = when (inputModel) {
-        SsoAuthority.Eve -> "Log in with EVE Online"
+        SsoAuthority.Eve -> "使用 EVE Online 登录"
     }
     RiftDialog(
         title = title,

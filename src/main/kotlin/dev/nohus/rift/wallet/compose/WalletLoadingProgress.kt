@@ -53,35 +53,35 @@ fun WalletLoadingProgress(
         when (stage) {
             WalletRepository.LoadingStage.LoadingJournal -> {
                 Text(
-                    text = "Loading transactions…",
+                    text = "正在加载流水…",
                     style = RiftTheme.typography.headlinePrimary,
                 )
             }
 
             WalletRepository.LoadingStage.LoadingDatabase -> {
                 Text(
-                    text = "Processing transactions…",
+                    text = "正在处理流水…",
                     style = RiftTheme.typography.headlinePrimary,
                 )
             }
 
             WalletRepository.LoadingStage.LoadingTypeDetails -> {
                 Text(
-                    text = "Loading transaction details…",
+                    text = "正在加载流水明细…",
                     style = RiftTheme.typography.headlinePrimary,
                 )
             }
 
             WalletRepository.LoadingStage.LoadingDivisionNames -> {
                 Text(
-                    text = "Loading corporation division names…",
+                    text = "正在加载军团分账名称…",
                     style = RiftTheme.typography.headlinePrimary,
                 )
             }
 
             WalletRepository.LoadingStage.LoadingBalances -> {
                 Text(
-                    text = "Loading balances…",
+                    text = "正在加载余额…",
                     style = RiftTheme.typography.headlinePrimary,
                 )
             }
@@ -124,14 +124,14 @@ fun WalletLoadingProgress(
                                                 val text = if (character.isJournalLoaded) {
                                                     buildAnnotatedString {
                                                         withColor(RiftTheme.colors.textSecondary) {
-                                                            appendLine("${formatNumber(character.loadedJournalItems)} wallet transactions loaded")
-                                                            appendLine("${formatNumber(character.loadedTransactions)} market transactions loaded")
+                                                            appendLine("已加载 ${formatNumber(character.loadedJournalItems)} 条钱包流水")
+                                                            appendLine("已加载 ${formatNumber(character.loadedTransactions)} 条市场交易")
                                                         }
                                                     }
                                                 } else {
                                                     buildAnnotatedString {
-                                                        appendLine("${formatNumber(character.loadedJournalItems)} wallet transactions, loading…")
-                                                        appendLine("${formatNumber(character.loadedTransactions)} market transactions, loading…")
+                                                        appendLine("${formatNumber(character.loadedJournalItems)} 条钱包流水，加载中…")
+                                                        appendLine("${formatNumber(character.loadedTransactions)} 条市场交易，加载中…")
                                                     }
                                                 }.trim() as AnnotatedString
                                                 Text(
@@ -171,14 +171,14 @@ fun WalletLoadingProgress(
                                                 val text = if (corpDivision.isJournalLoaded) {
                                                     buildAnnotatedString {
                                                         withColor(RiftTheme.colors.textSecondary) {
-                                                            appendLine("${formatNumber(corpDivision.loadedJournalItems)} wallet transactions loaded")
-                                                            appendLine("${formatNumber(corpDivision.loadedTransactions)} market transactions loaded")
+                                                            appendLine("已加载 ${formatNumber(corpDivision.loadedJournalItems)} 条钱包流水")
+                                                            appendLine("已加载 ${formatNumber(corpDivision.loadedTransactions)} 条市场交易")
                                                         }
                                                     }
                                                 } else {
                                                     buildAnnotatedString {
-                                                        appendLine("${formatNumber(corpDivision.loadedJournalItems)} wallet transactions, loading…")
-                                                        appendLine("${formatNumber(corpDivision.loadedTransactions)} market transactions, loading…")
+                                                        appendLine("${formatNumber(corpDivision.loadedJournalItems)} 条钱包流水，加载中…")
+                                                        appendLine("${formatNumber(corpDivision.loadedTransactions)} 条市场交易，加载中…")
                                                     }
                                                 }.trim() as AnnotatedString
                                                 Text(
@@ -200,27 +200,27 @@ fun WalletLoadingProgress(
                 WalletRepository.LoadingStage.LoadingTypeDetails -> {
                     Text(
                         text = buildAnnotatedString {
-                            appendLine("${formatNumber(loading.totalJournalItems)} transactions referencing")
-                            append("${loading.typeDetails.structureIds} structures and stations")
+                            appendLine("${formatNumber(loading.totalJournalItems)} 条流水涉及")
+                            append("${loading.typeDetails.structureIds} 个建筑与空间站")
                             if (loading.typeDetails.isStructuresLoaded) {
                                 appendLine(", done!")
                             } else {
                                 appendLine("…")
                             }
-                            append("${loading.typeDetails.characterIds} characters")
+                            append("${loading.typeDetails.characterIds} 个角色")
                             if (loading.typeDetails.isCharactersLoaded) {
                                 appendLine(", done!")
                             } else {
                                 appendLine("…")
                             }
-                            append("${loading.typeDetails.groupIds} corporations and alliances")
+                            append("${loading.typeDetails.groupIds} 个军团与联盟")
                             if (loading.typeDetails.isGroupsLoaded) {
                                 appendLine(", done!")
                             } else {
                                 appendLine("…")
                             }
-                            appendLine("${loading.typeDetails.systemIds} systems…")
-                            appendLine("${loading.typeDetails.typeIds} types…")
+                            appendLine("${loading.typeDetails.systemIds} 个星系…")
+                            appendLine("${loading.typeDetails.typeIds} 个类型…")
                         }.trim() as AnnotatedString,
                         style = RiftTheme.typography.headerSecondary,
                     )

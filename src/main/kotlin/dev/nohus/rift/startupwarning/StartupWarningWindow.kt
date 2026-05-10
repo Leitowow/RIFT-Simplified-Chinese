@@ -41,7 +41,7 @@ fun StartupWarningWindow(
         onCloseRequest()
     }
 
-    val title = state.warnings.singleOrNull()?.title ?: "Warnings"
+    val title = state.warnings.singleOrNull()?.title ?: "警告"
     RiftWindow(
         title = title,
         icon = Res.drawable.window_warning,
@@ -89,7 +89,7 @@ private fun StartupWarningContent(
                     )
                 }
                 RiftCheckboxWithLabel(
-                    label = "Don't show again",
+                    label = "不再显示",
                     isChecked = warning.id in checkedIds,
                     onCheckedChange = { checkedIds = checkedIds.toggle(warning.id) },
                 )
@@ -100,7 +100,7 @@ private fun StartupWarningContent(
         ) {
             Spacer(Modifier.weight(1f))
             RiftButton(
-                text = "Understood",
+                text = "我知道了",
                 onClick = { onDoneClick(checkedIds) },
             )
         }

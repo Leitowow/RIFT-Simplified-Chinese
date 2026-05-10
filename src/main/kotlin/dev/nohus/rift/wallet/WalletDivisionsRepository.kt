@@ -38,7 +38,7 @@ class WalletDivisionsRepository(
     }
 
     fun getDivisionNameOrDefault(corporationId: Int, divisionId: Int): String {
-        return getDivisionName(corporationId, divisionId) ?: "Division $divisionId"
+        return getDivisionName(corporationId, divisionId) ?: "分账 $divisionId"
     }
 
     fun getDivisionName(corporationId: Int, divisionId: Int): String? {

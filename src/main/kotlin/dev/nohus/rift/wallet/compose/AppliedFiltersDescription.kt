@@ -25,8 +25,8 @@ fun AppliedFiltersDescription(
 ) {
     val text = buildAnnotatedString {
         when (tab) {
-            WalletTab.Transactions -> append("Showing ")
-            else -> append("Based on ")
+            WalletTab.Transactions -> append("显示 ")
+            else -> append("基于 ")
         }
         val transactionsCount = journal?.size ?: 0
         withStyle(
@@ -38,26 +38,26 @@ fun AppliedFiltersDescription(
         when (tab) {
             WalletTab.Transactions -> append(
                 when (state.filters.direction) {
-                    TransferDirection.Income -> "deposit"
-                    TransferDirection.Expense -> "withdrawal"
-                    null -> "transaction"
+                    TransferDirection.Income -> "收入"
+                    TransferDirection.Expense -> "支出"
+                    null -> "流水"
                 },
             )
 
-            else -> append("transaction")
+            else -> append("流水")
         }
         append(transactionsCount.plural)
-        append(" from ")
+        append("，来自 ")
         val walletsCount = journal?.map { it.wallet }?.distinct()?.size ?: 0
         withStyle(
             style = SpanStyle(color = RiftTheme.colors.textPrimary, fontWeight = FontWeight.Bold),
         ) {
             append("$walletsCount")
         }
-        append(" wallet${walletsCount.plural}")
+        append(" 个钱包")
 
         if (tab == WalletTab.Transactions && state.filters.referenceTypes.isNotEmpty()) {
-            append(" matching ")
+            append("，匹配 ")
             withStyle(
                 style = SpanStyle(
                     color = RiftTheme.colors.textPrimary,
@@ -66,7 +66,7 @@ fun AppliedFiltersDescription(
             ) {
                 append(state.filters.referenceTypes.size.toString())
             }
-            append(" type${state.filters.referenceTypes.size.plural}")
+            append(" 种类型")
         }
     }
 

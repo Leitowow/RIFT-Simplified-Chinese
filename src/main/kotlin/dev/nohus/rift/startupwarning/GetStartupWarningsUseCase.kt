@@ -2,7 +2,6 @@ package dev.nohus.rift.startupwarning
 
 import dev.nohus.rift.settings.persistence.Settings
 import dev.nohus.rift.startupwarning.HasIncorrectSystemTimeUseCase.SystemTimeStatus.Incorrect
-import dev.nohus.rift.utils.plural
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.koin.core.annotation.Single
 
@@ -32,22 +31,22 @@ class GetStartupWarningsUseCase(
             val systemTimeStatus = hasIncorrectSystemTimeUseCase()
             if (systemTimeStatus is Incorrect) {
                 val text = buildString {
-                    append("The clock on your computer is ")
+                    append("你的电脑时钟与标准时间相差 ")
                     val absoluteOffset = systemTimeStatus.offset.abs()
                     val minutes = absoluteOffset.toMinutes()
                     val seconds = absoluteOffset.toSecondsPart()
-                    append("$minutes minute${minutes.plural} and $seconds second${seconds.plural} ")
+                    append("${minutes} 分 ${seconds} 秒，")
                     if (systemTimeStatus.offset.isNegative) {
-                        append("behind the real time. ")
+                        append("当前时间偏慢。")
                     } else {
-                        append("ahead of the real time. ")
+                        append("当前时间偏快。")
                     }
-                    append("You need to set your clock to the correct time to prevent issues like not receiving alerts.")
+                    append("请校准系统时间，否则可能出现无法接收报警等问题。")
                 }
                 add(
                     StartupWarning(
                         id = "incorrect system time",
-                        title = "Incorrect system time",
+                        title = "系统时间不正确",
                         description = text,
                     ),
                 )
@@ -56,10 +55,10 @@ class GetStartupWarningsUseCase(
                 add(
                     StartupWarning(
                         id = "non-english client",
-                        title = "Non-English EVE Client",
+                        title = "非英语 EVE 客户端",
                         description = """
-                            Your EVE client is set to a language other than English.
-                            RIFT features based on reading game logs won't work.
+                            你的 EVE 客户端语言不是英语。
+                            依赖读取游戏日志的 RIFT 功能将无法正常工作。
                         """.trimIndent(),
                     ),
                 )
@@ -68,12 +67,12 @@ class GetStartupWarningsUseCase(
                 add(
                     StartupWarning(
                         id = "fullscreen client",
-                        title = "Fullscreen EVE Client",
+                        title = "全屏 EVE 客户端",
                         description = """
-                            Your EVE client is set to run in fullscreen mode.
-                            You might not be able to put RIFT windows on top of it.
+                            你的 EVE 客户端正在使用全屏模式运行。
+                            这可能导致 RIFT 窗口无法覆盖显示在游戏上方。
                             
-                            It's recommended to use Fixed Window or Window mode.
+                            建议改用固定窗口或窗口模式。
                         """.trimIndent(),
                     ),
                 )
@@ -84,7 +83,8 @@ class GetStartupWarningsUseCase(
                         id = "msi afterburner",
                         title = "MSI Afterburner",
                         description = """
-                            You are running MSI Afterburner or RivaTuner, which is known to inject code into RIFT that causes freezes and crashes.
+                            检测到你正在运行 MSI Afterburner 或 RivaTuner。
+                            这类程序会向 RIFT 注入代码，已知可能导致卡死或崩溃。
                         """.trimIndent(),
                     ),
                 )
@@ -94,14 +94,14 @@ class GetStartupWarningsUseCase(
                 add(
                     StartupWarning(
                         id = "chat logs disabled v2",
-                        title = "Chat logs are disabled",
+                        title = "聊天日志已禁用",
                         description = buildString {
-                            appendLine("You need to enable the \"Log Chat to File\" option in EVE Settings, in the Gameplay section. RIFT won't be able to read intel messages or trigger alerts otherwise.")
+                            appendLine("请在 EVE 设置的 Gameplay 分类中启用“Log Chat to File（聊天记录写入文件）”。否则 RIFT 无法读取情报消息并触发报警。")
                             appendLine()
                             if (accountMessages.size == 1) {
-                                append("You have it disabled on this account:")
+                                append("以下账号关闭了该选项：")
                             } else {
-                                append("You have it disabled on these ${accountMessages.size} accounts:")
+                                append("以下 ${accountMessages.size} 个账号关闭了该选项：")
                             }
                         },
                         detail = accountMessages.joinToString("\n"),
@@ -112,9 +112,9 @@ class GetStartupWarningsUseCase(
                 add(
                     StartupWarning(
                         id = "missing x11-utils",
-                        title = "Missing dependency",
+                        title = "缺少依赖",
                         description = """
-                            You don't have "xwininfo", "xprop", or "wmctrl" installed. Usually they are in a "x11-utils" package, "wmctrl" package, or similar. Without them, RIFT won't be able to check the online status of your characters.
+                            你的系统未安装 "xwininfo"、"xprop" 或 "wmctrl"。它们通常包含在 "x11-utils"、"wmctrl" 等软件包中。缺少这些依赖时，RIFT 将无法检查角色在线状态。
                         """.trimIndent(),
                     ),
                 )
@@ -123,9 +123,9 @@ class GetStartupWarningsUseCase(
                 add(
                     StartupWarning(
                         id = "old version",
-                        title = "Outdated version",
+                        title = "版本过旧",
                         description = """
-                            You are running an outdated version of RIFT. Please check the About window to update to the latest version.
+                            你正在使用较旧版本的 RIFT。请在“关于”窗口查看版本信息并手动更新到最新版本。
                         """.trimIndent(),
                     ),
                 )

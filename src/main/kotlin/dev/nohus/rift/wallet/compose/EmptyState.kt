@@ -16,7 +16,7 @@ fun EmptyState(state: WalletViewModel.UiState) {
         state.filters.walletTypes.isNotEmpty() ||
         state.filters.referenceTypes.isNotEmpty() ||
         state.filters.search != null
-    val text = if (isFiltering) "All transactions filtered out" else "No transactions"
+    val text = if (isFiltering) "所有流水都被筛选掉了" else "无流水"
     Text(
         text = text,
         style = RiftTheme.typography.displaySecondary,

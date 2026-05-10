@@ -207,13 +207,13 @@ class CharacterSettingsViewModel(
 
         val dialogMessage = if (success) {
             DialogMessage(
-                title = "Settings copied",
+                title = "设置已复制",
                 message = "EVE settings have been copied from ${source.name} to ${destination.joinToString { it.name }}.",
                 type = MessageDialogType.Info,
             )
         } else {
             DialogMessage(
-                title = "Copying failed",
+                title = "复制失败",
                 message = "There is something wrong with your character settings files.",
                 type = MessageDialogType.Warning,
             )

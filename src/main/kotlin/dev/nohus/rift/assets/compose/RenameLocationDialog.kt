@@ -38,7 +38,7 @@ fun WindowScope.RenameLocationDialog(
     onConfirmClick: (name: String) -> Unit,
 ) {
     RiftDialog(
-        title = "Name location",
+        title = "命名位置",
         icon = Res.drawable.window_assets,
         parentState = parentWindowState,
         state = rememberWindowState(width = 400.dp, height = Dp.Unspecified),
@@ -70,9 +70,9 @@ private fun RenameLocationDialogContent(
 
         val description = buildAnnotatedString {
             if (location.isNameAuthoritative) {
-                append("You can give this location a custom name below:")
+                append("可在下方为该位置设置自定义名称：")
             } else {
-                append("ESI does not provide any info about this location, but you can give it a name below:")
+                append("ESI 未提供此位置的名称，可在下方自行命名：")
             }
         }
         Text(
@@ -81,7 +81,7 @@ private fun RenameLocationDialogContent(
         )
         val initialText = location.customName ?: ""
         var text by remember { mutableStateOf(initialText) }
-        val placeholder = if (location.isNameAuthoritative) "Custom name" else location.name
+        val placeholder = if (location.isNameAuthoritative) "自定义名称" else location.name
         RiftTextField(
             text = text,
             placeholder = placeholder,
@@ -93,14 +93,14 @@ private fun RenameLocationDialogContent(
             horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
         ) {
             RiftButton(
-                text = "Cancel",
+                text = "取消",
                 cornerCut = ButtonCornerCut.BottomLeft,
                 type = ButtonType.Secondary,
                 onClick = onCancelClick,
                 modifier = Modifier.weight(1f),
             )
             RiftButton(
-                text = "Rename",
+                text = "保存名称",
                 onClick = { onConfirmClick(text) },
                 modifier = Modifier.weight(1f),
             )

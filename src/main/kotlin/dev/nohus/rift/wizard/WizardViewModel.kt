@@ -115,8 +115,8 @@ class WizardViewModel(
             _state.update {
                 it.copy(
                     dialogMessage = DialogMessage(
-                        title = "Can't read settings",
-                        message = "Your settings couldn't be read and were reset. Your original settings file was backed up, and you can find it under:\n${appDirectories.getAppDataDirectory().absolutePathString()}",
+                        title = "无法读取设置",
+                        message = "无法读取设置，已恢复默认。你的原始配置文件已备份，路径：\n${appDirectories.getAppDataDirectory().absolutePathString()}",
                         type = MessageDialogType.Warning,
                     ),
                 )

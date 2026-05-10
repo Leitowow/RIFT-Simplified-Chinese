@@ -68,7 +68,7 @@ fun SplashWindow(
             width = 640.dp,
             height = 360.dp,
         ),
-        title = "RIFT Intel Fusion Tool",
+        title = "RIFT 预警融合工具",
         icon = painterResource(Res.drawable.window_rift_64),
         undecorated = true,
         resizable = false,

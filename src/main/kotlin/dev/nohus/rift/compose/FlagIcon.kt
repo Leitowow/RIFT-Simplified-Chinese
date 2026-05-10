@@ -29,14 +29,14 @@ fun FlagIcon(standing: Float, modifier: Modifier = Modifier) {
 @Composable
 fun FlagIcon(standing: Standing, modifier: Modifier = Modifier) {
     val tooltip = when (standing) {
-        Standing.Terrible -> "Pilot has Terrible Standing"
-        Standing.Bad -> "Pilot has Bad Standing"
-        Standing.Neutral -> "Pilot has No Standing"
-        Standing.Good -> "Pilot has Good Standing"
-        Standing.Excellent -> "Pilot has Excellent Standing"
-        Standing.Self -> "Pilot is you"
-        Standing.Corporation -> "Pilot is in your Capsuleer corporation"
-        Standing.Alliance -> "Pilot is in your alliance"
+        Standing.Terrible -> "极差声望"
+        Standing.Bad -> "不佳声望"
+        Standing.Neutral -> "中立声望"
+        Standing.Good -> "良好声望"
+        Standing.Excellent -> "极佳声望"
+        Standing.Self -> "你自己"
+        Standing.Corporation -> "同属克隆飞行员军团"
+        Standing.Alliance -> "同属联盟"
     }
     RiftTooltipArea(tooltip, modifier) {
         Box(

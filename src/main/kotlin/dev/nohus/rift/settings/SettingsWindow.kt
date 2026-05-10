@@ -122,7 +122,7 @@ fun SettingsWindow(
     val state by viewModel.state.collectAsState()
 
     RiftWindow(
-        title = "RIFT Settings",
+        title = "RIFT 设置",
         icon = Res.drawable.window_settings,
         state = windowState,
         onCloseClick = onCloseRequest,
@@ -152,7 +152,7 @@ fun SettingsWindow(
 
         if (state.isJumpBridgeSearchDialogShown) {
             RiftDialog(
-                title = "Jump Bridge Search",
+                title = "跳桥搜索",
                 icon = Res.drawable.window_warning,
                 parentState = windowState,
                 state = rememberWindowState(width = 350.dp, height = Dp.Unspecified),
@@ -162,12 +162,12 @@ fun SettingsWindow(
                     verticalArrangement = Arrangement.spacedBy(Spacing.medium),
                 ) {
                     Text(
-                        text = "This feature is not unique to RIFT, and no problems were reported with it, but some " +
-                            "concerns were raised that it might trip ESI's hidden rate limits and block your IP address.",
+                        text = "此功能并非 RIFT 独有，目前也无已知故障报告，但有观点认为它可能触发 " +
+                            "ESI 的隐藏限流并导致你的 IP 被封禁。",
                         style = RiftTheme.typography.bodyPrimary,
                     )
                     Text(
-                        text = "Use at your own risk!",
+                        text = "请自行承担使用风险！",
                         textAlign = TextAlign.Center,
                         style = RiftTheme.typography.headerPrimary,
                         modifier = Modifier.fillMaxWidth(),
@@ -176,14 +176,14 @@ fun SettingsWindow(
                         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
                     ) {
                         RiftButton(
-                            text = "Cancel",
+                            text = "取消",
                             cornerCut = ButtonCornerCut.BottomLeft,
                             type = ButtonType.Secondary,
                             onClick = viewModel::onJumpBridgeDialogDismissed,
                             modifier = Modifier.weight(1f),
                         )
                         RiftButton(
-                            text = "Confirm",
+                            text = "确认",
                             type = ButtonType.Secondary,
                             onClick = viewModel::onJumpBridgeSearchDialogConfirmClick,
                             modifier = Modifier.weight(1f),
@@ -380,11 +380,11 @@ private fun ToolbarRow(
 ) {
     val tabs = remember {
         listOf(
-            Tab(id = SettingsTab.General.id, title = "General Settings", isCloseable = false, payload = SettingsTab.General),
-            Tab(id = SettingsTab.Intel.id, title = "Intel & Alerts", isCloseable = false, payload = SettingsTab.Intel),
-            Tab(id = SettingsTab.Map.id, title = "Map", isCloseable = false, payload = SettingsTab.Map),
-            Tab(id = SettingsTab.Sovereignty.id, title = "Sovereignty", isCloseable = false, payload = SettingsTab.Sovereignty),
-            Tab(id = SettingsTab.Misc.id, title = "Misc", isCloseable = false, payload = SettingsTab.Misc),
+            Tab(id = SettingsTab.General.id, title = "常规设置", isCloseable = false, payload = SettingsTab.General),
+            Tab(id = SettingsTab.Intel.id, title = "预警与告警", isCloseable = false, payload = SettingsTab.Intel),
+            Tab(id = SettingsTab.Map.id, title = "星图", isCloseable = false, payload = SettingsTab.Map),
+            Tab(id = SettingsTab.Sovereignty.id, title = "主权", isCloseable = false, payload = SettingsTab.Sovereignty),
+            Tab(id = SettingsTab.Misc.id, title = "其他", isCloseable = false, payload = SettingsTab.Misc),
         )
     }
     RiftTabBar(
@@ -433,90 +433,90 @@ private fun UserInterfaceSection(
     state: UiState,
     viewModel: SettingsViewModel,
 ) {
-    SectionTitle("User Interface", Modifier.padding(bottom = Spacing.medium))
+    SectionTitle("用户界面", Modifier.padding(bottom = Spacing.medium))
     RiftCheckboxWithLabel(
-        label = "Remember open windows",
-        tooltip = "Enable to remember open windows\nacross app restarts",
+        label = "记住已打开窗口",
+        tooltip = "开启后在重启应用时恢复上次打开的窗口",
         isChecked = state.isRememberOpenWindows,
         onCheckedChange = viewModel::onRememberOpenWindowsChanged,
         modifier = Modifier.padding(bottom = Spacing.small),
     )
     RiftCheckboxWithLabel(
-        label = "Remember window placement",
-        tooltip = "Enable to remember window positions and\nsizes across app restarts",
+        label = "记住窗口位置与大小",
+        tooltip = "开启后在重启应用时恢复窗口位置与尺寸",
         isChecked = state.isRememberWindowPlacement,
         onCheckedChange = viewModel::onRememberWindowPlacementChanged,
         modifier = Modifier.padding(bottom = Spacing.small),
     )
     RiftCheckboxWithLabel(
-        label = "Display times in EVE time",
-        tooltip = "Enable to show times in EVE time,\ninstead of your own time zone.",
+        label = "使用 EVE 时间显示",
+        tooltip = "开启后以 EVE 时间显示，而非本地时区",
         isChecked = state.isDisplayEveTime,
         onCheckedChange = viewModel::onIsDisplayEveTimeChanged,
         modifier = Modifier.padding(bottom = Spacing.small),
     )
     RiftCheckboxWithLabel(
-        label = "Use dark tray icon",
-        tooltip = "Enable to use a dark tray icon,\nif you prefer it.",
+        label = "使用深色托盘图标",
+        tooltip = "开启后使用深色样式的系统托盘图标",
         isChecked = state.isUsingDarkTrayIcon,
         onCheckedChange = viewModel::onIsUsingDarkTrayIconChanged,
         modifier = Modifier.padding(bottom = Spacing.small),
     )
     RiftCheckboxWithLabel(
-        label = "Show ISK cents",
-        tooltip = "Enable to show decimal places in ISK amounts",
+        label = "ISK 显示小数",
+        tooltip = "开启后在 ISK 金额中显示小数位",
         isChecked = state.isShowIskCents,
         onCheckedChange = viewModel::onIsShowIskCentsChanged,
         modifier = Modifier.padding(bottom = Spacing.small),
     )
     if (koin.get<OperatingSystem>() != MacOs) {
         RiftCheckboxWithLabel(
-            label = "Smart always above",
-            tooltip = "Windows set to \"always above\" will\nonly be on top while an EVE client is focused.",
+            label = "智能置顶",
+            tooltip = "设为「始终置顶」的窗口仅在 EVE 客户端获得焦点时保持最前",
             isChecked = state.isSmartAlwaysAbove,
             onCheckedChange = viewModel::onIsSmartAlwaysAboveChanged,
             modifier = Modifier.padding(bottom = Spacing.small),
         )
     }
     RiftCheckboxWithLabel(
-        label = "Show distance on systems",
-        tooltip = "Enable to show the number of jumps to\nthe closest character next to system names.",
+        label = "星系旁显示距离",
+        tooltip = "开启后在星名旁显示距最近角色的跳数",
         isChecked = state.isShowingSystemDistance,
         onCheckedChange = viewModel::onIsShowingSystemDistanceChange,
         modifier = Modifier.padding(bottom = Spacing.small),
     )
     RiftCheckboxWithLabel(
-        label = "Use jump bridges for distance",
-        tooltip = "Enable to include jump bridges in system distances",
+        label = "距离计算包含跳桥",
+        tooltip = "开启后在星系距离计算中包含跳桥",
         isChecked = state.isUsingJumpBridgesForDistance,
         onCheckedChange = viewModel::onIsUsingJumpBridgesForDistance,
         modifier = Modifier.padding(bottom = Spacing.small),
     )
     RiftCheckboxWithLabel(
-        label = "Enable transparent windows",
-        tooltip = "Enable to be able to set\nwindows transparent.",
+        label = "启用窗口透明",
+        tooltip = "开启后可调节窗口透明度",
         isChecked = state.isWindowTransparencyEnabled,
         onCheckedChange = viewModel::onIsWindowTransparencyChanged,
     )
     Spacer(Modifier.height(Spacing.small))
     RiftDropdownWithLabel(
-        label = "Window transparency:",
+        label = "窗口透明度：",
         items = listOf(0f, 0.25f, 0.5f, 0.75f, 1f),
         selectedItem = state.windowTransparencyModifier,
         onItemSelected = viewModel::onWindowTransparencyModifierChanged,
         getItemName = {
             when (it) {
-                0f -> "Maximal"
-                0.25f -> "High"
-                0.5f -> "Medium"
-                0.75f -> "Low"
-                1f -> "Minimal"
-                else -> "Custom"
+                0f -> "最高"
+                0.25f -> "高"
+                0.5f -> "中"
+                0.75f -> "低"
+                1f -> "最低"
+                else -> "自定义"
             }
         },
     )
     RiftDropdownWithLabel(
-        label = "UI scale:",
+        label = "界面缩放：",
         items = listOf(0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f),
         selectedItem = state.uiScale,
         onItemSelected = viewModel::onUiScaleChanged,
@@ -529,22 +529,22 @@ private fun AlertsSection(
     state: UiState,
     viewModel: SettingsViewModel,
 ) {
-    SectionTitle("Alerts", Modifier.padding(bottom = Spacing.medium))
+    SectionTitle("告警", Modifier.padding(bottom = Spacing.medium))
     Row(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "Choose notification position:",
+            text = "选择通知位置：",
             style = RiftTheme.typography.bodyPrimary,
             modifier = Modifier.weight(1f),
         )
         RiftButton(
-            text = "Edit position",
+            text = "编辑位置",
             onClick = viewModel::onEditNotificationClick,
         )
     }
     RiftSliderWithLabel(
-        label = "Alert volume:",
+        label = "告警音量：",
         width = 100.dp,
         range = 0..100,
         currentValue = state.soundsVolume,
@@ -554,12 +554,12 @@ private fun AlertsSection(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "Mobile push notifications:",
+            text = "移动端推送：",
             style = RiftTheme.typography.bodyPrimary,
             modifier = Modifier.weight(1f),
         )
         RiftButton(
-            text = "Configure",
+            text = "配置",
             onClick = viewModel::onConfigurePushoverClick,
         )
     }
@@ -570,15 +570,15 @@ private fun KillmailMonitoringSection(
     state: UiState,
     viewModel: SettingsViewModel,
 ) {
-    SectionTitle("Killmail Monitoring", Modifier.padding(bottom = Spacing.medium))
+    SectionTitle("Kill 监视", Modifier.padding(bottom = Spacing.medium))
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
         Text(
-            text = "RIFT watches killmails for valuable intel,\nfor example to show attackers on the map",
+            text = "RIFT 会监视 killmail 以获取宝贵预警信息，\n例如在星图上显示攻击者",
             style = RiftTheme.typography.bodySecondary,
         )
         RiftCheckboxWithLabel(
-            label = "Monitor zKillboard.com",
-            tooltip = "RIFT will subscribe to zKillboard.com\nto receive new killmails live",
+            label = "监视 zKillboard.com",
+            tooltip = "RIFT 将订阅 zKillboard.com\n以实时接收新的 killmail",
             isChecked = state.isZkillboardMonitoringEnabled,
             onCheckedChange = viewModel::onIsZkillboardMonitoringChanged,
             modifier = Modifier.padding(bottom = Spacing.small),
@@ -591,23 +591,23 @@ private fun OtherSettingsSection(
     state: UiState,
     viewModel: SettingsViewModel,
 ) {
-    SectionTitle("Other Settings", Modifier.padding(bottom = Spacing.medium))
+    SectionTitle("其他设置", Modifier.padding(bottom = Spacing.medium))
     RiftDropdownWithLabel(
-        label = "Configuration pack:",
+        label = "联盟配置包：",
         items = listOf(null) + ConfigurationPack.entries,
         selectedItem = state.configurationPack,
         onItemSelected = viewModel::onConfigurationPackChange,
-        getItemName = { it?.displayName ?: "Default" },
+        getItemName = { it?.displayName ?: "默认" },
         tooltip = """
-            Enables settings specific to a player group,
-            like intel channel suggestions.
-            Contact me on Discord if you'd like to add yours.
+            启用针对玩家团体的预设，
+            例如推荐的预警频道。
+            若需添加请联系开发者（Discord）。
         """.trimIndent(),
         modifier = Modifier.padding(bottom = Spacing.small),
     )
     RiftCheckboxWithLabel(
-        label = "Show setup wizard on next start",
-        tooltip = "Did you know that Aura is a wizard?",
+        label = "下次启动显示设置向导",
+        tooltip = "Aura 也是位「向导」哦。",
         isChecked = state.isShowSetupWizardOnNextStartEnabled,
         onCheckedChange = viewModel::onShowSetupWizardOnNextStartChanged,
     )
@@ -618,7 +618,7 @@ private fun StorageSection(
     state: UiState,
     viewModel: SettingsViewModel,
 ) {
-    SectionTitle("Storage", Modifier.padding(bottom = Spacing.medium))
+    SectionTitle("存储", Modifier.padding(bottom = Spacing.medium))
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -630,7 +630,7 @@ private fun StorageSection(
                 modifier = Modifier.weight(1f),
             ) {
                 Text(
-                    text = "RIFT data directory",
+                    text = "RIFT 数据目录",
                     style = RiftTheme.typography.bodyPrimary,
                 )
                 Text(
@@ -641,12 +641,12 @@ private fun StorageSection(
                 )
             }
             RiftButton(
-                text = "Open app data",
+                text = "打开数据目录",
                 type = ButtonType.Primary,
                 onClick = viewModel::onOpenAppData,
             )
         }
-        UsedSpace("All data:", state.storageStats?.dataSize)
+        UsedSpace("全部数据：", state.storageStats?.dataSize)
 
         Divider(color = RiftTheme.colors.divider, modifier = Modifier.padding(vertical = Spacing.small))
 
@@ -660,7 +660,7 @@ private fun StorageSection(
                 modifier = Modifier.weight(1f),
             ) {
                 Text(
-                    text = "RIFT cache directory",
+                    text = "RIFT 缓存目录",
                     style = RiftTheme.typography.bodyPrimary,
                 )
                 Text(
@@ -671,16 +671,16 @@ private fun StorageSection(
                 )
             }
             RiftButton(
-                text = "Open app cache",
+                text = "打开缓存目录",
                 type = ButtonType.Primary,
                 onClick = viewModel::onOpenAppCache,
             )
         }
-        UsedSpace("ESI cache:", state.storageStats?.esiCacheSize)
-        UsedSpace("Killmail cache:", state.storageStats?.zkillCacheSize)
-        UsedSpace("HTTP cache:", state.storageStats?.httpCacheSize)
-        UsedSpace("Portraits cache:", state.storageStats?.portraitsSize, state.storageStats?.portraitsCount?.let { "$it characters," })
-        UsedSpace("Other cache:", state.storageStats?.otherCacheSize)
+        UsedSpace("ESI 缓存：", state.storageStats?.esiCacheSize)
+        UsedSpace("Killmail 缓存：", state.storageStats?.zkillCacheSize)
+        UsedSpace("HTTP 缓存：", state.storageStats?.httpCacheSize)
+        UsedSpace("头像缓存：", state.storageStats?.portraitsSize, state.storageStats?.portraitsCount?.let { "$it 个角色，" })
+        UsedSpace("其他缓存：", state.storageStats?.otherCacheSize)
     }
 }
 
@@ -704,14 +704,14 @@ private fun UsedSpace(text: String, bytes: Long?, secondaryText: String? = null)
                 text = buildAnnotatedString {
                     append(formatBytes(bytes))
                     withColor(RiftTheme.colors.textSecondary) {
-                        append(" used")
+                        append(" 已用")
                     }
                 },
                 style = RiftTheme.typography.bodyPrimary,
             )
         } else {
             Text(
-                text = "Calculating…",
+                text = "计算中…",
                 style = RiftTheme.typography.bodySecondary,
             )
         }
@@ -732,9 +732,9 @@ private fun ClipboardSection(
     state: UiState,
     viewModel: SettingsViewModel,
 ) {
-    SectionTitle("Clipboard", Modifier.padding(bottom = Spacing.medium))
+    SectionTitle("剪贴板", Modifier.padding(bottom = Spacing.medium))
     Text(
-        text = "RIFT can import some data from your clipboard, like Jump Bridges and Sovereignty Upgrades",
+        text = "RIFT 可从剪贴板导入部分数据，例如跳桥与主权增强",
         style = RiftTheme.typography.bodySecondary,
     )
     Row(
@@ -742,9 +742,9 @@ private fun ClipboardSection(
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Text("Troubleshoot import issues")
+        Text("导入问题排查")
         RiftButton(
-            text = "Clipboard tester",
+            text = "剪贴板测试",
             type = ButtonType.Primary,
             onClick = viewModel::onClipboardTesterClick,
         )
@@ -756,18 +756,18 @@ private fun EveInstallationSection(
     state: UiState,
     viewModel: SettingsViewModel,
 ) {
-    SectionTitle("EVE Installation")
+    SectionTitle("EVE 安装路径")
     Row(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "EVE Online logs directory",
+            text = "EVE Online 日志目录",
             style = RiftTheme.typography.bodyPrimary,
         )
         RequirementIcon(
             isFulfilled = state.isLogsDirectoryValid,
-            fulfilledTooltip = "Logs directory valid",
-            notFulfilledTooltip = if (state.logsDirectory.isBlank()) "No logs directory" else "Invalid logs directory",
+            fulfilledTooltip = "日志目录有效",
+            notFulfilledTooltip = if (state.logsDirectory.isBlank()) "未设置日志目录" else "日志目录无效",
         )
     }
     Row(
@@ -785,7 +785,7 @@ private fun EveInstallationSection(
         )
         RiftFileChooserButton(
             fileSelectionMode = JFileChooser.DIRECTORIES_ONLY,
-            typesDescription = "Chat logs directory",
+            typesDescription = "聊天日志目录",
             currentPath = text,
             type = ButtonType.Secondary,
             cornerCut = ButtonCornerCut.None,
@@ -795,7 +795,7 @@ private fun EveInstallationSection(
             },
         )
         RiftButton(
-            text = "Detect",
+            text = "检测",
             type = if (state.isLogsDirectoryValid) ButtonType.Secondary else ButtonType.Primary,
             onClick = viewModel::onDetectLogsDirectoryClick,
         )
@@ -805,13 +805,13 @@ private fun EveInstallationSection(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "EVE Online character settings directory",
+            text = "EVE Online 角色设置目录",
             style = RiftTheme.typography.bodyPrimary,
         )
         RequirementIcon(
             isFulfilled = state.isSettingsDirectoryValid,
-            fulfilledTooltip = "Settings directory valid",
-            notFulfilledTooltip = if (state.settingsDirectory.isBlank()) "No settings directory" else "Invalid settings directory",
+            fulfilledTooltip = "设置目录有效",
+            notFulfilledTooltip = if (state.settingsDirectory.isBlank()) "未设置设置目录" else "设置目录无效",
         )
     }
     Row(
@@ -829,7 +829,7 @@ private fun EveInstallationSection(
         )
         RiftFileChooserButton(
             fileSelectionMode = JFileChooser.DIRECTORIES_ONLY,
-            typesDescription = "Game logs directory",
+            typesDescription = "游戏日志目录",
             currentPath = text,
             type = ButtonType.Secondary,
             cornerCut = ButtonCornerCut.None,
@@ -839,7 +839,7 @@ private fun EveInstallationSection(
             },
         )
         RiftButton(
-            text = "Detect",
+            text = "检测",
             type = if (state.isSettingsDirectoryValid) ButtonType.Secondary else ButtonType.Primary,
             onClick = viewModel::onDetectSettingsDirectoryClick,
         )
@@ -851,7 +851,7 @@ private fun CharacterPortraitsSection(
     state: UiState,
     viewModel: SettingsViewModel,
 ) {
-    SectionTitle("Character Portraits")
+    SectionTitle("角色头像")
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(Spacing.small),
@@ -867,20 +867,19 @@ private fun CharacterPortraitsSection(
             }
         }
         RiftDropdownWithLabel(
-            label = "Parallax effect:",
+            label = "视差效果：",
             items = CharacterPortraitsParallaxStrength.entries,
             selectedItem = state.characterPortraits.parallaxStrength,
             onItemSelected = { viewModel.onCharacterPortraitsParallaxStrengthChanged(it) },
             getItemName = {
                 when (it) {
-                    CharacterPortraitsParallaxStrength.None -> "Turned off"
-                    CharacterPortraitsParallaxStrength.Reduced -> "Reduced"
-                    CharacterPortraitsParallaxStrength.Normal -> "Normal"
+                    CharacterPortraitsParallaxStrength.None -> "关闭"
+                    CharacterPortraitsParallaxStrength.Reduced -> "减弱"
+                    CharacterPortraitsParallaxStrength.Normal -> "标准"
                 }
             },
             tooltip = """
-                Shown for your characters and 
-                characters outside of intel contexts
+                对你的角色以及非预警场景下的角色显示
             """.trimIndent(),
         )
 
@@ -903,26 +902,25 @@ private fun CharacterPortraitsSection(
             }
         }
         RiftDropdownWithLabel(
-            label = "Standings background:",
+            label = "声望背景：",
             items = CharacterPortraitsStandingsTargets.entries,
             selectedItem = state.characterPortraits.standingsTargets,
             onItemSelected = { viewModel.onCharacterPortraitsStandingsTargetsChanged(it) },
             getItemName = {
                 when (it) {
-                    CharacterPortraitsStandingsTargets.All -> "For all"
-                    CharacterPortraitsStandingsTargets.OnlyFriendly -> "For friendly"
-                    CharacterPortraitsStandingsTargets.OnlyHostile -> "For hostile"
-                    CharacterPortraitsStandingsTargets.OnlyNonNeutral -> "For non-neutral"
-                    CharacterPortraitsStandingsTargets.None -> "Turned off"
+                    CharacterPortraitsStandingsTargets.All -> "全部"
+                    CharacterPortraitsStandingsTargets.OnlyFriendly -> "仅友好"
+                    CharacterPortraitsStandingsTargets.OnlyHostile -> "仅敌对"
+                    CharacterPortraitsStandingsTargets.OnlyNonNeutral -> "仅非中立"
+                    CharacterPortraitsStandingsTargets.None -> "关闭"
                 }
             },
             tooltip = """
-                Shown for characters
-                in intel contexts
+                在预警场景下对角色显示
             """.trimIndent(),
         )
         RiftSliderWithLabel(
-            label = "Standings background strength:",
+            label = "声望背景强度：",
             width = 100.dp,
             range = 30..100,
             currentValue = (state.characterPortraits.standingsEffectStrength * 100).toInt().coerceIn(0..100),
@@ -937,9 +935,9 @@ private fun IntelChannelsSection(
     state: UiState,
     viewModel: SettingsViewModel,
 ) {
-    SectionTitle("Intel Channels")
+    SectionTitle("预警频道")
     Text(
-        text = "Intel reports will be read from these channels:",
+        text = "预警报告将从此处配置的频道读取：",
         style = RiftTheme.typography.bodyPrimary,
         modifier = Modifier.padding(vertical = Spacing.medium),
     )
@@ -961,7 +959,7 @@ private fun IntelChannelsSection(
                     val text = buildAnnotatedString {
                         append(channel.name)
                         withStyle(SpanStyle(color = RiftTheme.colors.textSecondary)) {
-                            append(" – ${channel.region ?: "All regions"}")
+                            append(" – ${channel.region ?: "全部星域"}")
                         }
                     }
                     Text(
@@ -980,7 +978,7 @@ private fun IntelChannelsSection(
         }
         if (state.intelChannels.isEmpty()) {
             Text(
-                text = "No intel channels configured",
+                text = "尚未配置预警频道",
                 style = RiftTheme.typography.headerPrimary,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
@@ -1019,19 +1017,19 @@ private fun IntelChannelsSection(
         RiftAutocompleteTextField(
             text = addChannelText,
             suggestions = state.autocompleteIntelChannels.filter { it.lowercase().startsWith(addChannelText.lowercase()) }.take(5),
-            placeholder = "Channel name",
+            placeholder = "频道名称",
             onTextChanged = {
                 addChannelText = it
             },
             modifier = Modifier.weight(1f),
         )
-        val regionPlaceholder = "Choose region"
+        val regionPlaceholder = "选择星域"
         var selectedRegion by remember { mutableStateOf<String?>(regionPlaceholder) }
         RiftDropdown(
             items = listOf(null) + state.regions,
             selectedItem = selectedRegion,
             onItemSelected = { selectedRegion = it },
-            getItemName = { it ?: "All regions" },
+            getItemName = { it ?: "全部星域" },
             maxItems = 5,
         )
 
@@ -1039,15 +1037,15 @@ private fun IntelChannelsSection(
         val isRegionSelected = selectedRegion != regionPlaceholder
         RiftTooltipArea(
             text = if (!isNameSelected) {
-                "Enter a channel name"
+                "请输入频道名称"
             } else if (!isRegionSelected) {
-                "Choose a region for this channel"
+                "请选择该频道所属星域"
             } else {
                 null
             },
         ) {
             RiftButton(
-                text = "Add channel",
+                text = "添加频道",
                 isEnabled = isNameSelected && isRegionSelected,
                 onClick = {
                     if (addChannelText.isNotEmpty() && selectedRegion != regionPlaceholder) {
@@ -1066,26 +1064,25 @@ private fun IntelTimeoutSection(
     state: UiState,
     viewModel: SettingsViewModel,
 ) {
-    SectionTitle("Intel Timeout", Modifier.padding(bottom = Spacing.medium))
+    SectionTitle("预警过期时间", Modifier.padding(bottom = Spacing.medium))
     val expiryItems = mapOf(
-        "1 minute" to 60,
-        "2 minutes" to 60 * 2,
-        "5 minutes" to 60 * 5,
-        "10 minutes" to 60 * 10,
-        "15 minutes" to 60 * 15,
-        "30 minutes" to 60 * 30,
-        "1 hour" to 60 * 60,
-        "Don't expire" to Int.MAX_VALUE,
+        "1 分钟" to 60,
+        "2 分钟" to 60 * 2,
+        "5 分钟" to 60 * 5,
+        "10 分钟" to 60 * 10,
+        "15 分钟" to 60 * 15,
+        "30 分钟" to 60 * 30,
+        "1 小时" to 60 * 60,
+        "不过期" to Int.MAX_VALUE,
     )
     RiftDropdownWithLabel(
-        label = "Expire intel after:",
+        label = "预警在此时间后过期：",
         items = expiryItems.values.toList(),
         selectedItem = state.intelExpireSeconds,
         onItemSelected = viewModel::onIntelExpireSecondsChange,
         getItemName = { item -> expiryItems.entries.firstOrNull { it.value == item }?.key ?: "$item" },
         tooltip = """
-                    Time after a piece of intel will no longer
-                    be shown on the feed or map.
+                    预警在多长时间后不再显示于预警流或星图。
         """.trimIndent(),
     )
 }
@@ -1095,40 +1092,40 @@ private fun MapUserInterfaceSection(
     state: UiState,
     viewModel: SettingsViewModel,
 ) {
-    SectionTitle("Map User Interface", Modifier.padding(bottom = Spacing.medium))
+    SectionTitle("星图界面", Modifier.padding(bottom = Spacing.medium))
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
         RiftCheckboxWithLabel(
-            label = "Compact mode",
+            label = "紧凑模式",
             isChecked = state.intelMap.isUsingCompactMode,
             onCheckedChange = viewModel::onIsUsingCompactModeChange,
         )
         RiftCheckboxWithLabel(
-            label = "Move map to follow character",
-            tooltip = "When you jump to another system visible\non your current map, the map will move\nto center on the new system",
+            label = "星图随角色移动",
+            tooltip = "当你跃迁到当前星图可见的另一星系时，\n星图会移动并居中到新星系",
             isChecked = state.intelMap.isFollowingCharacterWithinLayouts,
             onCheckedChange = { viewModel.onIsFollowingCharacterWithinLayoutsChange(it) },
         )
         RiftCheckboxWithLabel(
-            label = "Switch maps to follow character",
-            tooltip = "When you jump to another system not visible\non the current map, the map will switch\nto a region showing that system",
+            label = "切换星图以跟随角色",
+            tooltip = "当你跃迁到当前星图不可见的星系时，\n星图会切换到包含该星系的区域视图",
             isChecked = state.intelMap.isFollowingCharacterAcrossLayouts,
             onCheckedChange = { viewModel.onIsFollowingCharacterAcrossLayoutsChange(it) },
         )
         RiftCheckboxWithLabel(
-            label = "Invert scroll wheel zoom",
-            tooltip = "Zoom direction will be reversed",
+            label = "反转滚轮缩放方向",
+            tooltip = "缩放方向与默认相反",
             isChecked = state.intelMap.isInvertZoom,
             onCheckedChange = { viewModel.onIsScrollZoomInvertedChange(it) },
         )
         RiftCheckboxWithLabel(
-            label = "Always show system labels",
-            tooltip = "System labels won't hide when zooming out",
+            label = "始终显示星系标签",
+            tooltip = "缩放时星系名称不会自动隐藏",
             isChecked = state.intelMap.isAlwaysShowingSystems,
             onCheckedChange = { viewModel.onIsAlwaysShowingSystemsChange(it) },
         )
         RiftCheckboxWithLabel(
-            label = "Prefer showing systems on region maps",
-            tooltip = "When clicking a system somewhere in RIFT, it will\nopen on a region map instead of the New Eden map",
+            label = "优先在星域图上显示星系",
+            tooltip = "在 RIFT 中点击星系时，优先在星域图而非新伊甸总图打开",
             isChecked = state.intelMap.isPreferringRegionMaps,
             onCheckedChange = { viewModel.onIsPreferringRegionMapsChange(it) },
         )
@@ -1137,9 +1134,9 @@ private fun MapUserInterfaceSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.padding(end = Spacing.medium).fillMaxWidth(),
         ) {
-            Text("View and edit your map markers")
+            Text("查看与编辑星图标记")
             RiftButton(
-                text = "Map markers",
+                text = "星图标记",
                 type = ButtonType.Primary,
                 onClick = viewModel::onMapNotesClick,
             )
@@ -1147,9 +1144,9 @@ private fun MapUserInterfaceSection(
         Text(
             text = buildAnnotatedString {
                 withColor(RiftTheme.colors.textPrimary) {
-                    append("Tip:")
+                    append("提示：")
                 }
-                append(" Press Space on the map to automatically resize")
+                append(" 在星图上按空格可自动调整缩放")
             },
             style = RiftTheme.typography.bodySecondary,
         )
@@ -1161,21 +1158,21 @@ private fun MapAutopilotSection(
     state: UiState,
     viewModel: SettingsViewModel,
 ) {
-    SectionTitle("Autopilot", Modifier.padding(bottom = Spacing.medium))
+    SectionTitle("自动导航", Modifier.padding(bottom = Spacing.medium))
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
         Text(
-            text = "When setting autopilot destination, use:",
+            text = "设置自动导航目的地时使用：",
             style = RiftTheme.typography.bodySecondary,
         )
         RiftRadioButtonWithLabel(
-            label = "RIFT calculated route",
-            tooltip = "Shortest route as shown on the RIFT map.\nIgnores your EVE autopilot settings.",
+            label = "RIFT 计算航线",
+            tooltip = "与 RIFT 星图显示的最短路径一致。\n忽略游戏内自动导航设置。",
             isChecked = state.isUsingRiftAutopilotRoute,
             onChecked = { viewModel.onIsUsingRiftAutopilotRouteChange(true) },
         )
         RiftRadioButtonWithLabel(
-            label = "EVE calculated route",
-            tooltip = "Route as set by EVE.\nMay not match the route on the RIFT map.",
+            label = "EVE 计算航线",
+            tooltip = "与游戏内设置的航线一致。\n可能与 RIFT 星图显示不完全相同。",
             isChecked = !state.isUsingRiftAutopilotRoute,
             onChecked = { viewModel.onIsUsingRiftAutopilotRouteChange(false) },
         )
@@ -1187,28 +1184,27 @@ private fun MapIntelPopupsSection(
     state: UiState,
     viewModel: SettingsViewModel,
 ) {
-    SectionTitle("Intel Popups", Modifier.padding(bottom = Spacing.medium))
+    SectionTitle("预警气泡", Modifier.padding(bottom = Spacing.medium))
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
         val timeoutItems = mapOf(
-            "Don't show" to 0,
-            "10 seconds" to 10,
-            "30 seconds" to 30,
-            "1 minute" to 60,
-            "2 minutes" to 60 * 2,
-            "5 minutes" to 60 * 5,
-            "15 minutes" to 60 * 15,
-            "No limit" to Int.MAX_VALUE,
+            "不显示" to 0,
+            "10 秒" to 10,
+            "30 秒" to 30,
+            "1 分钟" to 60,
+            "2 分钟" to 60 * 2,
+            "5 分钟" to 60 * 5,
+            "15 分钟" to 60 * 15,
+            "无限制" to Int.MAX_VALUE,
         )
         RiftDropdownWithLabel(
-            label = "Automatically show popups for:",
+            label = "自动显示气泡：",
             items = timeoutItems.values.toList(),
             selectedItem = state.intelMap.intelPopupTimeoutSeconds,
             onItemSelected = viewModel::onIntelPopupTimeoutSecondsChange,
             getItemName = { item -> timeoutItems.entries.firstOrNull { it.value == item }?.key ?: "$item" },
             tooltip = """
-                    For how long will intel popups be visible
-                    when new information is available.
-                    They are visible on hover even after this time.
+                    有新预警时气泡显示的时长。
+                    超过此时间后仍可悬停查看。
             """.trimIndent(),
         )
     }
@@ -1219,7 +1215,7 @@ private fun JumpBridgeNetworkSection(
     state: UiState,
     viewModel: SettingsViewModel,
 ) {
-    SectionTitle("Jump Bridge Network", Modifier.padding())
+    SectionTitle("跳桥网络", Modifier.padding())
     Column {
         val solarSystemsRepository: SolarSystemsRepository = remember { koin.get() }
         ScrollbarLazyColumn(
@@ -1270,7 +1266,7 @@ private fun JumpBridgeNetworkSection(
             } else {
                 item {
                     Text(
-                        text = "No jump bridges imported",
+                        text = "尚未导入跳桥",
                         style = RiftTheme.typography.headerPrimary,
                         textAlign = TextAlign.Center,
                         modifier = Modifier
@@ -1288,22 +1284,22 @@ private fun JumpBridgeNetworkSection(
                                         .fillMaxWidth()
                                         .padding(top = Spacing.medium),
                                 ) {
-                                    Text("Import jump bridges by copying a list to clipboard")
+                                    Text("从剪贴板复制列表以导入跳桥")
                                     when (state.jumpBridgesReference) {
                                         is ConfigurationPackRepository.JumpBridgesReference.Url -> {
-                                            Text("You can press Ctrl+A, Ctrl+C on this page:")
+                                            Text("可在此页面 Ctrl+A、Ctrl+C：")
                                             LinkText(
-                                                text = "${state.jumpBridgesReference.packName} Jump Bridge List",
+                                                text = "${state.jumpBridgesReference.packName} 跳桥列表",
                                                 onClick = { state.jumpBridgesReference.url.toURIOrNull()?.openBrowser() },
                                             )
                                         }
                                         is ConfigurationPackRepository.JumpBridgesReference.Text -> {
                                             Text(
-                                                text = "A list of jump bridges for ${state.jumpBridgesReference.packName} from ${formatDate(state.jumpBridgesReference.date)} is available",
+                                                text = "已有 ${state.jumpBridgesReference.packName} 于 ${formatDate(state.jumpBridgesReference.date)} 的跳桥列表",
                                                 textAlign = TextAlign.Center,
                                             )
                                             LinkText(
-                                                text = "Click to use it",
+                                                text = "点击复制",
                                                 onClick = { Clipboard.copy(state.jumpBridgesReference.text) },
                                             )
                                         }
@@ -1311,7 +1307,7 @@ private fun JumpBridgeNetworkSection(
                                             val pointerInteractionStateHolder = remember { PointerInteractionStateHolder() }
                                             RiftTooltipArea(
                                                 text = buildAnnotatedString {
-                                                    appendLine("Any format will work as long as there are\ntwo system names somewhere in each line:")
+                                                    appendLine("每行包含两个星系名即可，格式不限：")
                                                     appendLine()
                                                     withColor(RiftTheme.colors.textHighlighted) {
                                                         appendLine("Jita -> Perimeter")
@@ -1327,7 +1323,7 @@ private fun JumpBridgeNetworkSection(
                                                         .padding(vertical = Spacing.small),
                                                 ) {
                                                     Text(
-                                                        text = "Format info",
+                                                        text = "格式说明",
                                                         style = RiftTheme.typography.bodySecondary,
                                                     )
                                                     RiftMulticolorIcon(
@@ -1348,7 +1344,7 @@ private fun JumpBridgeNetworkSection(
                                     append(connections)
                                     if (copyState.network.size > 5) {
                                         appendLine()
-                                        append("And more…")
+                                        append("还有更多…")
                                     }
                                 }
                                 RiftTooltipArea(
@@ -1361,9 +1357,9 @@ private fun JumpBridgeNetworkSection(
                                             .fillMaxWidth()
                                             .padding(top = Spacing.medium),
                                     ) {
-                                        Text("Copied network")
+                                        Text("已复制的网络")
                                         RiftButton(
-                                            text = "Import ${copyState.network.size} connections",
+                                            text = "导入 ${copyState.network.size} 条连接",
                                             onClick = viewModel::onJumpBridgeImportClick,
                                         )
                                     }
@@ -1380,17 +1376,17 @@ private fun JumpBridgeNetworkSection(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(top = Spacing.medium).fillMaxWidth(),
                 ) {
-                    Text("Network with ${network.size} connections loaded")
+                    Text("已加载 ${network.size} 条跳桥连接")
                     Spacer(Modifier.weight(1f))
                     RiftButton(
-                        text = "Copy",
+                        text = "复制",
                         type = ButtonType.Primary,
                         cornerCut = ButtonCornerCut.None,
                         onClick = viewModel::onJumpBridgeCopyClick,
                         modifier = Modifier.padding(end = Spacing.medium),
                     )
                     RiftButton(
-                        text = "Forget",
+                        text = "清除",
                         type = ButtonType.Negative,
                         onClick = viewModel::onJumpBridgeForgetClick,
                     )
@@ -1409,9 +1405,9 @@ private fun JumpBridgeNetworkSection(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
-                                Text("Search automatically?")
+                                Text("自动搜索？")
                                 RiftButton(
-                                    text = "Search",
+                                    text = "搜索",
                                     onClick = viewModel::onJumpBridgeSearchClick,
                                 )
                             }
@@ -1422,9 +1418,9 @@ private fun JumpBridgeNetworkSection(
                     Column(
                         modifier = Modifier.padding(top = Spacing.medium),
                     ) {
-                        Text("Searching – ${String.format("%.1f", searchState.progress * 100)}%")
+                        Text("搜索中 – ${String.format("%.1f", searchState.progress * 100)}%")
                         Text(
-                            text = "Found ${searchState.connectionsCount} jump gate connections",
+                            text = "已找到 ${searchState.connectionsCount} 条星门连接",
                             style = RiftTheme.typography.bodySecondary,
                         )
                     }
@@ -1433,7 +1429,7 @@ private fun JumpBridgeNetworkSection(
                     Column(
                         modifier = Modifier.padding(top = Spacing.medium),
                     ) {
-                        Text("Unable to search")
+                        Text("无法搜索")
                     }
                 }
                 is JumpBridgeSearchState.SearchDone -> {
@@ -1445,9 +1441,9 @@ private fun JumpBridgeNetworkSection(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Text("Found network with ${searchState.network.size} connections")
+                            Text("已找到包含 ${searchState.network.size} 条连接的网络")
                             RiftButton(
-                                text = "Import",
+                                text = "导入",
                                 onClick = viewModel::onJumpBridgeSearchImportClick,
                             )
                         }
@@ -1461,21 +1457,20 @@ private fun JumpBridgeNetworkSection(
                 modifier = Modifier.padding(top = Spacing.medium),
             ) {
                 RiftCheckboxWithLabel(
-                    label = "Show network on map",
-                    tooltip = "Jump bridge connection lines\nwill be shown on the map",
+                    label = "在星图显示网络",
+                    tooltip = "跳桥连线将绘制在星图上",
                     isChecked = state.intelMap.isJumpBridgeNetworkShown,
                     onCheckedChange = viewModel::onIsJumpBridgeNetworkShownChange,
                 )
                 RiftSliderWithLabel(
-                    label = "Connection opacity:",
+                    label = "连线不透明度：",
                     width = 100.dp,
                     range = 10..100,
                     currentValue = state.intelMap.jumpBridgeNetworkOpacity,
                     onValueChange = viewModel::onJumpBridgeNetworkOpacityChange,
                     getValueName = { "$it%" },
                     tooltip = """
-                    Visibility of the jump bridge
-                    connection lines.
+                    跳桥连线的可见度。
                     """.trimIndent(),
                 )
             }
@@ -1488,7 +1483,7 @@ private fun SovereigntyUpgradesSection(
     state: UiState,
     viewModel: SettingsViewModel,
 ) {
-    SectionTitle("Sovereignty Upgrades", Modifier.padding())
+    SectionTitle("主权增强", Modifier.padding())
     Column(
         verticalArrangement = Arrangement.spacedBy(Spacing.small),
     ) {
@@ -1537,7 +1532,7 @@ private fun SovereigntyUpgradesSection(
             } else {
                 item {
                     Text(
-                        text = "No sovereignty upgrades imported",
+                        text = "尚未导入主权增强",
                         style = RiftTheme.typography.headerPrimary,
                         textAlign = TextAlign.Center,
                         modifier = Modifier
@@ -1555,18 +1550,18 @@ private fun SovereigntyUpgradesSection(
                                         .fillMaxWidth()
                                         .padding(top = Spacing.medium),
                                 ) {
-                                    Text("Import upgrades by copying a list to clipboard")
+                                    Text("从剪贴板复制列表以导入增强")
                                     if (state.sovereigntyUpgradesUrl != null) {
                                         Text(
-                                            text = "You can press Ctrl+A, Ctrl+C on the list\nyou can find on this page:",
+                                            text = "可在此页面列表上 Ctrl+A、Ctrl+C：",
                                             textAlign = TextAlign.Center,
                                         )
                                         LinkText(
-                                            text = "Alliance Sovereignty Upgrades List",
+                                            text = "联盟主权增强列表",
                                             onClick = { state.sovereigntyUpgradesUrl.toURIOrNull()?.openBrowser() },
                                         )
                                     } else {
-                                        Text("You need a system name and the upgrade names on each line")
+                                        Text("每行需包含星系名与增强名称")
                                     }
                                 }
                             }
@@ -1578,9 +1573,9 @@ private fun SovereigntyUpgradesSection(
                                         .fillMaxWidth()
                                         .padding(top = Spacing.medium),
                                 ) {
-                                    Text("Copied upgrades")
+                                    Text("已复制的增强")
                                     RiftButton(
-                                        text = "Import for ${copyState.upgrades.size} systems",
+                                        text = "导入 ${copyState.upgrades.size} 个星系",
                                         onClick = viewModel::onSovereigntyUpgradesImportClick,
                                     )
                                 }
@@ -1597,17 +1592,17 @@ private fun SovereigntyUpgradesSection(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(top = Spacing.medium).fillMaxWidth(),
                 ) {
-                    Text("Upgrades for ${upgrades.size} systems loaded")
+                    Text("已加载 ${upgrades.size} 个星系的增强")
                     Spacer(Modifier.weight(1f))
                     RiftButton(
-                        text = "Copy",
+                        text = "复制",
                         type = ButtonType.Primary,
                         cornerCut = ButtonCornerCut.None,
                         onClick = viewModel::onSovereigntyUpgradesCopyClick,
                         modifier = Modifier.padding(end = Spacing.medium),
                     )
                     RiftButton(
-                        text = "Forget",
+                        text = "清除",
                         type = ButtonType.Negative,
                         onClick = viewModel::onSovereigntyUpgradesForgetClick,
                     )
@@ -1616,14 +1611,14 @@ private fun SovereigntyUpgradesSection(
         }
 
         RiftCheckboxWithLabel(
-            label = "Import upgrades from hacked Sovereignty Hubs",
-            tooltip = "Automatically import sovereignty upgrades\nwhen clicking the copy button on\na hacked Sovereignty Hub result",
+            label = "从被黑主权枢纽自动导入增强",
+            tooltip = "在被黑主权枢纽结果界面点击复制时自动导入主权增强",
             isChecked = state.isSovereigntyUpgradesHackImportingEnabled,
             onCheckedChange = viewModel::onIsSovereigntyUpgradesHackImportingEnabledClick,
         )
         RiftCheckboxWithLabel(
-            label = "Import offline upgrades from hacked Sovereignty Hubs",
-            tooltip = "When importing sovereignty upgrades from\na hacked Sovereignty Hub,\nalso import offline upgrades",
+            label = "同时导入离线增强",
+            tooltip = "从被黑主权枢纽导入时，同时导入离线状态的增强",
             isChecked = state.isSovereigntyUpgradesHackImportingOfflineEnabled,
             onCheckedChange = viewModel::onIsSovereigntyUpgradesHackImportingOfflineEnabledClick,
         )

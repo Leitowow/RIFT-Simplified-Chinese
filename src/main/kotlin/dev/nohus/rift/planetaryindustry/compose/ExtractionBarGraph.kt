@@ -97,12 +97,12 @@ fun ExtractionBarGraph(
                     tooltipOffset = offset
                     tooltipText = buildAnnotatedString {
                         withStyle(SpanStyle(color = tooltipPrimary, fontSize = tooltipFontSize)) {
-                            appendLine("Cycle ${cycle + 1}")
-                            appendLine("${formatNumber(prediction[cycle])} units")
+                            appendLine("周期 ${cycle + 1}")
+                            appendLine("${formatNumber(prediction[cycle])} 单位")
                         }
                         withStyle(SpanStyle(color = tooltipSecondary, fontSize = tooltipFontSize)) {
-                            appendLine("Accumulated:")
-                            appendLine("${formatNumber(prediction.take(cycle + 1).sum())} units")
+                            appendLine("累计：")
+                            appendLine("${formatNumber(prediction.take(cycle + 1).sum())} 单位")
                             val cycleTime = totalProgramDuration.dividedBy(prediction.size.toLong())
                             append(formatDurationCompact(cycleTime.multipliedBy(cycle + 1L)))
                         }
@@ -282,7 +282,7 @@ private fun ExtractionBarGraph(
 
         // X axis legend
         translate(left = LEFT_TEXT_WIDTH + LEGEND_LINE_WIDTH, top = yLegendMeasured[0].lastBaseline + GRAPH_HEIGHT) {
-            val measuredStart = textMeasurer.measure("Program start", legendStyle)
+            val measuredStart = textMeasurer.measure("程序开始", legendStyle)
             val measuredEnd = textMeasurer.measure(totalTimeText, legendStyle)
             translate(top = LEGEND_LINE_WIDTH) {
                 drawText(measuredStart)

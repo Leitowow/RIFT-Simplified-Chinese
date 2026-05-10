@@ -76,7 +76,6 @@ import dev.nohus.rift.generated.resources.play
 import dev.nohus.rift.generated.resources.window_loudspeaker_icon
 import dev.nohus.rift.get
 import dev.nohus.rift.planetaryindustry.PlanetaryIndustryRepository.ColonyItem
-import dev.nohus.rift.utils.plural
 import dev.nohus.rift.utils.sound.Sound
 import dev.nohus.rift.utils.sound.SoundPlayer
 import dev.nohus.rift.utils.toRegexOrNull
@@ -99,8 +98,8 @@ fun WindowScope.CreateAlertDialog(
     if (state.dismissEvent.get()) onDismiss()
 
     val title = when (inputModel) {
-        CreateAlertInputModel.New -> "New alert"
-        is CreateAlertInputModel.EditAction -> "Edit alert action"
+        CreateAlertInputModel.New -> "新建告警"
+        is CreateAlertInputModel.EditAction -> "编辑告警动作"
     }
     RiftDialog(
         title = title,
@@ -182,13 +181,13 @@ private fun CreateAlertDialogContent(
                 modifier = Modifier.padding(top = Spacing.medium),
             ) {
                 RiftButton(
-                    text = "Back",
+                    text = "返回",
                     cornerCut = ButtonCornerCut.BottomLeft,
                     type = ButtonType.Secondary,
                     onClick = onBackClick,
                     modifier = Modifier.weight(1f),
                 )
-                val label = if (state.formQuestion != null) "Continue" else "Finish"
+                val label = if (state.formQuestion != null) "继续" else "完成"
                 RiftButton(
                     text = label,
                     onClick = onContinueClick,
@@ -269,9 +268,9 @@ private fun FormQuestion(
                 ) {
                     var system: String by remember { mutableStateOf("") }
                     val placeholder = if (formQuestion.allowEmpty) {
-                        "System name, or leave empty"
+                        "星系名，可留空"
                     } else {
-                        "System name"
+                        "星系名"
                     }
                     if (formQuestion.allowEmpty) {
                         LaunchedEffect(Unit) {
@@ -290,8 +289,8 @@ private fun FormQuestion(
                     if (isPendingAnswerValid != null) {
                         RequirementIcon(
                             isFulfilled = isPendingAnswerValid,
-                            fulfilledTooltip = "System valid",
-                            notFulfilledTooltip = "System does not exist",
+                            fulfilledTooltip = "星系有效",
+                            notFulfilledTooltip = "星系不存在",
                             modifier = Modifier.padding(start = Spacing.medium),
                         )
                     }
@@ -306,13 +305,13 @@ private fun FormQuestion(
                     var min: Int by remember { mutableStateOf(0) }
                     var max: Int by remember { mutableStateOf(0) }
 
-                    fun getItemName(jumps: Int) = if (jumps == 0) "Same system" else "$jumps jump${jumps.plural}"
+                    fun getItemName(jumps: Int) = if (jumps == 0) "同星系" else "$jumps 跳"
 
                     LaunchedEffect(formQuestion) {
                         onFormAnswer(JumpsRangeAnswer(minJumps = min, maxJumps = max))
                     }
                     Text(
-                        text = "From: ",
+                        text = "从：",
                         style = RiftTheme.typography.headerPrimary,
                     )
                     val maxJumps = 16 // 0 - 15
@@ -328,7 +327,7 @@ private fun FormQuestion(
                         maxItems = 5,
                     )
                     Text(
-                        text = " To: ",
+                        text = " 到：",
                         style = RiftTheme.typography.headerPrimary,
                     )
                     RiftDropdown(
@@ -363,7 +362,7 @@ private fun FormQuestion(
                     )
                 } else {
                     Text(
-                        text = "You have no characters to choose from!",
+                        text = "没有可选角色。",
                         style = RiftTheme.typography.headerPrimary,
                     )
                 }
@@ -386,7 +385,7 @@ private fun FormQuestion(
                     )
                 } else {
                     Text(
-                        text = "You have no intel channels to choose from!",
+                        text = "没有可选的预警频道。",
                         style = RiftTheme.typography.headerPrimary,
                     )
                 }
@@ -398,8 +397,8 @@ private fun FormQuestion(
                 var selectedTabIndex by remember { mutableStateOf(0) }
                 RiftTabBar(
                     tabs = listOf(
-                        Tab(0, "Built-in sounds", isCloseable = false),
-                        Tab(1, "Custom sound", isCloseable = false),
+                        Tab(0, "内置音效", isCloseable = false),
+                        Tab(1, "自定义音效", isCloseable = false),
                     ),
                     selectedTab = selectedTabIndex,
                     onTabSelected = { selectedTabIndex = it },
@@ -431,7 +430,7 @@ private fun FormQuestion(
                         }
                     } else {
                         Text(
-                            text = "Choose a sound file:",
+                            text = "选择音效文件：",
                             style = RiftTheme.typography.bodyPrimary,
                             modifier = Modifier.padding(top = Spacing.medium),
                         )
@@ -454,12 +453,12 @@ private fun FormQuestion(
                             AnimatedVisibility(isPendingAnswerValid != null) {
                                 RequirementIcon(
                                     isFulfilled = isPendingAnswerValid ?: false,
-                                    fulfilledTooltip = "Sound file path valid",
-                                    notFulfilledTooltip = pendingAnswerInvalidReason ?: "Invalid",
+                                    fulfilledTooltip = "音效文件路径有效",
+                                    notFulfilledTooltip = pendingAnswerInvalidReason ?: "无效",
                                 )
                             }
                             RiftFileChooserButton(
-                                typesDescription = "WAV audio files",
+                                typesDescription = "WAV 音频",
                                 extensions = listOf("wav"),
                                 onFileChosen = {
                                     text = it.absolutePathString()
@@ -474,7 +473,7 @@ private fun FormQuestion(
                             )
                         }
                         Text(
-                            text = "You can test your sound with the play button.",
+                            text = "可用播放按钮试听。",
                             style = RiftTheme.typography.bodyPrimary,
                             modifier = Modifier.padding(vertical = Spacing.medium),
                         )
@@ -491,9 +490,9 @@ private fun FormQuestion(
                 ) {
                     var text: String by remember { mutableStateOf("") }
                     val placeholder = if (formQuestion.allowEmpty) {
-                        "Comma separated character names, or leave empty"
+                        "多个角色名用英文逗号分隔，可留空"
                     } else {
-                        "Comma separated character names"
+                        "多个角色名用英文逗号分隔"
                     }
                     if (formQuestion.allowEmpty) {
                         LaunchedEffect(Unit) {
@@ -516,8 +515,8 @@ private fun FormQuestion(
                     if (isPendingAnswerValid != null) {
                         RequirementIcon(
                             isFulfilled = isPendingAnswerValid,
-                            fulfilledTooltip = "Character names valid",
-                            notFulfilledTooltip = pendingAnswerInvalidReason ?: "Invalid character names",
+                            fulfilledTooltip = "角色名有效",
+                            notFulfilledTooltip = pendingAnswerInvalidReason ?: "角色名无效",
                             modifier = Modifier.padding(start = Spacing.medium),
                         )
                     }
@@ -547,7 +546,7 @@ private fun FormQuestion(
                             Spacer(Modifier.width(Spacing.medium))
                             RiftDropdown(
                                 items = recentTargets.toList(),
-                                selectedItem = "Recent targets",
+                                selectedItem = "最近目标",
                                 onItemSelected = {
                                     text = it
                                     onFormAnswer(FreeformTextAnswer(it.trim()))
@@ -559,9 +558,9 @@ private fun FormQuestion(
                         }
                     }
                     val helpText = if (recentTargets.isNotEmpty()) {
-                        "You can choose from your recent targets above."
+                        "可从上方「最近目标」下拉选择。"
                     } else {
-                        "Attack some targets in-game to get suggestions to what you can type above."
+                        "在游戏内锁定/攻击目标后，可将目标名填入上方。"
                     }
                     Text(
                         text = helpText,
@@ -576,7 +575,7 @@ private fun FormQuestion(
                     Column {
                         if (isNotEmpty) {
                             Text(
-                                text = "Leave empty for any.",
+                                text = "留空表示任意殖民地。",
                                 style = RiftTheme.typography.bodySecondary,
                                 modifier = Modifier.padding(bottom = Spacing.small),
                             )
@@ -603,7 +602,7 @@ private fun FormQuestion(
                             }
                         } else {
                             Text(
-                                text = "No colonies available.\nCheck the Planetary Industry window.",
+                                text = "暂无殖民地。\n请打开行星工业窗口刷新。",
                                 style = RiftTheme.typography.headerPrimary,
                             )
                         }
@@ -640,8 +639,8 @@ private fun FormQuestion(
                     }
                     if (formQuestion.isRegexAllowed) {
                         RiftCheckboxWithLabel(
-                            label = "Use regex",
-                            tooltip = "Your filter will be evaluated as a regular expression.\nMatching is case insensitive.\n\nYou can learn more about regular expressions online.",
+                            label = "使用正则",
+                            tooltip = "过滤条件将按正则表达式解析。\n匹配不区分大小写。\n\n可在网上查阅正则表达式教程。",
                             isChecked = isRegex,
                             onCheckedChange = { isRegex = it },
                         )
@@ -652,7 +651,7 @@ private fun FormQuestion(
                             ) {
                                 RiftTextField(
                                     text = testText,
-                                    placeholder = "Enter a message to test if it matches",
+                                    placeholder = "输入测试文本，检查是否匹配",
                                     onTextChanged = {
                                         testText = it
                                     },
@@ -664,12 +663,12 @@ private fun FormQuestion(
                                             text = buildAnnotatedString {
                                                 val trimmed = match.value.trim()
                                                 if (trimmed.isNotBlank()) {
-                                                    append("Matched: ")
+                                                    append("匹配：")
                                                     withColor(RiftTheme.colors.textSpecialHighlighted) {
                                                         append(trimmed)
                                                     }
                                                 } else {
-                                                    append("Matched")
+                                                    append("有匹配")
                                                 }
                                             },
                                             maxLines = 1,
@@ -683,8 +682,8 @@ private fun FormQuestion(
                                 }
                                 RequirementIcon(
                                     isFulfilled = match != null,
-                                    fulfilledTooltip = "This message would trigger this alert",
-                                    notFulfilledTooltip = "This message wouldn't trigger this alert",
+                                    fulfilledTooltip = "该消息会触发此告警",
+                                    notFulfilledTooltip = "该消息不会触发此告警",
                                     modifier = Modifier.padding(start = Spacing.small),
                                 )
                             }
@@ -714,7 +713,7 @@ private fun FormQuestion(
                     }
                 } else {
                     Text(
-                        text = "No contact labels available.\nCheck the Contacts window.",
+                        text = "暂无联系人标签。\n请打开联系人窗口。",
                         style = RiftTheme.typography.headerPrimary,
                     )
                 }
@@ -800,15 +799,14 @@ private fun Pair<FormQuestion, FormAnswer>.toAnswerString(
 
         is FormQuestion.JumpsRangeQuestion -> {
             val (min, max) = (answer as JumpsRangeAnswer).let { it.minJumps to it.maxJumps }
-            val plural = if (max > 1) "s" else ""
             if (min == 0 && max == 0) {
-                "Same system only"
+                "仅本星系"
             } else if (min == 0) {
-                "Up to $max jump$plural away"
+                "最远 $max 跳"
             } else if (min == max) {
-                "Exactly $max jump$plural away"
+                "正好 $max 跳"
             } else {
-                "Between $min–$max jump$plural away"
+                "$min–$max 跳"
             }
         }
 
@@ -833,7 +831,7 @@ private fun Pair<FormQuestion, FormAnswer>.toAnswerString(
             when {
                 specificCharacters.isEmpty() -> null
                 specificCharacters.size == 1 -> specificCharacters.single()
-                else -> "${specificCharacters.size} specific characters"
+                else -> "${specificCharacters.size} 个指定角色"
             }
         }
 
@@ -844,9 +842,9 @@ private fun Pair<FormQuestion, FormAnswer>.toAnswerString(
         is FormQuestion.PlanetaryIndustryColoniesQuestion -> {
             val colonies = (answer as PlanetaryIndustryColoniesAnswer).colonies
             when {
-                colonies.isEmpty() -> "Any colony"
-                colonies.size == 1 -> "A specific colony"
-                else -> "${colonies.size} Specific colonies"
+                colonies.isEmpty() -> "任意殖民地"
+                colonies.size == 1 -> "指定殖民地"
+                else -> "${colonies.size} 个指定殖民地"
             }
         }
 
@@ -859,7 +857,7 @@ private fun Pair<FormQuestion, FormAnswer>.toAnswerString(
             if (labels.size == 1) {
                 labels.single().name
             } else {
-                "${labels.size} labels"
+                "${labels.size} 个标签"
             }
         }
     }

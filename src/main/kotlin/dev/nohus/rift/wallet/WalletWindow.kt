@@ -58,7 +58,7 @@ fun WalletWindow(
     val viewModel: WalletViewModel = viewModel()
     val state by viewModel.state.collectAsState()
     RiftWindow(
-        title = "Wallets",
+        title = "钱包",
         icon = Res.drawable.window_wallet,
         state = windowState,
         onCloseClick = onCloseRequest,
@@ -96,11 +96,11 @@ private fun ToolbarRow(
         val tabs = remember {
             WalletTab.entries.mapIndexed { index, tab ->
                 val title = when (tab) {
-                    WalletTab.Wallets -> "Wallets"
-                    WalletTab.Overview -> "Overview"
-                    WalletTab.Transactions -> "Transactions"
-                    WalletTab.Insights -> "Insights"
-                    WalletTab.LoyaltyPoints -> "Loyalty Points"
+                    WalletTab.Wallets -> "钱包"
+                    WalletTab.Overview -> "总览"
+                    WalletTab.Transactions -> "流水"
+                    WalletTab.Insights -> "分析"
+                    WalletTab.LoyaltyPoints -> "忠诚点"
                 }
                 Tab(id = index, title = title, isCloseable = false)
             }
@@ -153,12 +153,12 @@ private fun WalletWindowContent(
                         modifier = Modifier.fillMaxWidth().padding(Spacing.large),
                     ) {
                         Text(
-                            text = "Could not load wallets",
+                            text = "无法加载钱包数据",
                             style = RiftTheme.typography.headerPrimary,
                             textAlign = TextAlign.Center,
                         )
                         RiftButton(
-                            text = "Try again",
+                            text = "重试",
                             type = ButtonType.Primary,
                             onClick = onReloadClick,
                         )

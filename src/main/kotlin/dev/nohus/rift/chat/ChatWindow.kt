@@ -90,7 +90,7 @@ fun ChatWindow(
     val state by viewModel.state.collectAsState()
 
     RiftWindow(
-        title = "Chat",
+        title = "聊天",
         icon = Res.drawable.window_chatchannels,
         state = windowState,
         onCloseClick = onCloseRequest,
@@ -135,7 +135,7 @@ private fun ToolbarRow(
 
         val tabs = remember(channels, unreadChannels) {
             val emptyChannel = if (channels.isEmpty()) {
-                listOf(Tab(id = 0, title = "No open channels", isCloseable = false))
+                listOf(Tab(id = 0, title = "没有打开的频道", isCloseable = false))
             } else {
                 emptyList()
             }
@@ -257,7 +257,7 @@ private fun ChatChannel(
                 .distinct()
                 .sortedBy { it.name }
             RiftTooltipArea(
-                text = "This counter and list shows characters that have recently sent a message, and not all characters in the channel. Similar to wormhole local in-game.",
+                text = "该计数和列表仅显示最近发送过消息的角色，并非频道中的全部角色。效果类似游戏内虫洞本地频道。",
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -332,7 +332,7 @@ private fun LazyItemScope.ChatMessageItem(
     ) {
         RiftContextMenuArea(
             items = listOf(
-                ContextMenuItem.TextItem("Copy") {
+                ContextMenuItem.TextItem("复制") {
                     println("Copy")
                 },
             ),
@@ -399,7 +399,7 @@ private fun ChannelList(
             item(key = "header") {
                 Column {
                     Text(
-                        text = "Choose channels to open",
+                        text = "选择要打开的频道",
                         style = RiftTheme.typography.bodyPrimary,
                         modifier = Modifier.padding(start = Spacing.medium, bottom = Spacing.large),
                     )
@@ -429,7 +429,7 @@ private fun ChannelList(
                                 horizontalArrangement = Arrangement.spacedBy(Spacing.small),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                val name = character?.info?.name ?: "Character ${channel.characterId}"
+                                val name = character?.info?.name ?: "角色 ${channel.characterId}"
                                 RiftCircularCharacterPortrait(
                                     characterId = channel.characterId,
                                     name = name,
@@ -462,19 +462,19 @@ private fun ChannelList(
                             horizontalArrangement = Arrangement.spacedBy(Spacing.small),
                         ) {
                             RiftButton(
-                                text = "Close",
+                                text = "关闭",
                                 type = ButtonType.Secondary,
                                 cornerCut = ButtonCornerCut.BottomLeft,
                                 onClick = { onChannelCloseClick(channel) },
                             )
                             RiftButton(
-                                text = "View",
+                                text = "查看",
                                 onClick = { onChannelClick(channel) },
                             )
                         }
                     } else {
                         RiftButton(
-                            text = "Open",
+                            text = "打开",
                             onClick = { onChannelOpenClick(channel) },
                         )
                     }

@@ -3,10 +3,6 @@ package dev.nohus.rift.about
 import dev.nohus.rift.BuildConfig
 import dev.nohus.rift.ViewModel
 import dev.nohus.rift.about.GetPatronsUseCase.Patron
-import dev.nohus.rift.about.UpdateController.UpdateAvailability
-import dev.nohus.rift.network.AsyncResource
-import dev.nohus.rift.network.AsyncResource.Loading
-import dev.nohus.rift.network.AsyncResource.Ready
 import dev.nohus.rift.network.HttpGetUseCase.CacheBehavior
 import dev.nohus.rift.utils.OperatingSystem
 import dev.nohus.rift.utils.directories.AppDirectories
@@ -31,15 +27,12 @@ class AboutViewModel(
     private val appDirectories: AppDirectories,
     private val windowManager: WindowManager,
     getVersionUseCase: GetVersionUseCase,
-    private val updateController: UpdateController,
     private val getPatrons: GetPatronsUseCase,
 ) : ViewModel() {
 
     data class UiState(
         val version: String,
         val buildTime: String,
-        val updateAvailability: AsyncResource<UpdateAvailability>,
-        val isUpdateDialogShown: Boolean,
         val isLegalDialogShown: Boolean,
         val isCreditsDialogShown: Boolean,
         val operatingSystem: OperatingSystem,
@@ -51,8 +44,6 @@ class AboutViewModel(
         UiState(
             version = getVersionUseCase(),
             buildTime = getBuildTime(),
-            updateAvailability = Loading,
-            isUpdateDialogShown = false,
             isLegalDialogShown = false,
             isCreditsDialogShown = false,
             operatingSystem = operatingSystem,
@@ -63,7 +54,6 @@ class AboutViewModel(
     val state = _state.asStateFlow()
 
     init {
-        checkForUpdate()
         checkPatrons()
     }
 
@@ -75,14 +65,6 @@ class AboutViewModel(
                 }
             }
         }
-    }
-
-    fun onUpdateClick() {
-        _state.update { it.copy(isUpdateDialogShown = true) }
-    }
-
-    fun onTriggerUpdateClick() {
-        updateController.triggerUpdate()
     }
 
     fun onLogLiteClick() {
@@ -108,16 +90,10 @@ class AboutViewModel(
     fun onDialogDismissed() {
         _state.update {
             it.copy(
-                isUpdateDialogShown = false,
                 isLegalDialogShown = false,
                 isCreditsDialogShown = false,
             )
         }
-    }
-
-    private fun checkForUpdate() = viewModelScope.launch {
-        val status = updateController.isUpdateAvailable()
-        _state.update { it.copy(updateAvailability = Ready(status)) }
     }
 
     private fun getBuildTime(): String {

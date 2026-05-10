@@ -69,7 +69,7 @@ fun MapMarkersWindow(
     val state by viewModel.state.collectAsState()
 
     RiftWindow(
-        title = "Map Markers",
+        title = "星图标记",
         icon = Res.drawable.window_locations,
         state = windowState,
         onCloseClick = onCloseRequest,
@@ -162,7 +162,7 @@ private fun MapMarkersWindowContent(
             }
             if (state.markers.isEmpty()) {
                 Text(
-                    text = "No map markers created",
+                    text = "尚未创建星图标记",
                     style = RiftTheme.typography.headerPrimary,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
@@ -195,7 +195,7 @@ private fun MapMarkersWindowContent(
             RiftAutocompleteTextField(
                 text = state.systemText,
                 suggestions = remember(state.systemText) { getSuggestions(solarSystemsRepository, state.systemText) },
-                placeholder = "System name",
+                placeholder = "星系名",
                 onTextChanged = {
                     onSystemTextChange(it)
                 },
@@ -204,7 +204,7 @@ private fun MapMarkersWindowContent(
             )
             RiftTextField(
                 text = markerText,
-                placeholder = "Label",
+                placeholder = "标记文字",
                 onTextChanged = { markerText = it.take(50) },
                 onDeleteClick = { markerText = "" },
                 modifier = Modifier.weight(1f),
@@ -212,14 +212,14 @@ private fun MapMarkersWindowContent(
             val isEditing = state.editingMarker != null
             if (isEditing) {
                 RiftButton(
-                    text = "Cancel",
+                    text = "取消",
                     type = ButtonType.Secondary,
                     cornerCut = ButtonCornerCut.None,
                     onClick = onCancelEditClick,
                 )
             }
             RiftButton(
-                text = if (isEditing) "Update" else "Add marker",
+                text = if (isEditing) "更新" else "添加标记",
                 onClick = {
                     val added = onAddMarkerClick(NewMarkerInput(state.systemText, markerText, markerColor, markerIcon))
                     if (added) {
@@ -231,7 +231,7 @@ private fun MapMarkersWindowContent(
         }
 
         Text(
-            text = "Marker color",
+            text = "标记颜色",
             style = RiftTheme.typography.headerPrimary,
         )
         val animatedColor by animateColorAsState(markerColor ?: Color.White)
@@ -274,7 +274,7 @@ private fun MapMarkersWindowContent(
         }
 
         Text(
-            text = "Marker icon",
+            text = "标记图标",
             style = RiftTheme.typography.headerPrimary,
         )
         FlowRow(

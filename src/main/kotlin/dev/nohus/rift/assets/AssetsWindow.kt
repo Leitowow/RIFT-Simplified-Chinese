@@ -56,7 +56,7 @@ fun AssetsWindow(
     val viewModel: AssetsViewModel = viewModel()
     val state by viewModel.state.collectAsState()
     RiftWindow(
-        title = "Assets",
+        title = "资产",
         icon = Res.drawable.window_assets,
         state = windowState,
         onCloseClick = onCloseRequest,
@@ -103,8 +103,8 @@ private fun ToolbarRow(
         val tabs = remember {
             AssetsTab.entries.mapIndexed { index, tab ->
                 val title = when (tab) {
-                    AssetsTab.Owners -> "Owners"
-                    AssetsTab.Assets -> "Assets"
+                    AssetsTab.Owners -> "归属"
+                    AssetsTab.Assets -> "资产"
                 }
                 Tab(id = index, title = title, isCloseable = false)
             }
@@ -153,7 +153,7 @@ private fun AssetsWindowContent(
             ) {
                 LoadingSpinnerAmbient()
                 Text(
-                    text = "Loading assets…",
+                    text = "正在加载资产…",
                     style = RiftTheme.typography.headlinePrimary,
                 )
             }
@@ -166,12 +166,12 @@ private fun AssetsWindowContent(
                         modifier = Modifier.fillMaxWidth().padding(Spacing.large),
                     ) {
                         Text(
-                            text = "Could not load assets",
+                            text = "无法加载资产",
                             style = RiftTheme.typography.headerPrimary,
                             textAlign = TextAlign.Center,
                         )
                         RiftButton(
-                            text = "Try again",
+                            text = "重试",
                             type = ButtonType.Primary,
                             onClick = onReloadClick,
                         )

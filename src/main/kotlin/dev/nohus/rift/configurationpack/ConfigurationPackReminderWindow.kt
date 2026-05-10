@@ -39,7 +39,7 @@ fun ConfigurationPackReminderWindow(
     }
 
     RiftWindow(
-        title = "Alliance Features",
+        title = "联盟功能",
         icon = Res.drawable.window_info,
         state = windowState,
         onCloseClick = onCloseRequest,

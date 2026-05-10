@@ -30,7 +30,6 @@ import dev.nohus.rift.compose.theme.Spacing
 import dev.nohus.rift.dynamicportraits.DynamicCharacterPortraitParallax
 import dev.nohus.rift.generated.resources.Res
 import dev.nohus.rift.generated.resources.window_assets
-import dev.nohus.rift.utils.plural
 import dev.nohus.rift.utils.toggle
 import org.jetbrains.compose.resources.painterResource
 import java.time.Duration
@@ -44,9 +43,9 @@ fun OwnersContent(
 ) {
     Column {
         val text = if (data.owners.any { it is AssetOwner.Corporation }) {
-            "Choose owners to filter assets"
+            "选择要筛选资产的军团或角色"
         } else {
-            "Choose characters to filter assets"
+            "选择要筛选资产的角色"
         }
         Text(
             text = text,
@@ -87,7 +86,7 @@ fun OwnersContent(
                             )
                         }
                     },
-                    name = "All character assets",
+                    name = "全部角色资产",
                     isSelected = OwnerType.Character in filters,
                     onClick = {
                         val updated = filters
@@ -166,6 +165,6 @@ fun OwnersContent(
 }
 
 private fun formatBalance(count: Int?): String {
-    if (count == null) return "0 assets"
-    return "$count asset${count.plural}"
+    if (count == null) return "0 件资产"
+    return "$count 件资产"
 }

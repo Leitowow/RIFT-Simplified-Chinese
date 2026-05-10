@@ -63,23 +63,23 @@ object SpreadsheetFormatter {
             ).joinToString(separator = "\t")
         }
         val headers = listOf(
-            "Character name",
-            "Character ID",
-            "Planet name",
-            "Planet type",
-            "System name",
-            "System ID",
-            "Status",
-            "Is working",
-            "Final products",
-            "Product capacity",
-            "Used capacity",
-            "Used capacity (products)",
-            "Used capacity (other)",
-            "Expires at",
-            "Expiry reason",
-            *extractedTypes.map { "Avg. per hour (${it.name})" }.toTypedArray(),
-            *types.map { "Stored (${it.name})" }.toTypedArray(),
+            "角色名",
+            "角色ID",
+            "行星名",
+            "行星类型",
+            "星系名",
+            "星系ID",
+            "状态",
+            "是否工作中",
+            "最终产品",
+            "产品容量",
+            "已用容量",
+            "已用容量（产品）",
+            "已用容量（其他）",
+            "到期时间",
+            "到期原因",
+            *extractedTypes.map { "每小时平均（${it.name}）" }.toTypedArray(),
+            *types.map { "库存（${it.name}）" }.toTypedArray(),
         ).joinToString("\t")
         return "$headers\n$rows"
     }
@@ -119,23 +119,23 @@ object SpreadsheetFormatter {
             ).joinToString(separator = "\t")
         }
         val headers = listOf(
-            "Character name",
-            "Character ID",
-            "Planet name",
-            "Planet type",
-            "System name",
-            "System ID",
-            "Status",
-            "Is working",
-            "Final products",
-            "Product capacity",
-            "Used capacity",
-            "Used capacity (products)",
-            "Used capacity (other)",
-            "Expires at (Date)",
-            "Expiry reason",
-            *extractedTypes.map { "Avg. per hour (${it.name})" }.toTypedArray(),
-            *types.map { "Stored (${it.name})" }.toTypedArray(),
+            "角色名",
+            "角色ID",
+            "行星名",
+            "行星类型",
+            "星系名",
+            "星系ID",
+            "状态",
+            "是否工作中",
+            "最终产品",
+            "产品容量",
+            "已用容量",
+            "已用容量（产品）",
+            "已用容量（其他）",
+            "到期时间（日期）",
+            "到期原因",
+            *extractedTypes.map { "每小时平均（${it.name}）" }.toTypedArray(),
+            *types.map { "库存（${it.name}）" }.toTypedArray(),
         ).joinToString("\t")
         return "$headers\n$rows"
     }
@@ -177,21 +177,21 @@ object SpreadsheetFormatter {
             ).joinToString(separator = "\t")
         }
         val headers = listOf(
-            "Character",
-            "Planet name",
-            "Planet type",
-            "System",
-            "Status",
-            "Is working",
-            *List(maxFinalProducts) { "Final product" }.toTypedArray(),
-            "Product capacity",
-            "Used capacity",
-            "Used capacity (products)",
-            "Used capacity (other)",
-            "Expires at (Date)",
-            "Expiry reason",
-            *extractedTypes.map { "Avg. per hour (${it.name})" }.toTypedArray(),
-            *types.map { "Stored (${it.name})" }.toTypedArray(),
+            "角色",
+            "行星名",
+            "行星类型",
+            "星系",
+            "状态",
+            "是否工作中",
+            *List(maxFinalProducts) { "最终产品" }.toTypedArray(),
+            "产品容量",
+            "已用容量",
+            "已用容量（产品）",
+            "已用容量（其他）",
+            "到期时间（日期）",
+            "到期原因",
+            *extractedTypes.map { "每小时平均（${it.name}）" }.toTypedArray(),
+            *types.map { "库存（${it.name}）" }.toTypedArray(),
         ).joinToString("\t")
         return "$headers\n$rows"
     }
@@ -222,24 +222,24 @@ object SpreadsheetFormatter {
     }
 
     private fun ColonyStatus.getDisplayName() = when (this) {
-        is Extracting -> "Extracting"
-        is Producing -> "Producing"
-        is NotSetup -> "Not setup"
-        is NeedsAttention -> "Needs attention"
-        is Idle -> "Idle"
+        is Extracting -> "开采中"
+        is Producing -> "生产中"
+        is NotSetup -> "未设置"
+        is NeedsAttention -> "需要注意"
+        is Idle -> "闲置"
     }
 
     private fun PinStatus.getDisplayName() = when (this) {
-        PinStatus.Extracting -> "Extracting"
-        PinStatus.ExtractorExpired -> "Extractor expired"
-        PinStatus.ExtractorInactive -> "Extractor inactive"
-        PinStatus.FactoryIdle -> "Factory idle"
-        PinStatus.InputNotRouted -> "Input not routed"
-        PinStatus.NotSetup -> "Not setup"
-        PinStatus.OutputNotRouted -> "Output not routed"
-        PinStatus.Producing -> "Producing"
-        PinStatus.Static -> "Static"
-        PinStatus.StorageFull -> "Storage full"
+        PinStatus.Extracting -> "开采中"
+        PinStatus.ExtractorExpired -> "采集器已过期"
+        PinStatus.ExtractorInactive -> "采集器未激活"
+        PinStatus.FactoryIdle -> "工厂闲置"
+        PinStatus.InputNotRouted -> "输入未建立路线"
+        PinStatus.NotSetup -> "未设置"
+        PinStatus.OutputNotRouted -> "输出未建立路线"
+        PinStatus.Producing -> "生产中"
+        PinStatus.Static -> "静态"
+        PinStatus.StorageFull -> "仓储已满"
     }
 
     private fun getGoogleSheetsExpiryTimestamp(item: ColonyItem): String {
@@ -254,7 +254,7 @@ object SpreadsheetFormatter {
 
     private fun getExpiryReason(status: ColonyStatus): String {
         return if (status is Idle) {
-            "Idle"
+            "闲置"
         } else {
             status.pins.map { it.status.getDisplayName() }.distinct().joinToString(",")
         }

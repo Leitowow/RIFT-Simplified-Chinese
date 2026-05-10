@@ -140,10 +140,10 @@ private fun JournalItem(
                 val walletDivisionsRepository: WalletDivisionsRepository = remember { koin.get() }
                 Text(
                     text = when (item.wallet) {
-                        is Wallet.Character -> state.availableWalletFilters.characters.find { it.id == item.wallet.characterId }?.name ?: "Unknown character"
+                        is Wallet.Character -> state.availableWalletFilters.characters.find { it.id == item.wallet.characterId }?.name ?: "未知角色"
 
                         is Wallet.Corporation -> {
-                            val corporationName = state.availableWalletFilters.corporations.find { it.id == item.wallet.corporationId }?.name ?: "Unknown corporation"
+                            val corporationName = state.availableWalletFilters.corporations.find { it.id == item.wallet.corporationId }?.name ?: "未知军团"
                             val divisionName = walletDivisionsRepository.getDivisionNameOrDefault(item.wallet.corporationId, item.wallet.divisionId)
                             "$corporationName $divisionName"
                         }
@@ -168,7 +168,7 @@ private fun JournalItem(
                 }
                 if (item.firstParty != null && item.secondParty != null) {
                     Text(
-                        text = "paid",
+                        text = "支付给",
                         style = RiftTheme.typography.bodySecondary,
                     )
                 }
@@ -191,7 +191,7 @@ private fun JournalItem(
                     TypeDetailItem(item.context, showCents = state.showCents)
                     if (item.refType == "corporation_account_withdrawal") {
                         Text(
-                            text = "performed the withdrawal",
+                            text = "执行了取款",
                             style = RiftTheme.typography.bodySecondary,
                         )
                     }
@@ -212,7 +212,7 @@ private fun JournalItem(
         if (item.reasonTypeDetails.isEmpty() && !item.reason.isNullOrBlank()) {
             Text(
                 text = buildAnnotatedString {
-                    append("Reason: \"")
+                    append("原因：\"")
                     withColor(RiftTheme.colors.textPrimary) {
                         append(item.reason)
                     }
@@ -230,7 +230,7 @@ private fun JournalItem(
             ) {
                 TypeDetailItem(item.taxReceiver)
                 Text(
-                    text = "received tax: ${formatIsk(item.tax, withCents = state.showCents)}",
+                    text = "收到税款：${formatIsk(item.tax, withCents = state.showCents)}",
                     style = RiftTheme.typography.bodySecondary,
                 )
             }
@@ -285,7 +285,7 @@ private fun FiltersRow(
             val referenceTypesFilterItems = buildList<ContextMenuItem> {
                 add(
                     ContextMenuItem.CheckboxItem(
-                        text = "All types",
+                        text = "全部类型",
                         isSelected = state.filters.referenceTypes.isEmpty(),
                         onClick = { updateFilters { copy(referenceTypes = emptyList()) } },
                     ),
@@ -298,7 +298,7 @@ private fun FiltersRow(
                 }
                 if (marketTransactionTypes.isNotEmpty()) {
                     add(ContextMenuItem.DividerItem)
-                    add(ContextMenuItem.HeaderItem("Market Transactions"))
+                    add(ContextMenuItem.HeaderItem("市场交易"))
                     marketTransactionTypes.forEach { type ->
                         add(
                             ContextMenuItem.CheckboxItem(
@@ -314,7 +314,7 @@ private fun FiltersRow(
                 }
                 if (otherTypes.isNotEmpty()) {
                     add(ContextMenuItem.DividerItem)
-                    add(ContextMenuItem.HeaderItem("Other Types"))
+                    add(ContextMenuItem.HeaderItem("其他类型"))
                     otherTypes.forEach { type ->
                         add(
                             ContextMenuItem.CheckboxItem(
@@ -332,7 +332,7 @@ private fun FiltersRow(
             Box(contentAlignment = Alignment.BottomStart) {
                 var isShown by remember { mutableStateOf(false) }
                 RiftButton(
-                    text = "Types",
+                    text = "类型",
                     onClick = { isShown = true },
                 )
                 if (isShown) {
@@ -353,9 +353,9 @@ private fun FiltersRow(
                 onItemSelected = { updateFilters { copy(direction = it) } },
                 getItemName = {
                     when (it) {
-                        null -> "All"
-                        TransferDirection.Income -> "Income"
-                        TransferDirection.Expense -> "Expenses"
+                        null -> "全部"
+                        TransferDirection.Income -> "收入"
+                        TransferDirection.Expense -> "支出"
                     }
                 },
             )
@@ -376,12 +376,12 @@ private fun FiltersRow(
                 horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
             ) {
                 Text(
-                    text = "Showing only transactions involving:",
+                    text = "仅显示涉及以下对象的流水：",
                     style = RiftTheme.typography.bodySecondary,
                 )
                 TypeDetailItem(state.filters.party)
                 RiftTooltipArea(
-                    text = "Remove filter",
+                    text = "移除筛选",
                 ) {
                     RiftImageButton(
                         resource = Res.drawable.deleteicon,

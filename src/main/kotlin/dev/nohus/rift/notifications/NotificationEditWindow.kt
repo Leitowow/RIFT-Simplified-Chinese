@@ -70,7 +70,7 @@ fun NotificationEditWindow(
         undecorated = true,
         alwaysOnTop = true,
         transparent = false,
-        title = "Edit notification placement",
+        title = "编辑通知位置",
         icon = painterResource(Res.drawable.window_loudspeaker_icon),
     ) {
         CompositionLocalProvider(LocalRiftColors provides getRiftColors(isTransparent = false)) {

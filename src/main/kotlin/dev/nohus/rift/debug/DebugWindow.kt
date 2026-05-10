@@ -87,7 +87,7 @@ fun DebugWindow(
     val viewModel: DebugViewModel = viewModel()
     val state by viewModel.state.collectAsState()
     RiftWindow(
-        title = "Debug",
+        title = "调试",
         icon = Res.drawable.window_log,
         state = windowState,
         onCloseClick = onCloseRequest,

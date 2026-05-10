@@ -116,7 +116,7 @@ fun TypeDetailItem(
                     ) {
                         val quantity = type.count ?: transaction?.quantity
                         val text = if (quantity != null) {
-                            "${formatNumber(quantity)}x ${type.type.name}"
+                            "${formatNumber(quantity)}× ${type.type.name}"
                         } else {
                             type.type.name
                         }
@@ -126,10 +126,10 @@ fun TypeDetailItem(
                         )
                         val unitPrice = transaction?.unitPrice
                         if (unitPrice != null) {
-                            val verb = if (transaction.isBuy) "Bought" else "Sold"
+                            val verb = if (transaction.isBuy) "买入" else "卖出"
                             val showCents = if (unitPrice.absoluteValue < 10) true else showCents
                             Text(
-                                text = "$verb at ${formatIsk(unitPrice, showCents)} per unit",
+                                text = "$verb，单价 ${formatIsk(unitPrice, showCents)}",
                                 style = RiftTheme.typography.bodySecondary,
                             )
                         }
@@ -152,7 +152,7 @@ fun TypeDetailItem(
                             style = RiftTheme.typography.bodyHighlighted.copy(fontWeight = FontWeight.Bold),
                         )
                         Text(
-                            text = "Corporation Project",
+                            text = "军团项目",
                             style = RiftTheme.typography.bodySecondary,
                         )
                     }
@@ -174,7 +174,7 @@ fun TypeDetailItem(
                             style = RiftTheme.typography.bodyHighlighted.copy(fontWeight = FontWeight.Bold),
                         )
                         Text(
-                            text = "Freelance Project",
+                            text = "自由职业项目",
                             style = RiftTheme.typography.bodySecondary,
                         )
                     }
@@ -190,7 +190,7 @@ fun TypeDetailItem(
                         style = RiftTheme.typography.bodyHighlighted.copy(fontWeight = FontWeight.Bold),
                     )
                     Text(
-                        text = "Daily Goal",
+                        text = "每日目标",
                         style = RiftTheme.typography.bodySecondary,
                     )
                 }
@@ -225,7 +225,7 @@ fun TypeDetailItem(
 
             is TypeDetail.Unknown -> {
                 Text(
-                    "Not implemented ${type.id}",
+                    "未实现 ${type.id}",
                     style = RiftTheme.typography.bodyPrimary.copy(RiftTheme.colors.hotRed),
                     modifier = Modifier.padding(horizontal = Spacing.small),
                 )

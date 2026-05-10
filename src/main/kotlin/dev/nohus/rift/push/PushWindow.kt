@@ -47,7 +47,7 @@ fun PushWindow(
     val viewModel: PushViewModel = viewModel()
     val state by viewModel.state.collectAsState()
     RiftWindow(
-        title = "Mobile Notifications",
+        title = "移动通知",
         icon = Res.drawable.window_loudspeaker_icon,
         state = windowState,
         withContentPadding = false,

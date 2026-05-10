@@ -136,8 +136,8 @@ private fun getTuneContextMenuItems(
     }
     val isUsingBiggerFontSize = (state as? UiState.LoggedIn)?.isUsingBiggerFontSize
     return buildList {
-        if (canLogout) add(TextItem("Logout", Res.drawable.logout, onClick = viewModel::onLogoutClick))
-        if (isUsingBiggerFontSize != null) add(CheckboxItem("Bigger font size", isSelected = isUsingBiggerFontSize, onClick = viewModel::onBiggerFontSizeClick))
+        if (canLogout) add(TextItem("退出登陆", Res.drawable.logout, onClick = viewModel::onLogoutClick))
+        if (isUsingBiggerFontSize != null) add(CheckboxItem("切换至大号字体", isSelected = isUsingBiggerFontSize, onClick = viewModel::onBiggerFontSizeClick))
     }.takeIf { it.isNotEmpty() }
 }
 
@@ -209,7 +209,7 @@ private fun ConnectingContent() {
         Column {
             LoadingSpinner()
             Text(
-                text = "Connecting…",
+                text = "正在连接…",
                 style = RiftTheme.typography.headerPrimary,
                 modifier = Modifier
                     .padding(top = Spacing.large),
@@ -248,11 +248,11 @@ private fun NoAccountContent(
                 )
                 val isUsingPidgin = state.canImport
                 val text = if (isUsingPidgin) {
-                    "\nRIFT is a Jabber client with additional features specific for Goonswarm.\n\n" +
-                        "You can receive pings in a better way without having to run Pidgin."
+                    "\nRIFT 是一个为 Goonswarm 提供额外特性的 Jabber 客户端。\n\n" +
+                        "无需运行 Pidgin，也能更方便地接收集结通知。"
                 } else {
-                    "\nRIFT is a Jabber client with additional features specific for Goonswarm.\n\n" +
-                        "You can receive pings in a better way without having to run a separate app."
+                    "\nRIFT 是一个为 Goonswarm 提供额外特性的 Jabber 客户端。\n\n" +
+                        "无需额外运行其他应用，也能更方便地接收集结通知。"
                 }
                 Text(
                     text = text,
@@ -263,7 +263,7 @@ private fun NoAccountContent(
         }
         if (state.canImport) {
             RiftButton(
-                text = "Import Pidgin account",
+                text = "导入 Pidgin 账号",
                 cornerCut = ButtonCornerCut.Both,
                 onClick = onImportClick,
                 modifier = Modifier
@@ -271,7 +271,7 @@ private fun NoAccountContent(
                     .padding(top = Spacing.medium),
             )
             RiftButton(
-                text = "Login manually",
+                text = "手动登陆",
                 type = ButtonType.Secondary,
                 cornerCut = ButtonCornerCut.Both,
                 onClick = onLoginClick,
@@ -281,7 +281,7 @@ private fun NoAccountContent(
             )
         } else {
             RiftButton(
-                text = "Get started",
+                text = "开始使用",
                 cornerCut = ButtonCornerCut.Both,
                 onClick = onLoginClick,
                 modifier = Modifier
@@ -333,26 +333,26 @@ private fun LoginContent(
                     modifier = Modifier.padding(top = Spacing.medium),
                 ) {
                     Text(
-                        text = "Jabber username",
+                        text = "用户名",
                         style = RiftTheme.typography.headerPrimary,
                     )
                     RiftTextField(
                         text = jidLocalPart,
-                        placeholder = "Type your username",
+                        placeholder = "请输入用户名",
                         onTextChanged = { jidLocalPart = it },
                         modifier = Modifier
                             .width(200.dp)
                             .padding(top = Spacing.small),
                     )
                     Text(
-                        text = "Jabber password",
+                        text = "密码",
                         style = RiftTheme.typography.headerPrimary,
                         modifier = Modifier
                             .padding(top = Spacing.small),
                     )
                     RiftTextField(
                         text = password,
-                        placeholder = if (savedPassword != null) "(unchanged)" else "Type your password",
+                        placeholder = if (savedPassword != null) "（如果密码未更改，直接点击登陆）" else "请输入密码",
                         isPassword = true,
                         onTextChanged = { password = it },
                         modifier = Modifier
@@ -360,7 +360,7 @@ private fun LoginContent(
                             .padding(top = Spacing.small),
                     )
                     LinkText(
-                        text = "Forgot username or password?",
+                        text = "忘记用户名或密码？",
                         onClick = { "https://goonfleet.com/esa/".toURIOrNull()?.openBrowser() },
                         modifier = Modifier.padding(top = Spacing.small),
                     )
@@ -368,7 +368,7 @@ private fun LoginContent(
             }
         }
         RiftButton(
-            text = "Connect",
+            text = "登陆",
             cornerCut = ButtonCornerCut.Both,
             onClick = {
                 val effectivePassword = password.takeIf { it.isNotEmpty() } ?: savedPassword ?: password
@@ -401,7 +401,7 @@ private fun LoggedInContent(
     onChatRoomMessageSend: (MultiUserChat, String) -> Unit,
 ) {
     Column {
-        val contactsTab = Tab(id = 0, "Contacts", false, payload = TabModel.Contacts)
+        val contactsTab = Tab(id = 0, "联系人", false, payload = TabModel.Contacts)
         val chatRoomTabs = state.jabberState.openMultiUserChats.withIndex().associateWith { (index, chat) ->
             Tab(
                 id = index + 1,
@@ -473,13 +473,13 @@ private fun LoggedInContent(
                                     .padding(bottom = Spacing.medium),
                             ) {
                                 RiftButton(
-                                    text = "Add contact",
+                                    text = "添加联系人",
                                     cornerCut = ButtonCornerCut.BottomLeft,
                                     onClick = onAddContactClick,
                                     modifier = Modifier.weight(1f),
                                 )
                                 RiftButton(
-                                    text = "Add chat room",
+                                    text = "添加聊天室",
                                     cornerCut = ButtonCornerCut.BottomRight,
                                     onClick = onAddChatRoomClick,
                                     modifier = Modifier.weight(1f),
@@ -544,7 +544,7 @@ private fun AddContact(
         modifier = Modifier.padding(Spacing.medium),
     ) {
         Text(
-            text = "Add contact",
+            text = "添加联系人",
             style = RiftTheme.typography.headerPrimary,
         )
         var jidLocalPart by remember { mutableStateOf("") }
@@ -553,7 +553,7 @@ private fun AddContact(
         ) {
             RiftTextField(
                 text = jidLocalPart,
-                placeholder = "Jabber username",
+                placeholder = "用户名",
                 onTextChanged = {
                     jidLocalPart = it
                 },
@@ -565,26 +565,26 @@ private fun AddContact(
             )
         }
         Text(
-            text = "Choose nickname (optional)",
+            text = "设置昵称（可选）",
             style = RiftTheme.typography.headerPrimary,
         )
         var name by remember { mutableStateOf("") }
         RiftTextField(
             text = name,
-            placeholder = "Nickname",
+            placeholder = "昵称",
             onTextChanged = {
                 name = it
             },
             modifier = Modifier.fillMaxWidth(),
         )
         Text(
-            text = "Choose group (optional)",
+            text = "设置分组（可选）",
             style = RiftTheme.typography.headerPrimary,
         )
         var group by remember { mutableStateOf("") }
         RiftTextField(
             text = group,
-            placeholder = "Group",
+            placeholder = "分组",
             onTextChanged = {
                 group = it
             },
@@ -600,14 +600,14 @@ private fun AddContact(
             horizontalArrangement = Arrangement.spacedBy(Spacing.small),
         ) {
             RiftButton(
-                text = "Back",
+                text = "返回",
                 type = ButtonType.Secondary,
                 cornerCut = ButtonCornerCut.BottomLeft,
                 onClick = { onBackClick() },
                 modifier = Modifier.weight(1f),
             )
             RiftButton(
-                text = "Add contact",
+                text = "添加联系人",
                 cornerCut = ButtonCornerCut.BottomRight,
                 onClick = {
                     val name = name.takeIf { it.isNotBlank() } ?: jidLocalPart
@@ -630,7 +630,7 @@ private fun AddChatRoom(
         modifier = Modifier.padding(Spacing.medium),
     ) {
         Text(
-            text = "Add chat room",
+            text = "添加聊天室",
             style = RiftTheme.typography.headerPrimary,
         )
         var jidLocalPart by remember { mutableStateOf("") }
@@ -639,7 +639,7 @@ private fun AddChatRoom(
         ) {
             RiftTextField(
                 text = jidLocalPart,
-                placeholder = "Room name",
+                placeholder = "聊天室名称",
                 onTextChanged = {
                     jidLocalPart = it
                 },
@@ -660,14 +660,14 @@ private fun AddChatRoom(
             horizontalArrangement = Arrangement.spacedBy(Spacing.small),
         ) {
             RiftButton(
-                text = "Back",
+                text = "返回",
                 type = ButtonType.Secondary,
                 cornerCut = ButtonCornerCut.BottomLeft,
                 onClick = { onBackClick() },
                 modifier = Modifier.weight(1f),
             )
             RiftButton(
-                text = "Add chat room",
+                text = "添加聊天室",
                 cornerCut = ButtonCornerCut.BottomRight,
                 onClick = { onAddChatRoomSubmitClick(jidLocalPart) },
                 modifier = Modifier.weight(1f),
@@ -751,7 +751,7 @@ private fun UserChat(
                     },
             )
             RiftButton(
-                text = "Send",
+                text = "发送",
                 onClick = {
                     onMessageSend(messageInput)
                     messageInput = ""
@@ -840,7 +840,7 @@ private fun MultiUserChat(
                     },
             )
             RiftButton(
-                text = "Send",
+                text = "发送",
                 onClick = {
                     onMessageSend(messageInput)
                     messageInput = ""
@@ -856,7 +856,7 @@ private fun ChatMessage(
     userChat: UserChat,
     message: UserMessage,
 ) {
-    val from = if (message.isOutgoing) "You" else userChat.name
+    val from = if (message.isOutgoing) "你" else userChat.name
     ChatMessage(isUsingBiggerFontSize, message.timestamp, from, message.text)
 }
 
@@ -866,7 +866,7 @@ private fun ChatMessage(
     userChat: MultiUserChat,
     message: MultiUserMessage,
 ) {
-    val from = message.sender ?: "You"
+    val from = message.sender ?: "你"
     ChatMessage(isUsingBiggerFontSize, message.timestamp, from, message.text)
 }
 
@@ -897,8 +897,8 @@ private fun ChatMessage(
 
     RiftContextMenuArea(
         items = listOf(
-            TextItem("Copy row", onClick = { Clipboard.copy(text.toString()) }),
-            TextItem("Copy message", onClick = { Clipboard.copy(message) }),
+            TextItem("复制整行", onClick = { Clipboard.copy(text.toString()) }),
+            TextItem("复制消息", onClick = { Clipboard.copy(message) }),
         ),
     ) {
         Row(

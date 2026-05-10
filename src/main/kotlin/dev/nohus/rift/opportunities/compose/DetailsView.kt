@@ -153,7 +153,7 @@ fun DetailsView(
             )
 
             Text(
-                text = "Opportunity Details",
+                text = "机遇详情",
                 style = RiftTheme.typography.detailSecondary,
             )
         }
@@ -181,8 +181,8 @@ fun DetailsView(
                 else -> EveColors.hotRed
             }
             val opportunityType = when (opportunity.type) {
-                OpportunityType.CorporationProject -> "Project"
-                OpportunityType.FreelanceJob -> "Job"
+                OpportunityType.CorporationProject -> "项目"
+                OpportunityType.FreelanceJob -> "任务"
             }
 
             EndDateRow(opportunity)
@@ -192,7 +192,7 @@ fun DetailsView(
                 Spacer(Modifier.height(Spacing.veryLarge))
             }
 
-            TitledSection(title = "Progress") {
+            TitledSection(title = "进度") {
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(50.dp),
                 ) {
@@ -219,7 +219,7 @@ fun DetailsView(
                                             .padding(Spacing.large),
                                     ) {
                                         Text(
-                                            text = "Total ISK Allocated:",
+                                            text = "分配的 ISK 总额：",
                                             style = RiftTheme.typography.detailSecondary,
                                         )
                                         Text(
@@ -227,7 +227,7 @@ fun DetailsView(
                                             style = RiftTheme.typography.bodyPrimary,
                                         )
                                         Text(
-                                            text = "Total compensation paid to all capsuleers:",
+                                            text = "支付给所有克隆飞行员的补偿总额：",
                                             style = RiftTheme.typography.detailSecondary,
                                         )
                                         Text(
@@ -238,7 +238,7 @@ fun DetailsView(
                                             color = RiftTheme.colors.textSecondary,
                                         )
                                         Text(
-                                            text = "Remaining compensation:",
+                                            text = "剩余补偿：",
                                             style = RiftTheme.typography.detailSecondary,
                                         )
                                         Text(
@@ -250,14 +250,14 @@ fun DetailsView(
                                 if (opportunity.details.submissionLimit != null) {
                                     RewardInfo(
                                         text = formatIsk(opportunity.details.submissionLimit, withCents = false),
-                                        caption = "Coverage limit per loss",
+                                        caption = "单次损失补偿上限",
                                         icon = Res.drawable.spaceship_command_16px,
                                         tooltip = tooltip,
                                     )
                                 } else {
                                     RewardInfo(
                                         text = formatIsk(reward.remaining, withCents = false),
-                                        caption = "Remaining ISK in $opportunityType",
+                                        caption = "$opportunityType 剩余 ISK",
                                         icon = Res.drawable.spaceship_command_16px,
                                         tooltip = tooltip,
                                     )
@@ -267,7 +267,7 @@ fun DetailsView(
                             if (opportunity.details.submissionMultiplier != null) {
                                 RewardInfo(
                                     text = String.format("%.0f%%", opportunity.details.submissionMultiplier * 100),
-                                    caption = "Coverage Ratio",
+                                    caption = "赔付比例",
                                     icon = Res.drawable.ratio_16px,
                                     tooltip = {
                                         Column(
@@ -277,7 +277,7 @@ fun DetailsView(
                                                 .padding(Spacing.large),
                                         ) {
                                             Text(
-                                                text = "The percentage of the value of the ship plus fitting lost that will be compensated.",
+                                                text = "按舰船及配装损失价值进行补偿的比例。",
                                                 style = RiftTheme.typography.bodyPrimary,
                                             )
                                         }
@@ -288,7 +288,7 @@ fun DetailsView(
                             opportunity.reward?.let { reward ->
                                 RewardInfo(
                                     text = formatIsk(reward.remaining, withCents = false),
-                                    caption = "Remaining ISK in $opportunityType",
+                                    caption = "$opportunityType 剩余 ISK",
                                     icon = Res.drawable.isk,
                                     tooltip = {
                                         Column(
@@ -298,7 +298,7 @@ fun DetailsView(
                                                 .padding(Spacing.large),
                                         ) {
                                             Text(
-                                                text = "Total ISK Allocated:",
+                                                text = "分配的 ISK 总额：",
                                                 style = RiftTheme.typography.detailSecondary,
                                             )
                                             Text(
@@ -306,7 +306,7 @@ fun DetailsView(
                                                 style = RiftTheme.typography.bodyPrimary,
                                             )
                                             Text(
-                                                text = "Total earned by all capsuleers:",
+                                                text = "所有克隆飞行员已获得总额：",
                                                 style = RiftTheme.typography.detailSecondary,
                                             )
                                             Text(
@@ -317,7 +317,7 @@ fun DetailsView(
                                                 color = RiftTheme.colors.textSecondary,
                                             )
                                             Text(
-                                                text = "Remaining ISK:",
+                                                text = "剩余 ISK：",
                                                 style = RiftTheme.typography.detailSecondary,
                                             )
                                             Text(
@@ -330,7 +330,7 @@ fun DetailsView(
                                 opportunity.details.rewardPerContribution?.let {
                                     RewardInfo(
                                         text = formatIsk(it, withCents = false),
-                                        caption = "Reward per ${metadata.rewardPer}",
+                                        caption = "每 ${metadata.rewardPer} 奖励",
                                         icon = Res.drawable.contribution_16px,
                                     )
                                     // TODO: Deliver jobs in-game shows value warnings / universal price %
@@ -342,9 +342,9 @@ fun DetailsView(
             }
             Spacer(Modifier.height(Spacing.veryLarge))
             TitledSection(
-                title = "Your Contribution",
+                title = "你的贡献",
                 tooltip = if (opportunity.details.participationLimit != null) {
-                    "This project has a participation\nlimit of ${formatNumber(opportunity.details.participationLimit)}. This means you can only\ncontribute up to that limit."
+                    "该项目的参与上限为\n${formatNumber(opportunity.details.participationLimit)}，意味着你的贡献最多只能达到该上限。"
                 } else {
                     null
                 },
@@ -372,7 +372,7 @@ fun DetailsView(
                                         val availableProgress = opportunity.details.participationLimit - contribution.contribution.data
                                         RewardInfo(
                                             text = formatIsk(availableProgress * opportunity.details.rewardPerContribution, withCents = false),
-                                            caption = "Remaining Compensation",
+                                            caption = "剩余补偿",
                                             icon = Res.drawable.isk,
                                         )
                                     }
@@ -381,7 +381,7 @@ fun DetailsView(
                                         val availableProgress = opportunity.details.participationLimit - contribution.contribution.data
                                         RewardInfo(
                                             text = formatIsk(availableProgress * opportunity.details.rewardPerContribution, withCents = false),
-                                            caption = "Available to earn",
+                                            caption = "仍可获得",
                                             icon = Res.drawable.isk,
                                         )
                                     }
@@ -390,7 +390,7 @@ fun DetailsView(
                                     contribution.contribution.success?.let {
                                         RewardInfo(
                                             text = formatIsk(totalEarnings, withCents = false),
-                                            caption = "ISK total earnings",
+                                            caption = "ISK 总收益",
                                             icon = Res.drawable.checkmark_16px,
                                             tooltip = {
                                                 Column(
@@ -400,7 +400,7 @@ fun DetailsView(
                                                         .padding(Spacing.large),
                                                 ) {
                                                     Text(
-                                                        text = "My Total Earnings:",
+                                                        text = "我的总收益：",
                                                         style = RiftTheme.typography.detailSecondary,
                                                     )
                                                     Text(
@@ -418,7 +418,7 @@ fun DetailsView(
                 }
                 if (opportunity.contributions.isEmpty()) {
                     Text(
-                        text = "You are not participating in this project",
+                        text = "你尚未参与该项目",
                         style = RiftTheme.typography.displaySecondary,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.align(Alignment.CenterHorizontally).fillMaxWidth(),
@@ -426,7 +426,7 @@ fun DetailsView(
                 }
             }
             Spacer(Modifier.height(Spacing.veryLarge))
-            TitledSection(title = "Participants") {
+            TitledSection(title = "参与者") {
                 when (val result = opportunity.contributors) {
                     is Contributors.Available -> {
                         when (opportunity.type) {
@@ -446,7 +446,7 @@ fun DetailsView(
                                     )
                                 }
                                 RiftTable(
-                                    columns = listOf("Contributor", "Total Amount", "Of Project Target", "Payout"),
+                                    columns = listOf("贡献者", "总量", "占项目目标", "报酬"),
                                     rows = rows,
                                     extraSpacing = 30.dp,
                                     defaultSort = SortingColumn(1, Sort.Descending),
@@ -495,7 +495,7 @@ fun DetailsView(
                                                                     .size(24.dp),
                                                             )
                                                             LinkText(
-                                                                text = contributor.details.corporationName ?: "Unknown",
+                                                                text = contributor.details.corporationName ?: "未知",
                                                                 maxLines = 1,
                                                                 overflow = TextOverflow.Clip,
                                                                 softWrap = false,
@@ -520,7 +520,7 @@ fun DetailsView(
                                                                     .size(24.dp),
                                                             )
                                                             LinkText(
-                                                                text = contributor.details.allianceName ?: "Unknown",
+                                                                text = contributor.details.allianceName ?: "未知",
                                                                 maxLines = 1,
                                                                 overflow = TextOverflow.Clip,
                                                                 softWrap = false,
@@ -536,10 +536,10 @@ fun DetailsView(
                                             TextTableCell(formatIsk(payout, withCents = false), sortingAmount = payout),
                                             RichTableCell(contributor.details?.allianceName ?: "${contributor.details?.allianceId}", 32.dp, 120.dp) {
                                                 val (text, color) = when (contributor.participationState) {
-                                                    ParticipationState.Unspecified -> "Unspecified" to RiftTheme.colors.textSecondary
-                                                    ParticipationState.Commited -> "Accepted" to EveColors.successGreen
-                                                    ParticipationState.Kicked -> "Removed" to EveColors.dangerRed
-                                                    ParticipationState.Resigned -> "Resigned" to EveColors.warningOrange
+                                                    ParticipationState.Unspecified -> "未指定" to RiftTheme.colors.textSecondary
+                                                    ParticipationState.Commited -> "已接受" to EveColors.successGreen
+                                                    ParticipationState.Kicked -> "已移除" to EveColors.dangerRed
+                                                    ParticipationState.Resigned -> "已退出" to EveColors.warningOrange
                                                 }
                                                 Text(
                                                     text = text,
@@ -551,7 +551,7 @@ fun DetailsView(
                                     )
                                 }
                                 RiftTable(
-                                    columns = listOf("Participant", "Corporation", "Alliance", "Total Amount", "Of Target Value", "ISK Payout", "State"),
+                                    columns = listOf("参与者", "军团", "联盟", "总量", "占目标值", "ISK 报酬", "状态"),
                                     rows = rows,
                                     extraSpacing = 30.dp,
                                     defaultSort = SortingColumn(1, Sort.Descending),
@@ -560,28 +560,28 @@ fun DetailsView(
                         }
                     }
                     Contributors.Empty -> Text(
-                        text = "No contributions found",
+                        text = "未找到贡献记录",
                         style = RiftTheme.typography.displaySecondary,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.align(Alignment.CenterHorizontally).fillMaxWidth(),
                     )
                     Contributors.NoAccess -> Text(
-                        text = "You are not a Project Manager",
+                        text = "你不是项目管理员",
                         style = RiftTheme.typography.bodySecondary,
                     )
                     is Contributors.Error -> Text(
-                        text = "Couldn't load contributors: ${result.message}",
+                        text = "无法加载贡献者：${result.message}",
                         style = RiftTheme.typography.bodySecondary,
                     )
                 }
             }
             Spacer(Modifier.height(Spacing.veryLarge))
-            TitledSection(title = "Objectives") {
+            TitledSection(title = "目标") {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(Spacing.large),
                 ) {
                     OpportunityAttribute(
-                        caption = "Contribution Method",
+                        caption = "贡献方式",
                         icon = metadata.icon,
                         values = listOf(OpportunityContributionAttribute.Text(metadata.name, isPlain = true)),
                         tooltip = metadata.tooltip,
@@ -599,7 +599,7 @@ fun DetailsView(
             }
             Spacer(Modifier.height(Spacing.veryLarge))
             if (opportunity.details.description.toPlainString().isNotEmpty()) {
-                TitledSection(title = "Description") {
+                TitledSection(title = "描述") {
                     LinkedText(
                         text = opportunity.details.description,
                         style = RiftTheme.typography.bodyPrimary,
@@ -607,7 +607,7 @@ fun DetailsView(
                 }
                 Spacer(Modifier.height(Spacing.veryLarge))
             }
-            TitledSection(title = "Created on ${formatDate(opportunity.details.created)}") {
+            TitledSection(title = "创建于 ${formatDate(opportunity.details.created)}") {
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(50.dp),
                     verticalArrangement = Arrangement.spacedBy(Spacing.medium),
@@ -680,21 +680,21 @@ private fun AgeRequirementBanner(
             verticalArrangement = Arrangement.spacedBy(Spacing.small),
             modifier = Modifier.padding(Spacing.medium).weight(2f),
         ) {
-            val title = if (hasMetRequirements) "AGE REQUIREMENTS MET" else "YOU DO NOT MEET AGE REQUIREMENTS"
+            val title = if (hasMetRequirements) "满足舰龄要求" else "未满足舰龄要求"
             Text(
                 text = title,
                 style = RiftTheme.typography.bodyPrimary.copy(color = headingColor),
             )
             val text = buildString {
-                append("Available to capsuleers who are")
+                append("仅对舰龄")
                 ageRequirement.minimumAge?.let {
-                    append(" at least $it day${it.plural} old")
+                    append("不少于 $it 天")
                 }
-                if (ageRequirement.minimumAge != null && ageRequirement.maximumAge != null) append(" and")
+                if (ageRequirement.minimumAge != null && ageRequirement.maximumAge != null) append(" 且")
                 ageRequirement.maximumAge?.let {
-                    append(" no more than $it day${it.plural} old")
+                    append("不超过 $it 天")
                 }
-                append(".")
+                append("的克隆飞行员开放。")
             }
             Text(
                 text = text,
@@ -735,7 +735,7 @@ private fun CharacterStack(
                                 style = RiftTheme.typography.bodyPrimary,
                             )
                             Text(
-                                text = "${formatNumber(days)} day${days.plural} old",
+                                text = "舰龄 ${formatNumber(days)} 天",
                                 style = RiftTheme.typography.bodyHighlighted,
                             )
                         }
@@ -818,7 +818,7 @@ private fun EndDateRow(opportunity: Opportunity) {
                 )
                 Text(
                     text = buildAnnotatedString {
-                        append("Expires in ")
+                        append("剩余 ")
                         val style = RiftTheme.typography.bodySecondary.copy(color = textHighlightColor, fontWeight = FontWeight.Bold)
                         withStyle(style.toSpanStyle()) {
                             append(formatDuration(expiresIn))
@@ -847,7 +847,7 @@ private fun EndDateRow(opportunity: Opportunity) {
 
                 Text(
                     text = buildAnnotatedString {
-                        append("End date ")
+                        append("结束时间 ")
                         withColor(RiftTheme.colors.textPrimary) {
                             append(formatDateTime2(finishDate))
                         }
@@ -885,7 +885,7 @@ private fun ProgressGauge(
         Column(
             verticalArrangement = Arrangement.spacedBy(Spacing.small),
         ) {
-            val suffix = if (isIskProgress) " ISK" else ""
+                                    val suffix = if (isIskProgress) " 伊斯克" else ""
             Text(
                 text = "${formatNumber(progress)}$suffix",
                 style = RiftTheme.typography.headerPrimary.copy(fontWeight = FontWeight.Bold),
@@ -1049,7 +1049,7 @@ private fun ProjectHeader(
                 Spacer(Modifier.height(Spacing.large))
 
                 RiftButton(
-                    text = "View In-Game",
+                    text = "在游戏内查看",
                     icon = Res.drawable.open_window_16px,
                     cornerCut = ButtonCornerCut.Both,
                     onClick = onViewInGameClick,
@@ -1123,7 +1123,7 @@ private fun Creator(creator: Creator) {
             )
             Column {
                 Text(
-                    text = "Creator",
+                    text = "发布者",
                     style = RiftTheme.typography.bodySecondary,
                 )
                 LinkText(

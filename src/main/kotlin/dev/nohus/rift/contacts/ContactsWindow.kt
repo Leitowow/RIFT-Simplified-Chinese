@@ -112,7 +112,7 @@ fun ContactsWindow(
     val state by viewModel.state.collectAsState()
 
     RiftWindow(
-        title = "Contacts",
+        title = "联系人",
         icon = Res.drawable.window_contacts,
         state = windowState,
         onCloseClick = onCloseRequest,
@@ -238,12 +238,12 @@ fun ToolbarRow(
             tabs = listOf(
                 Tab(
                     id = ContactsTab.Contacts.ordinal,
-                    title = "Contacts",
+                    title = "联系人",
                     isCloseable = false,
                 ),
                 Tab(
                     id = ContactsTab.Search.ordinal,
-                    title = "Search",
+                    title = "搜索",
                     isCloseable = false,
                 ),
             ),
@@ -289,7 +289,7 @@ private fun ContactsList(
                     .padding(Spacing.medium),
             ) {
                 if (state.contacts.isNotEmpty()) {
-                    Text("Delayed up to 5 minutes")
+                    Text("数据延迟最多约 5 分钟")
                 }
                 AnimatedContent(
                     state.isContactsLoading,
@@ -303,7 +303,7 @@ private fun ContactsList(
                         )
                     } else {
                         RiftButton(
-                            text = "Reload",
+                            text = "重新加载",
                             type = ButtonType.Secondary,
                             onClick = onReloadClick,
                         )
@@ -330,7 +330,7 @@ private fun ContactFilters(
         ) {
             ContactFilterRow(
                 image = Res.drawable.contact_allcontacts,
-                text = "All Contacts [${state.contacts.size}]",
+                text = "全部联系人 [${state.contacts.size}]",
                 currentFilter = state.filter,
                 filter = Filter.All,
                 onClick = onFilterClick,
@@ -339,41 +339,41 @@ private fun ContactFilters(
             Spacer(Modifier.height(Spacing.medium))
             ContactFilterRow(
                 image = Res.drawable.contact_standings,
-                text = "Standings",
+                text = "声望",
                 currentFilter = state.filter,
                 filter = null,
             )
             ContactFilterRow(
                 imageContent = { FlagIcon(10f, Modifier.padding(Spacing.verySmall)) },
-                text = "Excellent Standing [${state.contacts.count { it.standingLevel == Standing.Excellent }}]",
+                text = "优秀声望 [${state.contacts.count { it.standingLevel == Standing.Excellent }}]",
                 currentFilter = state.filter,
                 filter = Filter.Standings(Standing.Excellent),
                 onClick = onFilterClick,
             )
             ContactFilterRow(
                 imageContent = { FlagIcon(5f, Modifier.padding(Spacing.verySmall)) },
-                text = "Good Standing [${state.contacts.count { it.standingLevel == Standing.Good }}]",
+                text = "良好声望 [${state.contacts.count { it.standingLevel == Standing.Good }}]",
                 currentFilter = state.filter,
                 filter = Filter.Standings(Standing.Good),
                 onClick = onFilterClick,
             )
             ContactFilterRow(
                 imageContent = { FlagIcon(0f, Modifier.padding(Spacing.verySmall)) },
-                text = "Neutral Standing [${state.contacts.count { it.standingLevel == Standing.Neutral }}]",
+                text = "中立声望 [${state.contacts.count { it.standingLevel == Standing.Neutral }}]",
                 currentFilter = state.filter,
                 filter = Filter.Standings(Standing.Neutral),
                 onClick = onFilterClick,
             )
             ContactFilterRow(
                 imageContent = { FlagIcon(-5f, Modifier.padding(Spacing.verySmall)) },
-                text = "Bad Standing [${state.contacts.count { it.standingLevel == Standing.Bad }}]",
+                text = "负面声望 [${state.contacts.count { it.standingLevel == Standing.Bad }}]",
                 currentFilter = state.filter,
                 filter = Filter.Standings(Standing.Bad),
                 onClick = onFilterClick,
             )
             ContactFilterRow(
                 imageContent = { FlagIcon(-10f, Modifier.padding(Spacing.verySmall)) },
-                text = "Terrible Standing [${state.contacts.count { it.standingLevel == Standing.Terrible }}]",
+                text = "极差声望 [${state.contacts.count { it.standingLevel == Standing.Terrible }}]",
                 currentFilter = state.filter,
                 filter = Filter.Standings(Standing.Terrible),
                 onClick = onFilterClick,
@@ -382,7 +382,7 @@ private fun ContactFilters(
             Spacer(Modifier.height(Spacing.medium))
             ContactFilterRow(
                 image = Res.drawable.contact_tag,
-                text = "Labels",
+                text = "标签",
                 currentFilter = state.filter,
                 filter = null,
             )
@@ -398,7 +398,7 @@ private fun ContactFilters(
                 )
                 if (owner.second.isNotEmpty()) {
                     ContactLabelRow(
-                        text = "No label",
+                        text = "无标签",
                         count = ownerContacts.count { it.labels.isEmpty() },
                         currentFilter = state.filter,
                         filter = Filter.Unlabeled(owner.first),
@@ -575,7 +575,7 @@ private fun Contact(
 
 @Composable
 private fun WatchIcon() {
-    RiftTooltipArea("You are watching this character") {
+    RiftTooltipArea("你正在监控该角色") {
         Box(
             contentAlignment = Alignment.Center,
         ) {
@@ -590,7 +590,7 @@ private fun WatchIcon() {
 
 @Composable
 private fun BlockIcon() {
-    RiftTooltipArea("You have blocked this character") {
+    RiftTooltipArea("你已屏蔽该角色") {
         Box(
             contentAlignment = Alignment.Center,
         ) {
@@ -607,9 +607,9 @@ private fun BlockIcon() {
 private fun ContactOwner(owner: Entity) {
     val tooltip = buildAnnotatedString {
         val text = when (owner.type) {
-            EntityType.Character -> "This is a contact of your character"
-            EntityType.Corporation -> "This is a contact of your corporation"
-            EntityType.Alliance -> "This is a contact of your alliance"
+            EntityType.Character -> "这是你角色的联系人"
+            EntityType.Corporation -> "这是你军团的联系人"
+            EntityType.Alliance -> "这是你联盟的联系人"
             EntityType.Faction -> ""
         }
         appendLine(text)
@@ -625,10 +625,10 @@ private fun ContactOwner(owner: Entity) {
 @Composable
 private fun ContactType(type: EntityType) {
     val tooltip = when (type) {
-        EntityType.Character -> "This contact is a character"
-        EntityType.Corporation -> "This contact is a corporation"
-        EntityType.Alliance -> "This contact is an alliance"
-        EntityType.Faction -> "This contact is a faction"
+        EntityType.Character -> "该联系人是角色"
+        EntityType.Corporation -> "该联系人是军团"
+        EntityType.Alliance -> "该联系人是联盟"
+        EntityType.Faction -> "该联系人是势力"
     }
     RiftTooltipArea(tooltip) {
         when (type) {
@@ -663,11 +663,11 @@ private fun ContactType(type: EntityType) {
 private fun EmptyState(isLoading: Boolean, contacts: List<Contact>) {
     Text(
         text = if (isLoading) {
-            "Loading contacts…"
+            "正在加载联系人…"
         } else if (contacts.isNotEmpty()) {
-            "All contacts filtered out"
+            "所有联系人都被筛选掉了"
         } else {
-            "No contacts loaded"
+            "未加载任何联系人"
         },
         style = RiftTheme.typography.headerPrimary,
         textAlign = TextAlign.Center,
@@ -699,24 +699,24 @@ private fun SearchTabContent(
                 onSearchConfirm = { onSearchConfirm(selectedCharacter) },
                 modifier = Modifier.weight(1f),
             )
-            RiftTooltipArea("Character to search from.\nThis determines non-public structure results.") {
+            RiftTooltipArea("用于发起搜索的角色。\n这会影响非公开建筑的搜索结果。") {
                 RiftDropdown(
                     items = state.characters,
                     selectedItem = selectedCharacter,
                     onItemSelected = { selectedCharacter = it },
-                    getItemName = { it?.let { it.info?.name ?: "${it.characterId}" } ?: "Select character" },
+                    getItemName = { it?.let { it.info?.name ?: "${it.characterId}" } ?: "选择角色" },
                 )
             }
             RiftContextMenuArea(
                 items = buildList {
                     add(
                         ContextMenuItem.HeaderItem(
-                            text = "Search Type",
+                            text = "搜索类型",
                         ),
                     )
                     add(
                         ContextMenuItem.RadioItem(
-                            text = "Any",
+                            text = "全部",
                             isSelected = state.searchCategories.size == SearchCategory.entries.size,
                             onClick = { onSearchCategoriesChange(SearchCategory.entries) },
                         ),
@@ -744,17 +744,17 @@ private fun SearchTabContent(
             is AsyncResource.Error -> {
                 val message = results.exception?.message ?: ""
                 val text = if ("No results" in message) {
-                    "No results"
+                    "无结果"
                 } else if ("does not meet the minimum length of 3" in message) {
-                    "The search term needs to be at least 3 characters long"
+                    "搜索词至少需要 3 个字符"
                 } else if ("'search' is required" in message) {
-                    "You need to enter a search term"
+                    "请输入搜索词"
                 } else if ("timeout" in message) {
-                    "Search request timed out"
+                    "搜索请求超时"
                 } else if ("No character selected" in message) {
-                    "No character selected"
+                    "未选择角色"
                 } else {
-                    "Search request failed"
+                    "搜索请求失败"
                 }
                 Text(
                     text = text,

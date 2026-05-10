@@ -119,12 +119,12 @@ fun CharactersWindow(
     val viewModel: CharactersViewModel = viewModel()
     val state by viewModel.state.collectAsState()
     RiftWindow(
-        title = "Characters",
+        title = "角色",
         icon = Res.drawable.window_characters,
         state = windowState,
         tuneContextMenuItems = listOf(
             ContextMenuItem.CheckboxItem(
-                text = "Show clones",
+                text = "显示克隆体",
                 isSelected = state.isShowingClones,
                 onClick = { viewModel.onIsShowingCharactersClonesChange(!state.isShowingClones) },
             ),
@@ -148,9 +148,9 @@ fun CharactersWindow(
                 onDismiss = viewModel::onCloseSso,
             )
         } else if (state.deletingCharacter != null) {
-            val name = state.deletingCharacter?.info?.name ?: "character ID ${state.deletingCharacter?.characterId}"
+            val name = state.deletingCharacter?.info?.name ?: "角色 ID ${state.deletingCharacter?.characterId}"
             RiftDialog(
-                title = "Delete $name?",
+                title = "删除 $name？",
                 icon = Res.drawable.window_delete_character,
                 parentState = windowState,
                 state = rememberWindowState(width = 380.dp, height = Dp.Unspecified),
@@ -168,21 +168,21 @@ private fun DeleteCharacterDialogContent(viewModel: CharactersViewModel) {
         verticalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
         Text(
-            text = "The settings files for this character will be deleted from your installation of EVE Online, and RIFT's connection with ESI for this character will be removed.",
+            text = "该角色的设置文件将从本机《星战前夜》安装目录中删除，且 RIFT 将撤销该角色在 ESI 上的授权。",
             style = RiftTheme.typography.bodyPrimary,
         )
         Row(
             horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
         ) {
             RiftButton(
-                text = "Cancel",
+                text = "取消",
                 cornerCut = ButtonCornerCut.BottomLeft,
                 type = ButtonType.Secondary,
                 onClick = viewModel::onDeleteCharacterCancel,
                 modifier = Modifier.weight(1f),
             )
             RiftButton(
-                text = "Delete",
+                text = "删除",
                 type = ButtonType.Negative,
                 onClick = viewModel::onDeleteCharacterConfirm,
                 modifier = Modifier.weight(1f),
@@ -218,7 +218,7 @@ private fun CharactersWindowContent(
             )
         } else {
             Text(
-                text = "No characters found.\n\nMake sure the game directory is selected in settings, and that you have logged in to at least one character on this computer before.",
+                text = "未找到角色。\n\n请在设置中选择游戏目录，并确保本机曾至少登录过一个角色。",
                 style = RiftTheme.typography.headerPrimary,
                 modifier = Modifier
                     .fillMaxSize()
@@ -259,7 +259,7 @@ private fun ColumnScope.CharactersList(
         item(key = "disabled characters") {
             Box(modifier = Modifier.animateItem()) {
                 RiftTooltipArea(
-                    text = "Disabled characters will not be used in RIFT.",
+                    text = "已禁用的角色不会被 RIFT 使用。",
                     modifier = Modifier.padding(vertical = Spacing.medium),
                 ) {
                     Row(
@@ -267,12 +267,12 @@ private fun ColumnScope.CharactersList(
                     ) {
                         if (state.characters.any { it.isHidden }) {
                             Text(
-                                text = "Disabled characters",
+                                text = "已禁用",
                                 style = RiftTheme.typography.headerPrimary,
                             )
                         } else {
                             Text(
-                                text = "No disabled characters",
+                                text = "暂无已禁用角色",
                                 style = RiftTheme.typography.headerPrimary,
                             )
                         }
@@ -317,12 +317,12 @@ private fun TopRow(
             ) {
                 if (isChoosingDisabledCharacters) {
                     Text(
-                        text = "Enable or disable characters you don't want to use.",
+                        text = "启用或禁用不想参与 RIFT 的角色。",
                         style = RiftTheme.typography.bodyPrimary,
                         modifier = Modifier.weight(1f),
                     )
                     RiftButton(
-                        text = "Done",
+                        text = "完成",
                         type = ButtonType.Primary,
                         onClick = onChooseDisabledClick,
                     )
@@ -330,10 +330,10 @@ private fun TopRow(
                     SsoButton(onClick = onSsoClick)
                     if (state.characters.isNotEmpty()) {
                         RiftTooltipArea(
-                            text = "Copy Eve settings\n(window positions, overview, etc.)\nbetween selected characters.",
+                            text = "复制 EVE 设置\n（窗口位置、总览等）\n到所选角色。",
                         ) {
                             RiftButton(
-                                text = "Copy settings",
+                                text = "复制设置",
                                 onClick = onCopySettingsClick,
                             )
                         }
@@ -400,7 +400,7 @@ private fun CharacterRow(
             when (character.info) {
                 null -> {
                     Text(
-                        text = "Could not load",
+                        text = "无法加载",
                         style = RiftTheme.typography.bodySecondary.copy(color = RiftTheme.colors.borderError),
                         modifier = Modifier
                             .padding(horizontal = Spacing.medium)
@@ -466,7 +466,7 @@ private fun CharacterRow(
             }
 
             AnimatedVisibility(isChoosingDisabledCharacters) {
-                RiftTooltipArea("Disable this character") {
+                RiftTooltipArea("禁用此角色") {
                     RiftIconButton(
                         icon = Res.drawable.buttoniconminus,
                         onClick = { onDisableCharacterClick(character.characterId) },
@@ -519,17 +519,17 @@ private fun LocationText(location: Location?) {
                         }
                         if (locationId != null) {
                             if (shipName != null) {
-                                append(" docked in ")
+                                append(" 停靠于 ")
                             } else {
-                                append("Docked in ")
+                                append("停靠于 ")
                             }
                             if (location.station != null) {
-                                append("a ")
+                                append("一座 ")
                                 withColor(RiftTheme.colors.textHighlighted) {
-                                    append("Station")
+                                    append("空间站")
                                 }
                             } else if (location.structure != null) {
-                                val structureTypeName = location.structure.typeId?.let { typesRepository.getTypeName(it) } ?: "Structure"
+                                val structureTypeName = location.structure.typeId?.let { typesRepository.getTypeName(it) } ?: "建筑"
                                 append("${structureTypeName.article} ")
                                 withColor(RiftTheme.colors.textHighlighted) {
                                     append(structureTypeName)
@@ -537,9 +537,9 @@ private fun LocationText(location: Location?) {
                             }
                         } else {
                             if (shipName != null) {
-                                append(" in space")
+                                append(" 在太空中")
                             } else {
-                                append("In space")
+                                append("太空中的")
                             }
                         }
                     },
@@ -565,7 +565,7 @@ fun AuthenticationStatusIcon(
                         modifier = Modifier.padding(Spacing.large),
                     ) {
                         Text(
-                            text = "Missing ESI scopes:",
+                            text = "缺少 ESI 权限：",
                             style = RiftTheme.typography.bodyPrimary,
                         )
                         Text(
@@ -574,14 +574,14 @@ fun AuthenticationStatusIcon(
                             modifier = Modifier.padding(vertical = Spacing.small),
                         )
                         Text(
-                            text = "Some features won't work.",
+                            text = "部分功能将不可用。",
                             style = RiftTheme.typography.bodyPrimary,
                         )
                     }
                 }
                 AuthenticationStatus.Unauthenticated -> {
                     Text(
-                        text = "Not authenticated with ESI.\nClick the log in button above.",
+                        text = "尚未通过 ESI 登录。\n请点击上方按钮登录。",
                         style = RiftTheme.typography.bodyPrimary,
                         modifier = Modifier.padding(Spacing.large),
                     )
@@ -643,7 +643,7 @@ private fun Clone(clone: Clone) {
             }
         } else {
             Text(
-                text = "No implants",
+                text = "无植入体",
                 style = RiftTheme.typography.bodySecondary,
                 modifier = Modifier
                     .padding(start = Spacing.medium)
@@ -653,7 +653,7 @@ private fun Clone(clone: Clone) {
 
         if (clone.isActive) {
             Text(
-                text = "Active clone",
+                text = "当前克隆体",
                 style = RiftTheme.typography.bodyPrimary.copy(fontWeight = FontWeight.Bold),
             )
         } else {
@@ -691,7 +691,7 @@ private fun HiddenCharacterRow(
             when (character.info) {
                 null -> {
                     Text(
-                        text = "Could not load",
+                        text = "无法加载",
                         style = RiftTheme.typography.bodySecondary.copy(color = RiftTheme.colors.borderError),
                         modifier = Modifier.padding(horizontal = Spacing.medium),
                     )
@@ -723,7 +723,7 @@ private fun HiddenCharacterRow(
             Row(
                 horizontalArrangement = Arrangement.spacedBy(Spacing.small),
             ) {
-                RiftTooltipArea("Delete this character") {
+                RiftTooltipArea("删除此角色") {
                     RiftIconButton(
                         icon = Res.drawable.delete,
                         type = ButtonType.Negative,
@@ -731,7 +731,7 @@ private fun HiddenCharacterRow(
                         onClick = { onDeleteCharacterClick(character.characterId) },
                     )
                 }
-                RiftTooltipArea("Enable this character") {
+                RiftTooltipArea("启用此角色") {
                     RiftIconButton(
                         icon = Res.drawable.buttoniconplus,
                         onClick = { onEnableCharacterClick(character.characterId) },
@@ -853,7 +853,7 @@ private fun LocationIcon(
                             }
                             append(structureName.removePrefix(system.name).trim())
                         } else {
-                            append("In space")
+                            append("在太空中")
                         }
                     },
                     style = RiftTheme.typography.bodyPrimary,

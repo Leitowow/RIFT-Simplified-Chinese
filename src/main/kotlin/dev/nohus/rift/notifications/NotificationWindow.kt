@@ -91,7 +91,7 @@ fun NotificationWindow(
         alwaysOnTop = true,
         resizable = false,
         focusable = false,
-        title = "Notification",
+        title = "通知",
         icon = painterResource(Res.drawable.window_loudspeaker_icon),
     ) {
         val uiScaleController: UiScaleController = remember { koin.get() }

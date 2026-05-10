@@ -105,7 +105,7 @@ fun SolarSystemNode(
             modifier = Modifier.size(2 * nodeSizes.radiusWithMargin),
         ) {
             val isDrawingNodeBackgroundCircle = when (mapType) {
-                ClusterRegionsMap -> throw IllegalStateException("ClusterRegionsMap does not draw systems")
+                ClusterRegionsMap -> throw IllegalStateException("ClusterRegionsMap 不绘制星系")
                 is ClusterSystemsMap -> mapType.is2D && mapScale <= nodeBackgroundCircleMaxScale
                 is DistanceMap, is RegionMap -> mapScale <= nodeBackgroundCircleMaxScale
             }

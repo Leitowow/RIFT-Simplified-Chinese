@@ -28,7 +28,7 @@ fun FleetsWindow(
     val viewModel: FleetsViewModel = viewModel()
     val state by viewModel.state.collectAsState()
     RiftWindow(
-        title = "Fleet",
+        title = "舰队",
         icon = Res.drawable.window_fleet,
         state = windowState,
         onCloseClick = onCloseRequest,

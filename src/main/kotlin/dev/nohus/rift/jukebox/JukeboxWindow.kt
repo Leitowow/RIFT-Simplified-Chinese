@@ -108,7 +108,7 @@ fun JukeboxWindow(
         var renamedPlaylist: Playlist? by remember { mutableStateOf(null) }
 
         RiftWindow(
-            title = "Jukebox",
+            title = "点唱机",
             icon = Res.drawable.window_jukebox,
             state = windowState,
             onCloseClick = onCloseRequest,
@@ -186,7 +186,7 @@ private fun WindowScope.PlaylistDialog(
     onCreate: (String) -> Unit,
 ) {
     RiftDialog(
-        title = "Enter Playlist Name",
+        title = "输入播放列表名称",
         icon = Res.drawable.window_question,
         parentState = windowState,
         state = rememberWindowState(width = 300.dp, height = Dp.Unspecified),

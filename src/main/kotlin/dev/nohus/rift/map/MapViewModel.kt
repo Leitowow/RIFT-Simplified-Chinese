@@ -523,7 +523,7 @@ class MapViewModel(
         val layout = when (mapType) {
             is ClusterSystemsMap -> if (mapType.is2D) layoutRepository.getNewEdenSystemPosition2D() else layoutRepository.getNewEdenSystemPosition()
             ClusterRegionsMap -> layoutRepository.getRegionsPositions()
-            is RegionMap -> layoutRepository.getLayoutSystemPositions(mapType.layoutId) ?: throw IllegalArgumentException("No such layout: ${mapType.layoutId}")
+            is RegionMap -> layoutRepository.getLayoutSystemPositions(mapType.layoutId) ?: throw IllegalArgumentException("不存在该布局：${mapType.layoutId}")
             is DistanceMap -> distanceMapController.state.value.layout
         }
         val jumpBridgeAdditionalSystemsLayout = if (mapType is RegionMap) getJumpBridgeDestinationsLayout(layout) else emptyMap()
@@ -720,9 +720,9 @@ class MapViewModel(
 
     private fun createTabs(): List<Tab> {
         return listOf(
-            Tab(id = 0, title = "New Eden", isCloseable = false, icon = Res.drawable.map_universe, payload = ClusterSystemsMap(is2D = settings.intelMap.isUsing2DClusterLayout)),
-            Tab(id = 1, title = "Regions", isCloseable = false, icon = Res.drawable.map_region, payload = ClusterRegionsMap),
-            Tab(id = 2, title = "Distance", isCloseable = false, icon = Res.drawable.map_constellation, payload = DistanceMap),
+            Tab(id = 0, title = "新伊甸", isCloseable = false, icon = Res.drawable.map_universe, payload = ClusterSystemsMap(is2D = settings.intelMap.isUsing2DClusterLayout)),
+            Tab(id = 1, title = "星域", isCloseable = false, icon = Res.drawable.map_region, payload = ClusterRegionsMap),
+            Tab(id = 2, title = "距离", isCloseable = false, icon = Res.drawable.map_constellation, payload = DistanceMap),
         ) + openLayouts.mapIndexed { index, layoutId ->
             val layout = layoutRepository.getLayout(layoutId)
             val name = layout?.name ?: "$layoutId"

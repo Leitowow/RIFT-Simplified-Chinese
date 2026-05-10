@@ -125,7 +125,7 @@ fun Pin(
                 val hasRoutes = colony.routes.any { it.sourcePinId == pin.id || it.destinationPinId == pin.id }
                 if (hasRoutes) {
                     RiftTooltipArea(
-                        text = "Toggle routes",
+                        text = "切换路线显示",
                     ) {
                         RiftImageButton(
                             resource = Res.drawable.pi_route,
@@ -159,13 +159,13 @@ fun CommandCenter(
             val cpuPercent = usage.cpuUsage / usage.cpuSupply.toFloat()
             val powerPercent = usage.powerUsage / usage.powerSupply.toFloat()
             AnnotatedProgressBar(
-                title = String.format("CPU: %.1f%%", cpuPercent * 100),
+                title = String.format("CPU：%.1f%%", cpuPercent * 100),
                 percentage = cpuPercent,
                 description = "${usage.cpuUsage}/${usage.cpuSupply} tf",
                 color = Color(0xFF00FFE3),
             )
             AnnotatedProgressBar(
-                title = String.format("Power: %.1f%%", powerPercent * 100),
+                title = String.format("电力：%.1f%%", powerPercent * 100),
                 percentage = powerPercent,
                 description = "${usage.powerUsage}/${usage.powerSupply} MW",
                 color = Color(0xFFF3252F),
@@ -202,7 +202,7 @@ fun Extractor(
                     val cycleProgressDuration = Duration.ofSeconds(elapsedTime.toSeconds() % pin.cycleTime.toSeconds())
                     val totalCycleDuration = pin.cycleTime
                     AnnotatedProgressBar(
-                        title = "Current Cycle",
+                        title = "当前周期",
                         duration = cycleProgressDuration,
                         totalDuration = totalCycleDuration,
                         color = RiftTheme.colors.textHighlighted,
@@ -213,13 +213,13 @@ fun Extractor(
                     val description = pin.lastRunTime?.let {
                         val totalWaitTime = Duration.between(it + pin.cycleTime, currentTime)
                         if (totalWaitTime > Duration.ZERO) {
-                            "Idle for ${formatDurationCompact(totalWaitTime)}"
+                            "已闲置 ${formatDurationCompact(totalWaitTime)}"
                         } else {
                             null
                         }
-                    } ?: "Idle"
+                    } ?: "闲置"
                     AnnotatedProgressBar(
-                        title = "Program not active",
+                        title = "程序未激活",
                         percentage = 0f,
                         description = description,
                         color = RiftTheme.colors.textHighlighted,
@@ -231,7 +231,7 @@ fun Extractor(
 
                 if (pin.isActive) {
                     val timeToExpiry = Duration.between(currentTime, pin.expiryTime)
-                    TitledText("Time remaining", formatDurationLong(timeToExpiry))
+                    TitledText("剩余时间", formatDurationLong(timeToExpiry))
                 }
             }
 
@@ -249,9 +249,9 @@ fun Extractor(
                 val averagePerHour = (totalMined / totalProgramDuration.toHours().toFloat()).roundToInt()
 
                 Row(horizontalArrangement = Arrangement.spacedBy(Spacing.medium)) {
-                    TitledText("Avg. Per hour", "${formatNumber(averagePerHour)} units")
-                    TitledText("Current Cycle Output", currentCycleMined?.let { "${formatNumber(currentCycleMined)} units" } ?: "None")
-                    TitledText("Total Output", "${formatNumber(totalMined)} units")
+                    TitledText("每小时平均", "${formatNumber(averagePerHour)} 单位")
+                    TitledText("当前周期产出", currentCycleMined?.let { "${formatNumber(currentCycleMined)} 单位" } ?: "无")
+                    TitledText("总产出", "${formatNumber(totalMined)} 单位")
                 }
 
                 ExtractionBarGraph(
@@ -267,9 +267,9 @@ fun Extractor(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 AnnotatedProgressBar(
-                    title = "Program not active",
+                    title = "程序未激活",
                     percentage = 0f,
-                    description = "Idle",
+                    description = "闲置",
                     color = RiftTheme.colors.textHighlighted,
                     titleStyle = RiftTheme.typography.bodyPrimary.copy(color = RiftTheme.colors.textRed, fontWeight = FontWeight.Bold),
                 )
@@ -297,7 +297,7 @@ fun Factory(
                 val cycleProgressDuration = Duration.between(pin.lastRunTime, currentTime)
                 val totalCycleDuration = pin.schematic.cycleTime
                 AnnotatedProgressBar(
-                    title = "In production",
+                    title = "生产中",
                     duration = cycleProgressDuration,
                     totalDuration = totalCycleDuration,
                     color = RiftTheme.colors.textHighlighted,
@@ -309,13 +309,13 @@ fun Factory(
                 val description = pin.lastCycleStartTime?.let {
                     val totalWaitTime = Duration.between(it + pin.schematic.cycleTime, currentTime)
                     if (totalWaitTime > Duration.ZERO) {
-                        "Idle for ${formatDurationCompact(totalWaitTime)}"
+                        "已闲置 ${formatDurationCompact(totalWaitTime)}"
                     } else {
                         null
                     }
-                } ?: "Idle"
+                } ?: "闲置"
                 AnnotatedProgressBar(
-                    title = "Waiting for resources",
+                    title = "等待资源",
                     percentage = 0f,
                     description = description,
                     color = RiftTheme.colors.textHighlighted,
@@ -326,7 +326,7 @@ fun Factory(
 
             Column {
                 Text(
-                    text = "Input",
+                    text = "输入",
                     style = RiftTheme.typography.bodyHighlighted,
                 )
                 Row(
@@ -346,7 +346,7 @@ fun Factory(
                                 }
                                 appendLine()
                                 withStyle(SpanStyle(color = RiftTheme.colors.textPrimary)) {
-                                    append("$stored/$quantity unit${quantity.plural}")
+                                    append("$stored/$quantity 单位")
                                 }
                             },
                         ) {
@@ -383,9 +383,9 @@ fun Factory(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             AnnotatedProgressBar(
-                title = "Program not active",
+                title = "程序未激活",
                 percentage = 0f,
-                description = "Idle",
+                description = "闲置",
                 color = RiftTheme.colors.textHighlighted,
                 titleStyle = RiftTheme.typography.bodyPrimary.copy(color = RiftTheme.colors.textRed, fontWeight = FontWeight.Bold),
             )
@@ -408,7 +408,7 @@ fun Storage(
     ) {
         if (maxVolume != null) {
             AnnotatedProgressBar(
-                title = "Storage",
+                title = "仓储",
                 percentage = capacityUsed / maxVolume,
                 description = String.format("%.0f/%.0f m3", capacityUsed, maxVolume),
                 color = RiftTheme.colors.progressBarProgress,
@@ -417,12 +417,12 @@ fun Storage(
 
         Column {
             Text(
-                text = "Stored Items",
+                text = "已存储物品",
                 style = RiftTheme.typography.bodyHighlighted,
             )
             if (contents.isEmpty()) {
                 Text(
-                    text = "None",
+                    text = "无",
                     style = RiftTheme.typography.bodySecondary,
                 )
             }
@@ -441,7 +441,7 @@ fun Storage(
                                 append(Commodities.getTierName(type.name))
                             }
                             appendLine()
-                            append("${formatNumber(quantity)} unit${quantity.plural}")
+                            append("${formatNumber(quantity)} 单位")
                         },
                     ) {
                         Row(
@@ -450,7 +450,7 @@ fun Storage(
                         ) {
                             val formatted = if (quantity >= 10_000) formatNumberCompact(quantity) else formatNumber(quantity)
                             Text(
-                                text = "$formatted x",
+                                text = "$formatted 个",
                                 style = RiftTheme.typography.bodyPrimary,
                             )
                             AsyncTypeIcon(

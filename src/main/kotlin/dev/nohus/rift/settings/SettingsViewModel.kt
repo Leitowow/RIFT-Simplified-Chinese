@@ -337,7 +337,7 @@ class SettingsViewModel(
     fun onDetectLogsDirectoryClick() {
         val logsDirectory = detectLogsDirectoryUseCase()
         if (logsDirectory == null) {
-            val title = "Cannot find logs"
+            val title = "找不到日志"
             val message =
                 "Cannot find your EVE Online logs directory.\nPlease enter a path ending in \"EVE/logs\" manually."
             _state.update { it.copy(dialogMessage = DialogMessage(title, message, MessageDialogType.Warning)) }
@@ -362,7 +362,7 @@ class SettingsViewModel(
     fun onDetectSettingsDirectoryClick() {
         val directory = detectEveSettingsDirectoryUseCase()
         if (directory == null) {
-            val title = "Cannot find installation"
+            val title = "找不到安装目录"
             val message =
                 "Cannot find your EVE Online settings directory.\nPlease enter a path ending in \"CCP/EVE/[..]_tq_tranquility\" manually."
             _state.update { it.copy(dialogMessage = DialogMessage(title, message, MessageDialogType.Warning)) }
@@ -571,7 +571,7 @@ class SettingsViewModel(
             "${connection.from.name} -> ${connection.to.name}"
         }
         Clipboard.copy(text)
-        _state.update { it.copy(dialogMessage = DialogMessage("Export successful", "Jump Bridge network copied to clipboard", MessageDialogType.Info)) }
+        _state.update { it.copy(dialogMessage = DialogMessage("导出成功", "Jump Bridge network copied to clipboard", MessageDialogType.Info)) }
     }
 
     fun onSovereigntyUpgradesImportClick() {
@@ -595,7 +595,7 @@ class SettingsViewModel(
             "${system.name} <- ${upgrades.joinToString(", ") { it.name }}"
         }
         Clipboard.copy(text)
-        _state.update { it.copy(dialogMessage = DialogMessage("Export successful", "Sovereignty upgrades copied to clipboard", MessageDialogType.Info)) }
+        _state.update { it.copy(dialogMessage = DialogMessage("导出成功", "Sovereignty upgrades copied to clipboard", MessageDialogType.Info)) }
     }
 
     fun onIsSovereigntyUpgradesHackImportingEnabledClick(enabled: Boolean) {
@@ -625,7 +625,7 @@ class SettingsViewModel(
     private fun showRestartRequiredDialog(message: String) {
         viewModelScope.launch {
             delay(Duration.ofMillis(300))
-            val dialogMessage = DialogMessage("Restart required", message, MessageDialogType.Info)
+            val dialogMessage = DialogMessage("需要重启", message, MessageDialogType.Info)
             _state.update { it.copy(dialogMessage = dialogMessage) }
         }
     }

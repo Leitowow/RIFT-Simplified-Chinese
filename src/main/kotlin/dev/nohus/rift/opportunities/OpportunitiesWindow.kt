@@ -145,7 +145,7 @@ fun OpportunitiesWindow(
     val viewModel: OpportunitiesViewModel = viewModel()
     val state by viewModel.state.collectAsState()
     RiftWindow(
-        title = "Opportunities",
+        title = "机遇",
         icon = Res.drawable.window_opportunities,
         state = windowState,
         onCloseClick = onCloseRequest,
@@ -245,9 +245,9 @@ fun ToolbarRow(
     onParticipatingFilterChange: (Boolean) -> Unit,
 ) {
     val participatingText = if (state.lifecycleFilter == OpportunityLifecycleFilter.Active) {
-        "Active"
+        "当前"
     } else {
-        "Participated"
+        "已参与"
     }
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -256,7 +256,7 @@ fun ToolbarRow(
             tabs = listOf(
                 Tab(
                     id = 0,
-                    title = "Opportunities",
+                    title = "机遇",
                     isCloseable = false,
                 ),
                 Tab(
@@ -412,7 +412,7 @@ private fun CorporationProjectsStatsRow(
     ) {
         StatsRowItem(
             value = formatIskCompact(stats.availableToYou),
-            text = "Available to you",
+            text = "你可获得",
             color = if (stats.availableToYou > 0) EveColors.successGreen else RiftTheme.colors.textPrimary,
             tooltip = buildAnnotatedString {
                 withStyle(RiftTheme.typography.headlinePrimary.toSpanStyle()) {
@@ -425,7 +425,7 @@ private fun CorporationProjectsStatsRow(
         )
         StatsRowItem(
             value = formatIskCompact(stats.availableTotal),
-            text = "Available to all members",
+            text = "全体成员可获得",
             color = if (stats.availableTotal > 0) EveColors.successGreen else RiftTheme.colors.textPrimary,
             tooltip = buildAnnotatedString {
                 withStyle(RiftTheme.typography.headlinePrimary.toSpanStyle()) {
@@ -438,23 +438,23 @@ private fun CorporationProjectsStatsRow(
         )
         StatsRowItem(
             value = stats.active.toString(),
-            text = "Active Project${stats.active.plural}",
+            text = "进行中项目 ${stats.active}",
             color = EveColors.airTurquoise,
             tooltip = buildAnnotatedString {
-                append("A maximum of 100 Projects\ncan be active at once per corporation")
+                append("每个军团最多只能同时\n进行 100 个项目")
             },
         )
         StatsRowItem(
             value = stats.completedToday.toString(),
-            text = "Completed Today",
+            text = "今日完成",
             color = if (stats.completedToday > 0) EveColors.successGreen else RiftTheme.colors.textPrimary,
             tooltip = buildAnnotatedString {
-                append("Number of projects completed\nin the last 24 hours")
+                append("过去 24 小时内\n完成的项目数量")
             },
         )
         StatsRowItem(
             value = stats.completedThisWeek.toString(),
-            text = "Completed This Week",
+            text = "本周完成",
             color = if (stats.completedThisWeek > 0) EveColors.successGreen else RiftTheme.colors.textPrimary,
         )
     }
@@ -471,20 +471,20 @@ private fun FreelanceJobsStatsRow(
     ) {
         StatsRowItem(
             value = stats.available.toString(),
-            text = "Job${stats.available.plural} Available",
+            text = "可用任务 ${stats.available}",
             color = if (stats.available > 0) EveColors.airTurquoise else RiftTheme.colors.textPrimary,
         )
         StatsRowItem(
             value = stats.corporations.toString(),
-            text = "Corporation${stats.corporations.plural}",
+            text = "发布军团 ${stats.corporations}",
             color = if (stats.corporations > 0) EveColors.airTurquoise else RiftTheme.colors.textPrimary,
         )
         StatsRowItem(
             value = stats.accepted.toString(),
-            text = "Job${stats.accepted.plural} Accepted",
+            text = "已接受任务 ${stats.accepted}",
             color = if (stats.accepted > 0) EveColors.airTurquoise else RiftTheme.colors.textPrimary,
             tooltip = buildAnnotatedString {
-                append("The Freelancing skill determines the maximum number of\nFreelance Jobs that can be accepted simultaneously")
+                append("“自由职业”技能决定可同时接受的\n自由职业任务上限")
             },
         )
     }
@@ -583,7 +583,7 @@ private fun FiltersRow(
             ) {
                 val count = state.opportunities?.size ?: 0
                 Text(
-                    text = if (count == 1) "1 Opportunity" else "$count Opportunities",
+                    text = if (count == 1) "1 个机遇" else "$count 个机遇",
                     style = RiftTheme.typography.headlinePrimary,
                 )
             }
@@ -599,25 +599,25 @@ private fun FiltersRow(
                 )
 
                 RiftButton(
-                    text = "Filters",
+                    text = "筛选",
                     icon = if (state.isFiltersShown) Res.drawable.expand_less_16px else Res.drawable.expand_more_16px,
                     type = ButtonType.Secondary,
                     onClick = { onIsFiltersShownChange(!state.isFiltersShown) },
                 )
 
                 fun OpportunitySorting.getName() = when (this) {
-                    OpportunitySorting.Name -> "Name"
-                    OpportunitySorting.NameReversed -> "Name (Reversed)"
-                    OpportunitySorting.DateCreated -> "Date Created"
-                    OpportunitySorting.DateCreatedReversed -> "Date Created (Newest first)"
-                    OpportunitySorting.TimeRemaining -> "Time Remaining"
-                    OpportunitySorting.TimeRemainingReversed -> "Time Remaining (Longest first)"
-                    OpportunitySorting.Progress -> "Progress"
-                    OpportunitySorting.ProgressReversed -> "Progress (Highest first)"
-                    OpportunitySorting.NumberOfJumps -> "Number of Jumps"
-                    OpportunitySorting.NumberOfJumpsReversed -> "Number of Jumps (Farthest first)"
-                    OpportunitySorting.LastUpdated -> "Last Updated"
-                    OpportunitySorting.LastUpdatedReversed -> "Last Updated (Newest first)"
+                    OpportunitySorting.Name -> "名称"
+                    OpportunitySorting.NameReversed -> "名称（倒序）"
+                    OpportunitySorting.DateCreated -> "创建时间"
+                    OpportunitySorting.DateCreatedReversed -> "创建时间（最新优先）"
+                    OpportunitySorting.TimeRemaining -> "剩余时间"
+                    OpportunitySorting.TimeRemainingReversed -> "剩余时间（最长优先）"
+                    OpportunitySorting.Progress -> "进度"
+                    OpportunitySorting.ProgressReversed -> "进度（最高优先）"
+                    OpportunitySorting.NumberOfJumps -> "跳跃数"
+                    OpportunitySorting.NumberOfJumpsReversed -> "跳跃数（最远优先）"
+                    OpportunitySorting.LastUpdated -> "最后更新"
+                    OpportunitySorting.LastUpdatedReversed -> "最后更新（最新优先）"
                 }
 
                 val sortingFilterItems: List<ContextMenuItem> = OpportunitySorting.entries.map { sorting ->
@@ -629,12 +629,12 @@ private fun FiltersRow(
                 }.chunked(2).flatMap { (a, b) ->
                     listOf(a, b, ContextMenuItem.DividerItem)
                 }.dropLast(1).let {
-                    listOf(ContextMenuItem.HeaderItem("Sort By")) + it
+                    listOf(ContextMenuItem.HeaderItem("排序方式")) + it
                 }
                 Box(contentAlignment = Alignment.BottomStart) {
                     var isShown by remember { mutableStateOf(false) }
                     RiftButton(
-                        text = "Sort By",
+                        text = "排序",
                         icon = Res.drawable.bars_sort_ascending_16px,
                         type = ButtonType.Secondary,
                         onClick = { isShown = true },
@@ -687,8 +687,8 @@ private fun FiltersRow(
                 LazyRow(Modifier.animateContentSize()) {
                     items(corporationFilters.sortedBy { it == selectedFilter }, key = { it }) { filter ->
                         val name = when (filter) {
-                            CorporationFilter.All -> "All creators"
-                            CorporationFilter.MemberCorporations -> "All your corporations"
+                            CorporationFilter.All -> "全部发布者"
+                            CorporationFilter.MemberCorporations -> "你的全部军团"
                             is CorporationFilter.SpecificCorporation -> filter.corporation.name
                         }
                         RiftTooltipArea(name, modifier = Modifier.animateItem()) {
@@ -731,7 +731,7 @@ private fun FiltersRow(
                     when (filter) {
                         CorporationFilter.All -> {
                             Text(
-                                text = "All creators",
+                                text = "全部发布者",
                                 style = RiftTheme.typography.headlinePrimary.copy(
                                     fontWeight = FontWeight.Bold,
                                 ),
@@ -739,7 +739,7 @@ private fun FiltersRow(
                         }
                         CorporationFilter.MemberCorporations -> {
                             Text(
-                                text = "All your corporations",
+                                text = "你的全部军团",
                                 style = RiftTheme.typography.headlinePrimary.copy(
                                     fontWeight = FontWeight.Bold,
                                 ),
@@ -799,22 +799,22 @@ private fun ProjectCard(
             RiftOpportunityCardButton(
                 resource = Res.drawable.open_window_16px,
                 isAlwaysVisible = false,
-                tooltip = "View In-Game",
+                tooltip = "在游戏内查看",
                 action = onViewInGameClick,
             ),
         )
         if (opportunity.contributions.isNotEmpty()) {
-            val verb = if (opportunity.state == OpportunityState.Active) "are" else "were"
+            val verb = if (opportunity.state == OpportunityState.Active) "是" else "曾是"
             val noun = when (opportunity.type) {
-                OpportunityType.CorporationProject -> "project"
-                OpportunityType.FreelanceJob -> "job"
+                OpportunityType.CorporationProject -> "项目"
+                OpportunityType.FreelanceJob -> "任务"
             }
             add(
                 RiftOpportunityCardButton(
                     resource = Res.drawable.contribution_16px,
                     isAlwaysVisible = true,
                     colorTint = Color(0xFFA9DBE9),
-                    tooltip = "You $verb a participant in this $noun",
+                    tooltip = "你${verb}该${noun}的参与者",
                     action = null,
                 ),
             )
@@ -834,13 +834,13 @@ private fun ProjectCard(
                         Text(
                             text = buildAnnotatedString {
                                 if (expiresIn.isPositive) {
-                                    append("Expires in ")
+                                    append("剩余 ")
                                     withColor(RiftTheme.colors.textPrimary) {
                                         append(formatDuration(expiresIn))
                                     }
                                 } else {
                                     withColor(EveColors.dangerRed) {
-                                        append("Expired")
+                                        append("已过期")
                                     }
                                 }
                             },
@@ -904,7 +904,7 @@ private fun getProjectBottomContent(opportunity: Opportunity): RiftOpportunityCa
             val bottomTextTooltip = buildAnnotatedString {
                 if (totalRemainingRewardForCharacters != null) {
                     withStyle(RiftTheme.typography.bodySecondary.toSpanStyle()) {
-                        appendLine("Available to you")
+                        appendLine("你可获得")
                     }
                     withStyle(RiftTheme.typography.headerPrimary.toSpanStyle()) {
                         appendLine(formatIsk(totalRemainingRewardForCharacters, withCents = false))
@@ -916,7 +916,7 @@ private fun getProjectBottomContent(opportunity: Opportunity): RiftOpportunityCa
                 }
 
                 withStyle(RiftTheme.typography.bodySecondary.toSpanStyle()) {
-                    appendLine("Available in Project")
+                    appendLine("项目内剩余")
                 }
                 withStyle(RiftTheme.typography.headerPrimary.toSpanStyle()) {
                     appendLine(formatIsk(opportunity.reward.remaining, withCents = false))
@@ -933,7 +933,7 @@ private fun getProjectBottomContent(opportunity: Opportunity): RiftOpportunityCa
 
     OpportunityState.Closed -> {
         getProjectBottomText(
-            text = "Closed",
+            text = "已关闭",
             color = EveColors.hotRed,
             icon = Res.drawable.corporation_project_state_close_16px,
             timestamp = opportunity.details.finished ?: opportunity.lastModified,
@@ -942,7 +942,7 @@ private fun getProjectBottomContent(opportunity: Opportunity): RiftOpportunityCa
 
     OpportunityState.Completed -> {
         getProjectBottomText(
-            text = "Completed",
+            text = "已完成",
             color = EveColors.successGreen,
             icon = Res.drawable.corporation_project_state_checkmark_16px,
             timestamp = opportunity.details.finished ?: opportunity.lastModified,
@@ -951,7 +951,7 @@ private fun getProjectBottomContent(opportunity: Opportunity): RiftOpportunityCa
 
     OpportunityState.Expired -> {
         getProjectBottomText(
-            text = "Expired",
+            text = "已过期",
             color = EveColors.hotRed,
             icon = Res.drawable.corporation_project_state_time_16px,
             timestamp = opportunity.details.finished ?: opportunity.lastModified,
@@ -960,7 +960,7 @@ private fun getProjectBottomContent(opportunity: Opportunity): RiftOpportunityCa
 
     OpportunityState.Deleted -> {
         getProjectBottomText(
-            text = "Deleted",
+            text = "已删除",
             color = EveColors.hotRed,
             icon = Res.drawable.corporation_project_state_close_16px,
             timestamp = opportunity.details.finished ?: opportunity.lastModified,
@@ -992,7 +992,7 @@ private fun getProjectBottomText(
 @Composable
 private fun EmptyState() {
     Text(
-        text = "No Opportunities found",
+        text = "未找到机遇",
         style = RiftTheme.typography.headlineSecondary,
         textAlign = TextAlign.Center,
         modifier = Modifier

@@ -217,11 +217,11 @@ private fun ColonyTooltip(
         modifier = Modifier.padding(Spacing.large),
     ) {
         when (colony.status) {
-            is Extracting -> Text("Extracting", fontWeight = FontWeight.Bold, color = RiftTheme.colors.textGreen)
-            is Producing -> Text("Producing", fontWeight = FontWeight.Bold, color = RiftTheme.colors.textGreen)
-            is NotSetup -> Text("Not setup", fontWeight = FontWeight.Bold, color = RiftTheme.colors.textRed)
-            is NeedsAttention -> Text("Needs attention", fontWeight = FontWeight.Bold, color = RiftTheme.colors.textRed)
-            is Idle -> Text("Idle", fontWeight = FontWeight.Bold)
+            is Extracting -> Text("开采中", fontWeight = FontWeight.Bold, color = RiftTheme.colors.textGreen)
+            is Producing -> Text("生产中", fontWeight = FontWeight.Bold, color = RiftTheme.colors.textGreen)
+            is NotSetup -> Text("未设置", fontWeight = FontWeight.Bold, color = RiftTheme.colors.textRed)
+            is NeedsAttention -> Text("需要注意", fontWeight = FontWeight.Bold, color = RiftTheme.colors.textRed)
+            is Idle -> Text("闲置", fontWeight = FontWeight.Bold)
         }
         val finalProducts = colony.overview.finalProducts
         if (finalProducts.isNotEmpty()) {
@@ -238,7 +238,7 @@ private fun ColonyTooltip(
                     modifier = Modifier.padding(start = Spacing.small),
                 ) {
                     Text(
-                        text = "Producing",
+                        text = "生产中",
                         style = RiftTheme.typography.bodyPrimary,
                     )
                     Text(
@@ -249,7 +249,7 @@ private fun ColonyTooltip(
             }
 
             AnnotatedProgressBar(
-                title = "Product storage",
+                title = "产品仓储",
                 percentage = colony.overview.finalProductsUsedCapacity.toFloat() / colony.overview.capacity,
                 secondaryPercentage = colony.overview.otherUsedCapacity.toFloat() / colony.overview.capacity,
                 description = String.format("%.0f/%.0f m3", colony.overview.finalProductsUsedCapacity, colony.overview.capacity.toFloat()),
@@ -263,7 +263,7 @@ private fun ColonyTooltip(
             style = RiftTheme.typography.bodyPrimary,
         )
         Text(
-            text = "${colony.type.name} planet",
+            text = "${colony.type.name} 行星",
             style = RiftTheme.typography.bodySecondary,
         )
     }

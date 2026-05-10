@@ -75,17 +75,17 @@ class GetAccountsWithDisabledChatLogsUseCase(
 
         return buildString {
             if (profile != "Default") {
-                append("In profile $profile: ")
+                append("配置档 $profile：")
             }
-            append("Account with ID $id")
+            append("账号 ID：$id")
             if (charactersOnAccount.isNotEmpty()) {
                 val names = charactersOnAccount.mapNotNull { it.info?.name }
                 if (names.isNotEmpty()) {
                     val characterNames = names.joinToString(", ")
-                    append(" and characters $characterNames")
+                    append("，角色：$characterNames")
                 } else {
                     val characterIds = charactersOnAccount.joinToString(", ") { it.characterId.toString() }
-                    append(" and character IDs $characterIds")
+                    append("，角色 ID：$characterIds")
                 }
             }
         }

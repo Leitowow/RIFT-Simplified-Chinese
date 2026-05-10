@@ -147,7 +147,7 @@ fun MapWindow(
     val viewModel: MapViewModel = viewModel(windowState.uuid)
     val state by viewModel.state.collectAsState()
     RiftWindow(
-        title = "Intel Map",
+        title = "预警星图",
         icon = Res.drawable.window_map,
         state = windowState,
         onCloseClick = onCloseRequest,
@@ -297,7 +297,7 @@ private fun BoxScope.BottomControlButtons(
         AnimatedVisibility(mapType != DistanceMap) {
             RiftTooltipArea(
                 tooltip = {
-                    KeyName("Focus Current Location", "Enter")
+                    KeyName("定位到当前位置", "Enter")
                 },
             ) {
                 RiftImageButton(
@@ -309,7 +309,7 @@ private fun BoxScope.BottomControlButtons(
         }
         RiftTooltipArea(
             tooltip = {
-                KeyName("Fit To Window", "Space")
+                KeyName("适应窗口", "Space")
             },
         ) {
             RiftImageButton(
@@ -320,7 +320,7 @@ private fun BoxScope.BottomControlButtons(
         }
         AnimatedVisibility(mapType is ClusterSystemsMap) {
             RiftTooltipArea(
-                text = "Toggle 2D Layout",
+                text = "切换 2D 布局",
             ) {
                 RiftImageButton(
                     resource = Res.drawable.abstract_layout_32px,
@@ -725,7 +725,7 @@ fun getSolarSystemColorStrategy(
         MapSystemInfoType.SovereigntyUpgrades -> systemStatusColorStrategies.sovereigntyUpgrades
         MapSystemInfoType.MetaliminalStorms -> systemStatusColorStrategies.storms
         MapSystemInfoType.JumpRange -> systemStatusColorStrategies.jumpRange
-        MapSystemInfoType.Planets -> throw IllegalArgumentException("Not used for coloring")
+        MapSystemInfoType.Planets -> throw IllegalArgumentException("不用于着色")
         MapSystemInfoType.JoveObservatories -> koin.get<JoveObservatorySystemColorStrategy>()
         MapSystemInfoType.Wormholes -> systemStatusColorStrategies.wormholes
         MapSystemInfoType.Colonies -> systemStatusColorStrategies.colonies
@@ -734,8 +734,8 @@ fun getSolarSystemColorStrategy(
         MapSystemInfoType.RatsType -> systemStatusColorStrategies.rats
         MapSystemInfoType.AsteroidBelts -> koin.get<AsteroidBeltsSystemColorStrategy>()
         MapSystemInfoType.IceFields -> koin.get<IceFieldsSystemColorStrategy>()
-        MapSystemInfoType.Region -> throw IllegalArgumentException("Not used for coloring")
-        MapSystemInfoType.Constellation -> throw IllegalArgumentException("Not used for coloring")
+        MapSystemInfoType.Region -> throw IllegalArgumentException("不用于着色")
+        MapSystemInfoType.Constellation -> throw IllegalArgumentException("不用于着色")
         MapSystemInfoType.IndustryIndexCopying -> systemStatusColorStrategies.industryCopying
         MapSystemInfoType.IndustryIndexInvention -> systemStatusColorStrategies.industryInvention
         MapSystemInfoType.IndustryIndexManufacturing -> systemStatusColorStrategies.industryManufacturing

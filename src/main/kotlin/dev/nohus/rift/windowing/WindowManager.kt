@@ -71,6 +71,10 @@ class WindowManager(
     private val settings: Settings,
     private val uiScaleController: UiScaleController,
 ) {
+    private val disabledWindows = setOf(
+        RiftWindow.Jukebox,
+        RiftWindow.JukeboxCollapsed,
+    )
 
     @Serializable
     enum class RiftWindow {
@@ -235,7 +239,10 @@ class WindowManager(
     fun openInitialWindows() {
         if (settings.isSetupWizardFinished) {
             if (settings.isRememberOpenWindows) {
-                settings.openWindows.filter { it !in nonSavedWindows }.forEach { onWindowOpen(it) }
+                settings.openWindows
+                    .filter { it !in nonSavedWindows }
+                    .filter { it !in disabledWindows }
+                    .forEach { onWindowOpen(it) }
             }
             if (!settings.isRememberOpenWindows || !settings.isTrayIconWorking) {
                 onWindowOpen(RiftWindow.Neocom, ifClosed = true)
@@ -298,6 +305,7 @@ class WindowManager(
     }
 
     fun onWindowOpen(window: RiftWindow, inputModel: Any? = null, ifClosed: Boolean = false) {
+        if (window in disabledWindows) return
         val existingStates = states.value[window] ?: emptyList()
         if (ifClosed && existingStates.isNotEmpty()) return
         val newStates = if (existingStates.isNotEmpty()) {

@@ -33,8 +33,8 @@ fun WindowScope.CreateGroupDialog(
     onConfirmClick: (name: String) -> Unit,
 ) {
     val title = when (inputModel) {
-        CreateGroupInputModel.New -> "Create group"
-        is CreateGroupInputModel.Rename -> "Rename group"
+        CreateGroupInputModel.New -> "创建分组"
+        is CreateGroupInputModel.Rename -> "重命名分组"
     }
     RiftDialog(
         title = title,
@@ -62,14 +62,14 @@ private fun CreateGroupDialogContent(
     ) {
         if (inputModel is CreateGroupInputModel.New) {
             Text(
-                text = "Groups allow you to organize your alerts.",
+                text = "分组用于整理告警列表。",
             )
         }
         val initialText = (inputModel as? CreateGroupInputModel.Rename)?.name ?: ""
         var text by remember { mutableStateOf(initialText) }
         RiftTextField(
             text = text,
-            placeholder = "Group name",
+            placeholder = "分组名称",
             onTextChanged = { text = it.take(24) },
             modifier = Modifier.fillMaxWidth(),
         )
@@ -78,15 +78,15 @@ private fun CreateGroupDialogContent(
             horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
         ) {
             RiftButton(
-                text = "Cancel",
+                text = "取消",
                 cornerCut = ButtonCornerCut.BottomLeft,
                 type = ButtonType.Secondary,
                 onClick = onCancelClick,
                 modifier = Modifier.weight(1f),
             )
             val label = when (inputModel) {
-                CreateGroupInputModel.New -> "Create"
-                is CreateGroupInputModel.Rename -> "Rename"
+                CreateGroupInputModel.New -> "创建"
+                is CreateGroupInputModel.Rename -> "重命名"
             }
             RiftButton(
                 text = label,

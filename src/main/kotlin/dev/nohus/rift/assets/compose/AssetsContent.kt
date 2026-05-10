@@ -88,7 +88,6 @@ import dev.nohus.rift.repositories.IdRanges
 import dev.nohus.rift.settings.persistence.LocationPinStatus
 import dev.nohus.rift.utils.formatIskCompact
 import dev.nohus.rift.utils.formatNumberCompact
-import dev.nohus.rift.utils.plural
 import dev.nohus.rift.utils.roundSecurity
 import dev.nohus.rift.utils.withColor
 import org.jetbrains.compose.resources.painterResource
@@ -109,16 +108,16 @@ fun AssetsContent(
             modifier = Modifier.padding(bottom = Spacing.medium),
         ) {
             RiftDropdownWithLabel(
-                label = "Sort By",
+                label = "排序",
                 items = SortType.entries,
                 selectedItem = state.filters.sort,
                 onItemSelected = { onFiltersUpdate(state.filters.copy(sort = it)) },
                 getItemName = {
                     when (it) {
-                        SortType.Distance -> "Distance"
-                        SortType.Name -> "Name"
-                        SortType.Count -> "Asset count"
-                        SortType.Price -> "Total price"
+                        SortType.Distance -> "距离"
+                        SortType.Name -> "名称"
+                        SortType.Count -> "资产数量"
+                        SortType.Price -> "总价"
                     }
                 },
             )
@@ -144,10 +143,10 @@ fun AssetsContent(
                             .padding(vertical = Spacing.small),
                     ) {
                         val text = buildAnnotatedString {
-                            append("Total: ")
-                            append("${totals.locations} Location${totals.locations.plural}")
+                            append("合计：")
+                            append("${totals.locations} 个位置")
                             append(" - ")
-                            append("${totals.items} Item${totals.items.plural}")
+                            append("${totals.items} 件物品")
                             append(" - ")
                             append(formatIskCompact(totals.price))
                             append(" - ")
@@ -217,9 +216,9 @@ fun AssetsContent(
                         ) {
                             val isFiltering = state.filters.search != null || state.filters.ownerTypes.isNotEmpty()
                             val text = if (isFiltering) {
-                                "All assets filtered out"
+                                "筛选结果为空"
                             } else {
-                                "No assets"
+                                "暂无资产"
                             }
                             Text(
                                 text = text,
@@ -239,7 +238,7 @@ fun AssetsContent(
                             .padding(Spacing.medium),
                     ) {
                         if (data.filteredAssets.isNotEmpty()) {
-                            Text("Delayed up to 1 hour")
+                            Text("数据延迟最多约 1 小时")
                         }
                         AnimatedContent(
                             state.isLoading,
@@ -253,7 +252,7 @@ fun AssetsContent(
                                 )
                             } else {
                                 RiftButton(
-                                    text = "Reload",
+                                    text = "重新加载",
                                     type = ButtonType.Secondary,
                                     onClick = onReloadClick,
                                 )
@@ -291,7 +290,7 @@ private fun HiddenLocationsHeader(
                 .size(16.dp),
         )
         Text(
-            text = "Hidden [$hiddenCount]",
+            text = "已隐藏 [$hiddenCount]",
             style = RiftTheme.typography.bodyPrimary,
             maxLines = 1,
             overflow = TextOverflow.Visible,
@@ -328,7 +327,7 @@ private fun LocationHeader(
             if (pinStatus == LocationPinStatus.Pinned) {
                 add(
                     ContextMenuItem.TextItem(
-                        text = "Unpin in Assets",
+                        text = "在资产中取消置顶",
                         iconResource = Res.drawable.menu_unpin,
                         onClick = { onPinChange(LocationPinStatus.None) },
                     ),
@@ -336,7 +335,7 @@ private fun LocationHeader(
             } else if (pinStatus == LocationPinStatus.Hidden) {
                 add(
                     ContextMenuItem.TextItem(
-                        text = "Unhide in Assets",
+                        text = "在资产中取消隐藏",
                         iconResource = Res.drawable.menu_unhide,
                         onClick = { onPinChange(LocationPinStatus.None) },
                     ),
@@ -344,14 +343,14 @@ private fun LocationHeader(
             } else {
                 add(
                     ContextMenuItem.TextItem(
-                        text = "Pin in Assets",
+                        text = "在资产中置顶",
                         iconResource = Res.drawable.menu_pinned,
                         onClick = { onPinChange(LocationPinStatus.Pinned) },
                     ),
                 )
                 add(
                     ContextMenuItem.TextItem(
-                        text = "Hide in Assets",
+                        text = "在资产中隐藏",
                         iconResource = Res.drawable.menu_hide,
                         onClick = { onPinChange(LocationPinStatus.Hidden) },
                     ),
@@ -404,7 +403,7 @@ private fun LocationHeader(
                         append(location.customName ?: location.name)
                     }
                     append(" - ")
-                    append("${assets.size} Item${if (assets.size != 1) "s" else ""}")
+                    append("${assets.size} 件物品")
                     append(" - ")
                     val totalPrice = assets.sumOf { it.getTotalPrice() }
                     append(formatIskCompact(totalPrice))
@@ -413,7 +412,7 @@ private fun LocationHeader(
                     append(formatNumberCompact(totalVolume) + " m3")
                     location.distance?.let {
                         append(" - ")
-                        append("Route: $it Jump${if (it != 1) "s" else ""}")
+                        append("路线：$it 跳")
                     }
                 }
                 Text(
@@ -437,7 +436,7 @@ private fun LocationHeader(
                 ) {
                     if (pointerState.isHovered) {
                         RiftTooltipArea(
-                            text = "Rename location",
+                            text = "重命名位置",
                         ) {
                             RiftImageButton(
                                 resource = Res.drawable.editplanicon,
@@ -448,7 +447,7 @@ private fun LocationHeader(
                         when (pinStatus) {
                             LocationPinStatus.Pinned -> {
                                 RiftTooltipArea(
-                                    text = "Unpin",
+                                    text = "取消置顶",
                                 ) {
                                     RiftImageButton(
                                         resource = Res.drawable.menu_unpin,
@@ -459,7 +458,7 @@ private fun LocationHeader(
                             }
                             LocationPinStatus.Hidden -> {
                                 RiftTooltipArea(
-                                    text = "Unhide",
+                                    text = "取消隐藏",
                                 ) {
                                     RiftImageButton(
                                         resource = Res.drawable.menu_hide,
@@ -470,7 +469,7 @@ private fun LocationHeader(
                             }
                             LocationPinStatus.None -> {
                                 RiftTooltipArea(
-                                    text = "Hide",
+                                    text = "隐藏",
                                 ) {
                                     RiftImageButton(
                                         resource = Res.drawable.menu_unhide,
@@ -479,7 +478,7 @@ private fun LocationHeader(
                                     )
                                 }
                                 RiftTooltipArea(
-                                    text = "Pin",
+                                    text = "置顶",
                                 ) {
                                     RiftImageButton(
                                         resource = Res.drawable.menu_pinned,
@@ -581,7 +580,7 @@ private fun AssetRow(
                             val text = when (asset.owner) {
                                 is AssetsRepository.AssetOwner.Character -> asset.owner.character.info?.name
                                 is AssetsRepository.AssetOwner.Corporation -> asset.owner.corporationName
-                            } ?: "Unknown Owner"
+                            } ?: "未知所有者"
                             RiftTooltipArea(
                                 text = text,
                                 modifier = Modifier.padding(end = Spacing.small),
@@ -622,10 +621,10 @@ private fun AssetRow(
                         }
                         if (asset.quantity > 1) {
                             val formatted = NumberFormat.getIntegerInstance().format(asset.quantity)
-                            add("$formatted units")
+                            add("$formatted 件")
                         }
                         if (asset.children.isNotEmpty()) {
-                            add("${asset.children.size} item${if (asset.children.size != 1) "s" else ""}")
+                            add("${asset.children.size} 项子资产")
                             val volume = asset.children.map { it.quantity * (it.type.volume) }.sum()
                             val formatted = NumberFormat.getNumberInstance().apply { maximumFractionDigits = 1 }.format(volume)
                             add("$formatted m3")
@@ -651,19 +650,19 @@ private fun AssetRow(
                             .padding(start = 24.dp),
                     ) {
                         RiftButton(
-                            text = "Copy fit",
+                            text = "复制装配",
                             type = ButtonType.Secondary,
                             cornerCut = ButtonCornerCut.BottomLeft,
                             onClick = { onFitAction(asset.fitting, FitAction.Copy) },
                         )
                         RiftButton(
-                            text = "Copy fit & cargo",
+                            text = "复制装配与货舱",
                             type = ButtonType.Secondary,
                             cornerCut = ButtonCornerCut.None,
                             onClick = { onFitAction(asset.fitting, FitAction.CopyWithCargo) },
                         )
                         RiftButton(
-                            text = "View fit",
+                            text = "查看装配",
                             cornerCut = ButtonCornerCut.BottomRight,
                             onClick = { onFitAction(asset.fitting, FitAction.Open) },
                         )

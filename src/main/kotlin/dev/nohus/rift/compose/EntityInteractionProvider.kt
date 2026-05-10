@@ -44,7 +44,7 @@ class EntityInteractionProvider(
         val contextMenuItems = buildList {
             add(
                 ContextMenuItem.TextItem(
-                    text = "Show Info",
+                    text = "显示信息",
                     iconContent = { RiftMulticolorIcon(MulticolorIconType.Info, it) },
                     onClick = { gameUiController.openInfoWindow(characterId) },
                 ),
@@ -86,7 +86,7 @@ class EntityInteractionProvider(
         val contextMenuItems = buildList {
             add(
                 ContextMenuItem.TextItem(
-                    text = "Show Info",
+                    text = "显示信息",
                     iconContent = { RiftMulticolorIcon(MulticolorIconType.Info, it) },
                     onClick = { gameUiController.openInfoWindow(corporationId) },
                 ),
@@ -110,7 +110,7 @@ class EntityInteractionProvider(
         val contextMenuItems = buildList {
             add(
                 ContextMenuItem.TextItem(
-                    text = "Show Info",
+                    text = "显示信息",
                     iconContent = { RiftMulticolorIcon(MulticolorIconType.Info, it) },
                     onClick = { gameUiController.openInfoWindow(allianceId) },
                 ),
@@ -134,7 +134,7 @@ class EntityInteractionProvider(
         val contextMenuItems = buildList {
             add(
                 ContextMenuItem.TextItem(
-                    text = "Show Info",
+                    text = "显示信息",
                     iconContent = { RiftMulticolorIcon(MulticolorIconType.Info, it) },
                     onClick = { gameUiController.pushType(type, "ship") },
                 ),
@@ -156,7 +156,7 @@ class EntityInteractionProvider(
         val contextMenuItems = buildList {
             add(
                 ContextMenuItem.TextItem(
-                    text = "Show Info",
+                    text = "显示信息",
                     iconContent = { RiftMulticolorIcon(MulticolorIconType.Info, it) },
                     onClick = { gameUiController.pushType(type, "type") },
                 ),
@@ -187,11 +187,11 @@ class EntityInteractionProvider(
         return buildList {
             add(
                 ContextMenuItem.TextItem(
-                    text = "Show Info",
+                    text = "显示信息",
                     iconContent = { RiftMulticolorIcon(MulticolorIconType.Info, it) },
                     onClick = {
                         if (locationId != null && locationTypeId != null) {
-                            gameUiController.pushLocation(locationId, locationTypeId, locationName ?: "Location")
+                            gameUiController.pushLocation(locationId, locationTypeId, locationName ?: "位置")
                         } else {
                             gameUiController.pushSystem(system)
                         }
@@ -201,7 +201,7 @@ class EntityInteractionProvider(
             add(ContextMenuItem.DividerItem)
             add(
                 ContextMenuItem.TextItem(
-                    text = "Set Destination",
+                    text = "设为目的地",
                     iconResource = Res.drawable.menu_set_destination,
                     onClick = {
                         autopilotController.setDestination(locationId ?: systemId.toLong(), systemId)
@@ -210,7 +210,7 @@ class EntityInteractionProvider(
             )
             add(
                 ContextMenuItem.TextItem(
-                    text = "Add Waypoint",
+                    text = "添加航点",
                     onClick = {
                         autopilotController.addWaypoint(locationId ?: systemId.toLong(), systemId)
                     },
@@ -218,7 +218,7 @@ class EntityInteractionProvider(
             )
             add(
                 ContextMenuItem.TextItem(
-                    text = "Clear Autopilot",
+                    text = "清除自动导航",
                     onClick = {
                         autopilotController.clearRoute()
                     },
@@ -226,7 +226,7 @@ class EntityInteractionProvider(
             )
             add(
                 ContextMenuItem.CheckboxItemWithInternalState(
-                    text = "All Characters",
+                    text = "所有角色",
                     isSelected = {
                         settings.isSettingAutopilotToAll
                     },
@@ -238,7 +238,7 @@ class EntityInteractionProvider(
             add(ContextMenuItem.DividerItem)
             add(
                 ContextMenuItem.TextItem(
-                    text = "Copy Name",
+                    text = "复制名称",
                     onClick = {
                         Clipboard.copy(system.name)
                     },
@@ -246,7 +246,7 @@ class EntityInteractionProvider(
             )
             add(
                 ContextMenuItem.TextItem(
-                    text = "Add Marker",
+                    text = "添加标记",
                     iconResource = Res.drawable.map_marker_place_bookmark,
                     onClick = {
                         val inputModel = MapMarkersInputModel.AddToSystem(systemId)
@@ -258,7 +258,7 @@ class EntityInteractionProvider(
                 if (mapType == null) {
                     add(
                         ContextMenuItem.TextItem(
-                            text = "Show on Map",
+                            text = "在星图显示",
                             onClick = {
                                 mapExternalControl.showSystemOnMap(systemId)
                             },
@@ -268,7 +268,7 @@ class EntityInteractionProvider(
                     if (mapType !is MapType.ClusterSystemsMap) {
                         add(
                             ContextMenuItem.TextItem(
-                                text = "Show in New Eden",
+                                text = "在新伊甸图显示",
                                 onClick = {
                                     mapExternalControl.showSystemOnNewEdenMap(systemId)
                                 },
@@ -278,7 +278,7 @@ class EntityInteractionProvider(
                     if (mapType !is MapType.RegionMap) {
                         add(
                             ContextMenuItem.TextItem(
-                                text = "Show in Region",
+                                text = "在星域图显示",
                                 onClick = {
                                     mapExternalControl.showSystemOnRegionMap(systemId)
                                 },
@@ -297,9 +297,9 @@ class EntityInteractionProvider(
             contactsExternalControl.editContact(id, type)
         }
         return if (contactsRepository.isCharacterContact(id)) {
-            ContextMenuItem.TextItem("Edit Contact", null, onClick = onEditContact)
+            ContextMenuItem.TextItem("编辑联系人", null, onClick = onEditContact)
         } else {
-            ContextMenuItem.TextItem("Add Contact", Res.drawable.menu_add, onClick = onEditContact)
+            ContextMenuItem.TextItem("添加联系人", Res.drawable.menu_add, onClick = onEditContact)
         }
     }
 }

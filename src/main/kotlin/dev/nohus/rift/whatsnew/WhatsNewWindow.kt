@@ -51,7 +51,7 @@ fun WhatsNewWindow(
     val viewModel: WhatsNewViewModel = viewModel()
     val state by viewModel.state.collectAsState()
     RiftWindow(
-        title = "What's New",
+        title = "新增内容",
         icon = Res.drawable.window_redeem,
         state = windowState,
         onCloseClick = onCloseRequest,

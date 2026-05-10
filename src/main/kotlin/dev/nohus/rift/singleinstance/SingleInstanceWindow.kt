@@ -23,7 +23,7 @@ fun SingleInstanceWindow(
     onCloseRequest: () -> Unit,
 ) {
     RiftWindow(
-        title = "RIFT Intel Fusion Tool",
+        title = "RIFT 预警融合工具",
         icon = Res.drawable.window_warning,
         state = windowState,
         onCloseClick = onCloseRequest,

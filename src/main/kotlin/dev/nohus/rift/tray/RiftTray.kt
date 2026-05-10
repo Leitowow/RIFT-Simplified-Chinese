@@ -28,7 +28,6 @@ import dev.nohus.rift.generated.resources.window_characters
 import dev.nohus.rift.generated.resources.window_chatchannels
 import dev.nohus.rift.generated.resources.window_contacts
 import dev.nohus.rift.generated.resources.window_evemailtag
-import dev.nohus.rift.generated.resources.window_jukebox
 import dev.nohus.rift.generated.resources.window_loudspeaker_icon
 import dev.nohus.rift.generated.resources.window_map
 import dev.nohus.rift.generated.resources.window_opportunities
@@ -118,28 +117,27 @@ private fun getTrayMenuItems(
             add(TrayMenuTextItem("RIFT", null) { onButtonClick(RiftWindow.Neocom) })
         }
         add(Separator)
-        add(TrayMenuTextItem("Alerts", Res.drawable.window_loudspeaker_icon) { onButtonClick(RiftWindow.Alerts) })
-        add(TrayMenuTextItem("Map", Res.drawable.window_map) { onButtonClick(RiftWindow.Map) })
-        add(TrayMenuTextItem("Intel Feed", Res.drawable.window_satellite) { onButtonClick(RiftWindow.IntelFeed) })
-        add(TrayMenuTextItem("Intel Reports", Res.drawable.window_bleedchannel) { onButtonClick(RiftWindow.IntelReports) })
-        add(TrayMenuTextItem("Characters", Res.drawable.window_characters) { onButtonClick(RiftWindow.Characters) })
-        add(TrayMenuTextItem("Assets", Res.drawable.window_assets) { onButtonClick(RiftWindow.Assets) })
-        add(TrayMenuTextItem("Wallets", Res.drawable.window_wallet) { onButtonClick(RiftWindow.Wallet) })
-        add(TrayMenuTextItem("Planetary Industry", Res.drawable.window_planets) { onButtonClick(RiftWindow.PlanetaryIndustry) })
-        add(TrayMenuTextItem("Opportunities", Res.drawable.window_opportunities) { onButtonClick(RiftWindow.Opportunities) })
-        add(TrayMenuTextItem("Contacts", Res.drawable.window_contacts) { onButtonClick(RiftWindow.Contacts) })
+        add(TrayMenuTextItem("告警", Res.drawable.window_loudspeaker_icon) { onButtonClick(RiftWindow.Alerts) })
+        add(TrayMenuTextItem("星图", Res.drawable.window_map) { onButtonClick(RiftWindow.Map) })
+        add(TrayMenuTextItem("预警流", Res.drawable.window_satellite) { onButtonClick(RiftWindow.IntelFeed) })
+        add(TrayMenuTextItem("预警报告", Res.drawable.window_bleedchannel) { onButtonClick(RiftWindow.IntelReports) })
+        add(TrayMenuTextItem("角色", Res.drawable.window_characters) { onButtonClick(RiftWindow.Characters) })
+        add(TrayMenuTextItem("资产", Res.drawable.window_assets) { onButtonClick(RiftWindow.Assets) })
+        add(TrayMenuTextItem("钱包", Res.drawable.window_wallet) { onButtonClick(RiftWindow.Wallet) })
+        add(TrayMenuTextItem("行星工业", Res.drawable.window_planets) { onButtonClick(RiftWindow.PlanetaryIndustry) })
+        add(TrayMenuTextItem("机遇", Res.drawable.window_opportunities) { onButtonClick(RiftWindow.Opportunities) })
+        add(TrayMenuTextItem("联系人", Res.drawable.window_contacts) { onButtonClick(RiftWindow.Contacts) })
         if (BuildConfig.isDevEnvironment) {
-            add(TrayMenuTextItem("Chat", Res.drawable.window_chatchannels) { onButtonClick(RiftWindow.Chat) })
+            add(TrayMenuTextItem("聊天", Res.drawable.window_chatchannels) { onButtonClick(RiftWindow.Chat) })
         }
         if (isJabberEnabled) {
-            add(TrayMenuTextItem("Pings", Res.drawable.window_sovereignty) { onButtonClick(RiftWindow.Pings) })
+            add(TrayMenuTextItem("集结通知", Res.drawable.window_sovereignty) { onButtonClick(RiftWindow.Pings) })
             add(TrayMenuTextItem("Jabber", Res.drawable.window_chatchannels) { onButtonClick(RiftWindow.Jabber) })
         }
-        add(TrayMenuTextItem("Jukebox", Res.drawable.window_jukebox) { onButtonClick(RiftWindow.Jukebox) })
-        add(TrayMenuTextItem("Settings", Res.drawable.window_settings) { onButtonClick(RiftWindow.Settings) })
-        add(TrayMenuTextItem("About", Res.drawable.window_evemailtag) { onButtonClick(RiftWindow.About) })
+        add(TrayMenuTextItem("设置", Res.drawable.window_settings) { onButtonClick(RiftWindow.Settings) })
+        add(TrayMenuTextItem("关于", Res.drawable.window_evemailtag) { onButtonClick(RiftWindow.About) })
         add(Separator)
-        add(TrayMenuTextItem("Quit", Res.drawable.window_quitgame) { onQuitClick() })
+        add(TrayMenuTextItem("退出", Res.drawable.window_quitgame) { onQuitClick() })
     }
 }
 

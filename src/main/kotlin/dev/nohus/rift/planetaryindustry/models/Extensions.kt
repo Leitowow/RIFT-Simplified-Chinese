@@ -38,9 +38,9 @@ fun Pin.getName(): String {
     return when (this) {
         is Pin.Extractor -> {
             val heads = heads?.size ?: 0
-            "$nameWithDesignator with $heads head${heads.plural}"
+            "$nameWithDesignator，$heads 个采集头"
         }
-        is Pin.CommandCenter -> "$nameWithDesignator Level $level"
+        is Pin.CommandCenter -> "$nameWithDesignator 等级 $level"
         else -> nameWithDesignator
     }
 }

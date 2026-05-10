@@ -73,7 +73,6 @@ import dev.nohus.rift.generated.resources.toggle_off_18
 import dev.nohus.rift.generated.resources.toggle_on_18
 import dev.nohus.rift.generated.resources.window_loudspeaker_icon
 import dev.nohus.rift.planetaryindustry.PlanetaryIndustryRepository.ColonyItem
-import dev.nohus.rift.utils.plural
 import dev.nohus.rift.utils.sound.Sound
 import dev.nohus.rift.utils.withColor
 import dev.nohus.rift.viewModel
@@ -90,7 +89,7 @@ fun AlertsWindow(
     val viewModel: AlertsViewModel = viewModel()
     val state by viewModel.state.collectAsState()
     RiftWindow(
-        title = "Alerts",
+        title = "告警",
         icon = Res.drawable.window_loudspeaker_icon,
         state = windowState,
         onCloseClick = onCloseRequest,
@@ -167,17 +166,17 @@ private fun AlertsWindowContent(
                         stickyHeader {
                             val text = buildAnnotatedString {
                                 withColor(RiftTheme.colors.textPrimary) {
-                                    append(group ?: "Default")
+                                    append(group ?: "默认")
                                 }
                                 val total = alertsInGroup.size
                                 val enabled = alertsInGroup.count { it.isEnabled }
                                 append(" - ")
                                 append(total.toString())
-                                append(" alert${total.plural}")
+                                append(" 个告警")
                                 if (enabled < total) {
                                     append(" - ")
                                     append(enabled.toString())
-                                    append(" enabled")
+                                    append(" 个已启用")
                                 }
                             }
                             AlertGroupHeader(
@@ -222,7 +221,7 @@ private fun AlertsWindowContent(
                 modifier = Modifier.weight(1f),
             ) {
                 Text(
-                    text = "No alerts defined.\nCreate some with the button below.",
+                    text = "尚未创建告警。\n点击下方按钮添加。",
                     style = RiftTheme.typography.headerPrimary,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
@@ -237,14 +236,14 @@ private fun AlertsWindowContent(
         ) {
             if (state.alerts.isNotEmpty()) {
                 RiftButton(
-                    text = "Create group",
+                    text = "新建分组",
                     type = ButtonType.Secondary,
                     cornerCut = ButtonCornerCut.None,
                     onClick = onCreateGroupClick,
                 )
             }
             RiftButton(
-                text = "Create alert",
+                text = "新建告警",
                 onClick = onCreateAlertClick,
             )
         }
@@ -288,7 +287,7 @@ private fun LazyItemScope.AlertGroupHeader(
         val buttonsAlpha by animateFloatAsState(if (pointerState.isHovered) 1f else 0f)
         if (!isEmpty) {
             RiftTooltipArea(
-                text = if (hasEnabledAlerts) "Disable all alerts" else "Enable all alerts",
+                text = if (hasEnabledAlerts) "全部关闭" else "全部启用",
             ) {
                 RiftImageButton(
                     resource = if (hasEnabledAlerts) Res.drawable.toggle_on_18 else Res.drawable.toggle_off_18,
@@ -300,7 +299,7 @@ private fun LazyItemScope.AlertGroupHeader(
         }
         if (!isDefault) {
             RiftTooltipArea(
-                text = "Rename group",
+                text = "重命名分组",
             ) {
                 RiftImageButton(
                     resource = Res.drawable.editplanicon,
@@ -310,7 +309,7 @@ private fun LazyItemScope.AlertGroupHeader(
                 )
             }
             RiftTooltipArea(
-                text = if (isEmpty) "Delete group" else "Delete group and move alerts to default",
+                text = if (isEmpty) "删除分组" else "删除分组并将告警移至默认分组",
             ) {
                 RiftImageButton(
                     resource = Res.drawable.delete,
@@ -334,7 +333,7 @@ private fun LazyItemScope.EmptyGroup() {
             .animateContentSize(),
     ) {
         Text(
-            text = "No alerts in this group",
+            text = "该分组暂无告警",
             style = RiftTheme.typography.bodySecondary,
         )
     }
@@ -413,11 +412,11 @@ private fun LazyItemScope.AlertItem(
                     .fillMaxWidth(),
             ) {
                 RiftDropdownWithLabel(
-                    label = "Group:",
+                    label = "分组：",
                     items = (groups.sorted() + listOf(null)).toList(),
                     selectedItem = alert.group,
                     onItemSelected = onGroupChange,
-                    getItemName = { it ?: "Default" },
+                    getItemName = { it ?: "默认" },
                     maxItems = 3,
                     modifier = Modifier
                         .widthIn(max = 170.dp)
@@ -425,7 +424,7 @@ private fun LazyItemScope.AlertItem(
                 )
                 if (alert.actions.any { it is AlertAction.Sound || it is AlertAction.CustomSound }) {
                     RiftButton(
-                        text = "Test sound",
+                        text = "试听音效",
                         type = ButtonType.Secondary,
                         cornerCut = ButtonCornerCut.None,
                         onClick = { onTestAlertSound(alert.id) },
@@ -433,14 +432,14 @@ private fun LazyItemScope.AlertItem(
                     )
                 }
                 RiftButton(
-                    text = "Edit action",
+                    text = "编辑动作",
                     type = ButtonType.Secondary,
                     cornerCut = ButtonCornerCut.None,
                     onClick = { onEditAlertAction(alert.id) },
                     modifier = Modifier.padding(end = Spacing.medium),
                 )
                 RiftButton(
-                    text = "Delete",
+                    text = "删除",
                     type = ButtonType.Negative,
                     onClick = { onDeleteAlert(alert.id) },
                 )
@@ -460,7 +459,7 @@ private fun getSpecificCharactersDetailText(alert: Alert): AnnotatedString? {
             val characters = (specificCharacters as IntelReportType.SpecificCharacters).characters
             buildAnnotatedString {
                 withStyle(secondary) {
-                    append("Monitored characters: ")
+                    append("监视角色：")
                     characters.forEach { character ->
                         withStyle(primary) {
                             append(character)
@@ -488,7 +487,7 @@ private fun getSpecificFleetCommandersDetailText(alert: Alert): AnnotatedString?
             val primary = SpanStyle(color = RiftTheme.colors.textPrimary)
             buildAnnotatedString {
                 withStyle(secondary) {
-                    append("Fleet commanders: ")
+                    append("集结指挥：")
                     fleetCommanders.forEach { character ->
                         withStyle(primary) {
                             append(character)
@@ -516,7 +515,7 @@ private fun getDecloakIgnoredKeywordsDetailText(alert: Alert): AnnotatedString? 
         val primary = SpanStyle(color = RiftTheme.colors.textPrimary)
         buildAnnotatedString {
             withStyle(secondary) {
-                append("Ignore decloaking objects containing: ")
+                append("忽略含以下关键字的显隐对象：")
                 decloakedTrigger.ignoredKeywords.forEach { keyword ->
                     withStyle(primary) {
                         append(keyword)
@@ -539,7 +538,7 @@ private fun getSpecificColoniesDetailText(alert: Alert, colonies: List<ColonyIte
     val primary = SpanStyle(color = RiftTheme.colors.textPrimary)
     return buildAnnotatedString {
         withStyle(secondary) {
-            append("Target colonies:")
+            append("目标殖民地：")
             colonyIds
                 .mapNotNull { id ->
                     val colony = colonies.find { it.colony.id == id } ?: return@mapNotNull null
@@ -548,7 +547,7 @@ private fun getSpecificColoniesDetailText(alert: Alert, colonies: List<ColonyIte
                     it.first
                 }.forEach { (_, entries) ->
                     val items = entries.map { it.second }
-                    val characterName = items.first().characterName ?: "Loading…"
+                    val characterName = items.first().characterName ?: "加载中…"
                     append("\n")
                     withStyle(primary) {
                         append(characterName)
@@ -576,7 +575,7 @@ private fun getSpecificShipClassesDetailText(alert: Alert): AnnotatedString? {
             val characters = (specificClasses as IntelReportType.SpecificShipClasses).classes
             buildAnnotatedString {
                 withStyle(secondary) {
-                    append("Monitored ship classes: ")
+                    append("监视舰船类别：")
                     characters.forEach { character ->
                         withStyle(primary) {
                             append(character)
@@ -608,15 +607,16 @@ private fun getLabeledContactsDetailText(alert: Alert, labels: List<Label>): Ann
             val primary = SpanStyle(color = RiftTheme.colors.textPrimary)
             buildAnnotatedString {
                 withStyle(secondary) {
-                    append("Contact labels: ")
+                    append("联系人标签：")
                     labels.forEachIndexed { index, label ->
                         withStyle(primary) {
                             append(label.name)
                         }
-                        append(" from ")
+                        append("（")
                         withStyle(primary) {
                             append(label.owner.name)
                         }
+                        append("）")
                         if (index != labels.lastIndex) {
                             appendLine()
                         }
@@ -631,6 +631,45 @@ private fun getLabeledContactsDetailText(alert: Alert, labels: List<Label>): Ann
     }
 }
 
+private fun intelSystemLocationText(jumpsRange: JumpRange, systemName: String): String {
+    val min = jumpsRange.min
+    val max = jumpsRange.max
+    return when {
+        min == 0 && max == 0 -> "在 $systemName"
+        min == 0 -> "距 $systemName 最远 $max 跳"
+        min == max -> "距 $systemName 正好 $min 跳"
+        else -> "$systemName 周边 $min–$max 跳"
+    }
+}
+
+private fun intelAnyOwnedLocationText(jumpsRange: JumpRange, onlyUndocked: Boolean): String {
+    val base = if (onlyUndocked) "任意离站角色位置" else "任意在线角色位置"
+    val min = jumpsRange.min
+    val max = jumpsRange.max
+    return when {
+        min == 0 && max == 0 -> base
+        min == 0 -> "距$base 最远 $max 跳"
+        min == max -> "距$base 正好 $min 跳"
+        else -> "$base 周边 $min–$max 跳"
+    }
+}
+
+private fun intelOwnedCharacterLocationText(
+    jumpsRange: JumpRange,
+    character: String,
+    onlyUndocked: Boolean,
+): String {
+    val place = if (onlyUndocked) "${character}的离站位置" else "${character}的在线位置"
+    val min = jumpsRange.min
+    val max = jumpsRange.max
+    return when {
+        min == 0 && max == 0 -> place
+        min == 0 -> "距$place 最远 $max 跳"
+        min == max -> "距$place 正好 $min 跳"
+        else -> "$place 周边 $min–$max 跳"
+    }
+}
+
 @Composable
 private fun getAlertText(
     alert: Alert,
@@ -642,61 +681,66 @@ private fun getAlertText(
     val primary = SpanStyle(color = RiftTheme.colors.textPrimary)
     return buildAnnotatedString {
         withStyle(secondary) {
-            append("When ")
+            append("当 ")
             when (val trigger = alert.trigger) {
                 is AlertTrigger.IntelReported -> {
                     if (trigger.reportTypes.size != 1) {
-                        append("any of ")
+                        append("以下任一：")
                     }
                     val types = trigger.reportTypes.joinToString { type ->
                         when (type) {
-                            IntelReportType.AnyCharacter -> "characters"
+                            IntelReportType.AnyCharacter -> "角色"
                             is IntelReportType.SpecificCharacters -> {
                                 if (type.characters.size == 1) {
                                     type.characters.single()
                                 } else {
-                                    "${type.characters.size} specific characters"
+                                    "${type.characters.size} 个指定角色"
                                 }
                             }
-                            IntelReportType.AnyShip -> "ships"
+                            IntelReportType.AnyShip -> "舰船"
                             is IntelReportType.SpecificShipClasses -> {
                                 if (type.classes.size == 1) {
-                                    "${type.classes.single()}-class ships"
+                                    "${type.classes.single()} 级舰船"
                                 } else {
-                                    "${type.classes.size} ship classes"
+                                    "${type.classes.size} 种船型"
                                 }
                             }
                             is IntelReportType.LabeledContacts -> {
                                 if (type.labels.size == 1) {
                                     val label = type.labels.single()
-                                    val name = labels.firstOrNull { it.owner.id == label.ownerId && it.id == label.id }?.name ?: "Unknown"
-                                    "characters labeled $name"
+                                    val name = labels.firstOrNull { it.owner.id == label.ownerId && it.id == label.id }?.name ?: "?"
+                                    "带标签「$name」的联系人"
                                 } else {
-                                    "characters under ${type.labels.size} labels"
+                                    "位于 ${type.labels.size} 个标签下的角色"
                                 }
                             }
-                            IntelReportType.Bubbles -> "bubbles"
-                            IntelReportType.GateCamp -> "gate camps"
-                            IntelReportType.Wormhole -> "wormholes"
+                            IntelReportType.Bubbles -> "泡泡"
+                            IntelReportType.GateCamp -> "星门蹲守"
+                            IntelReportType.Wormhole -> "虫洞"
                             IntelReportType.Ess -> "ESS"
-                            IntelReportType.Skyhook -> "Skyhooks"
+                            IntelReportType.Skyhook -> "天钩"
                         }
                     }
                     withStyle(primary) {
                         append(types)
                     }
-                    append(" are reported ")
+                    append(" 在预警中出现，位置靠近 ")
                     val location = when (val location = trigger.reportLocation) {
-                        is IntelReportLocation.System -> "${getRangePrefixText(location.jumpsRange)} ${location.systemName}"
-                        is IntelReportLocation.AnyOwnedCharacter if location.onlyUndocked -> "${getRangePrefixText(location.jumpsRange)} any undocked character's location"
-                        is IntelReportLocation.AnyOwnedCharacter -> "${getRangePrefixText(location.jumpsRange)} any online character's location"
+                        is IntelReportLocation.System ->
+                            intelSystemLocationText(location.jumpsRange, location.systemName)
+                        is IntelReportLocation.AnyOwnedCharacter if location.onlyUndocked ->
+                            intelAnyOwnedLocationText(location.jumpsRange, onlyUndocked = true)
+                        is IntelReportLocation.AnyOwnedCharacter ->
+                            intelAnyOwnedLocationText(location.jumpsRange, onlyUndocked = false)
                         is IntelReportLocation.OwnedCharacter if location.onlyUndocked -> {
-                            val character = characters.firstOrNull { it.characterId == location.characterId }?.info?.name ?: location.characterId.toString()
-                            "${getRangePrefixText(location.jumpsRange)} $character's undocked location"
+                            val character = characters.firstOrNull { it.characterId == location.characterId }?.info?.name
+                                ?: location.characterId.toString()
+                            intelOwnedCharacterLocationText(location.jumpsRange, character, onlyUndocked = true)
                         }
                         is IntelReportLocation.OwnedCharacter -> {
-                            val character = characters.firstOrNull { it.characterId == location.characterId }?.info?.name ?: location.characterId.toString()
-                            "${getRangePrefixText(location.jumpsRange)} $character's location"
+                            val character = characters.firstOrNull { it.characterId == location.characterId }?.info?.name
+                                ?: location.characterId.toString()
+                            intelOwnedCharacterLocationText(location.jumpsRange, character, onlyUndocked = false)
                         }
                     }
                     withStyle(primary) {
@@ -705,93 +749,91 @@ private fun getAlertText(
                 }
                 is AlertTrigger.GameAction -> {
                     trigger.actionTypes.forEachIndexed { index, type ->
-                        if (index != 0) append(", or ")
+                        if (index != 0) append("，或 ")
                         when (type) {
                             is GameActionType.InCombat -> {
-                                append("you are ")
-                                withStyle(primary) { append("in combat") }
+                                append("你已")
+                                withStyle(primary) { append("进入战斗") }
                                 if (type.nameContaining != null) {
-                                    append(" with ")
+                                    append("，对象含 ")
                                     withStyle(primary) { append(type.nameContaining) }
                                 }
                             }
                             is GameActionType.UnderAttack -> {
-                                append("you are ")
-                                withStyle(primary) { append("under attack") }
+                                append("你正")
+                                withStyle(primary) { append("遭受攻击") }
                                 if (type.nameContaining != null) {
-                                    append(" by ")
+                                    append("，来源含 ")
                                     withStyle(primary) { append(type.nameContaining) }
                                 }
                             }
                             is GameActionType.Attacking -> {
-                                append("you are ")
-                                withStyle(primary) { append("attacking") }
+                                append("你正在")
+                                withStyle(primary) { append("攻击") }
                                 if (type.nameContaining != null) {
-                                    append(" target ")
+                                    append("，目标含 ")
                                     withStyle(primary) { append(type.nameContaining) }
                                 }
                             }
                             GameActionType.BeingWarpScrambled -> {
-                                append("you are ")
-                                withStyle(primary) { append("being warp scrambled") }
+                                append("你正被")
+                                withStyle(primary) { append("反跳") }
                             }
                             is GameActionType.Decloaked -> {
-                                append("you are ")
-                                withStyle(primary) { append("decloaked") }
+                                append("你被")
+                                withStyle(primary) { append("破隐") }
                                 if (type.ignoredKeywords.isNotEmpty()) {
-                                    append(" with exceptions")
+                                    append("（含例外关键词）")
                                 }
                             }
                             is GameActionType.CombatStopped -> {
-                                append("you are ")
-                                withStyle(primary) { append("no longer in combat") }
+                                append("你已")
+                                withStyle(primary) { append("脱离战斗") }
                                 if (type.nameContaining != null) {
-                                    append(" with ")
+                                    append("，相关对象含 ")
                                     withStyle(primary) { append(type.nameContaining) }
                                 }
-                                append(" for ")
+                                append("，时长达 ")
                                 val minutes = type.durationSeconds / 60
                                 withStyle(primary) {
-                                    if (minutes == 1) {
-                                        append("$minutes minute")
-                                    } else if (minutes > 1) {
-                                        append("$minutes minutes")
-                                    } else {
-                                        append("${type.durationSeconds} seconds")
+                                    when {
+                                        minutes == 1 -> append("1 分钟")
+                                        minutes > 1 -> append("$minutes 分钟")
+                                        else -> append("${type.durationSeconds} 秒")
                                     }
                                 }
                             }
                             GameActionType.RanOutOfCharges -> {
-                                append("a module has run ")
-                                withStyle(primary) { append("out of charges") }
+                                append("某装备")
+                                withStyle(primary) { append("弹药/电量耗尽") }
                             }
 
                             is GameActionType.Custom -> {
-                                append("a game action has happened containing ")
-                                if (type.isRegex) append("regex ")
+                                append("游戏日志含 ")
+                                if (type.isRegex) append("正则 ")
                                 withStyle(primary) { append(type.messageContaining) }
                             }
                         }
                     }
                 }
                 is AlertTrigger.PlanetaryIndustry -> {
-                    append("on ")
+                    append("作用于 ")
                     val coloniesFilter = when {
-                        trigger.coloniesFilter == null -> "any colony"
-                        trigger.coloniesFilter.size == 1 -> "a specific colony"
-                        else -> "${trigger.coloniesFilter.size} specific colonies"
+                        trigger.coloniesFilter == null -> "任意殖民地"
+                        trigger.coloniesFilter.size == 1 -> "指定殖民地"
+                        else -> "${trigger.coloniesFilter.size} 个指定殖民地"
                     }
                     withStyle(primary) {
                         append(coloniesFilter)
                     }
-                    append(" ")
+                    append("，当 ")
                     trigger.eventTypes.forEachIndexed { index, type ->
-                        if (index != 0) append(", or ")
+                        if (index != 0) append("，或 ")
                         val text = when (type) {
-                            PiEventType.ExtractorInactive -> "extractors stop"
-                            PiEventType.Idle -> "production stops"
-                            PiEventType.NotSetup -> "setup is unfinished"
-                            PiEventType.StorageFull -> "storage becomes full"
+                            PiEventType.ExtractorInactive -> "开采设施停工"
+                            PiEventType.Idle -> "工厂停产"
+                            PiEventType.NotSetup -> "未设置完毕"
+                            PiEventType.StorageFull -> "仓库已满"
                         }
                         withStyle(primary) {
                             append(text)
@@ -800,39 +842,42 @@ private fun getAlertText(
                     if (trigger.alertBeforeSeconds > 0) {
                         val duration = Duration.ofSeconds(trigger.alertBeforeSeconds.toLong())
                         val text = when {
-                            duration.toHours() >= 1 -> "${duration.toHours()} hour${duration.toHours().plural}"
-                            else -> "${duration.toMinutes()} minutes"
+                            duration.toHours() >= 1 -> {
+                                val h = duration.toHours()
+                                "$h 小时"
+                            }
+                            else -> "${duration.toMinutes()} 分钟"
                         }
-                        append(" in ")
+                        append("，提前 ")
                         withStyle(primary) {
                             append(text)
                         }
                     }
                 }
                 is AlertTrigger.ChatMessage -> {
-                    append("a chat message")
+                    append("聊天消息")
                     if (trigger.messageContaining != null) {
-                        append(" containing ")
+                        append("包含 ")
                         if (trigger.isRegex) {
-                            append("regex ")
+                            append("正则 ")
                         }
                         withStyle(primary) {
                             append(trigger.messageContaining)
                         }
                     }
-                    append(" is sent")
+                    append(" 发出时")
                     if (trigger.sender != null) {
-                        append(" by ")
+                        append("，发送者 ")
                         withStyle(primary) {
                             append(trigger.sender)
                         }
                     }
                     if (trigger.isExcludingSelf) {
-                        append(" excluding my messages")
+                        append("（不含自己）")
                     }
-                    append(" in ")
+                    append("，频道 ")
                     val channel = when (val channel = trigger.channel) {
-                        ChatMessageChannel.Any -> "any channel"
+                        ChatMessageChannel.Any -> "任意"
                         is ChatMessageChannel.Channel -> channel.name
                     }
                     withStyle(primary) {
@@ -844,59 +889,55 @@ private fun getAlertText(
                     when (trigger.pingType) {
                         JabberPingType.Message -> {}
                         is JabberPingType.Message2 -> {
-                            append("a message ping ")
+                            append("收到文字集结 ")
                             if (trigger.pingType.target != null) {
-                                append("for ")
+                                append("目标 ")
                                 withStyle(primary) {
                                     append(trigger.pingType.target)
                                 }
                                 append(" ")
                             }
-                            append("is received")
                         }
                         is JabberPingType.Fleet -> {
-                            append("a fleet ping ")
+                            append("收到舰队集结 ")
                             if (trigger.pingType.target != null) {
-                                append("for ")
+                                append("目标 ")
                                 withStyle(primary) {
                                     append(trigger.pingType.target)
                                 }
                                 append(" ")
                             }
-                            append("is received")
                             if (trigger.pingType.fleetCommanders.isNotEmpty()) {
-                                append(", with ")
+                                append("，FC：")
                                 if (trigger.pingType.fleetCommanders.size == 1) {
                                     withStyle(primary) {
                                         append(trigger.pingType.fleetCommanders.single())
-                                        append(" as FC")
                                     }
                                 } else {
                                     withStyle(primary) {
-                                        append("${trigger.pingType.fleetCommanders.size} specific FC's")
+                                        append("${trigger.pingType.fleetCommanders.size} 名指定 FC")
                                     }
                                 }
                             }
                             if (trigger.pingType.formupSystem != null) {
-                                append(", forming in ")
+                                append("，集结星系 ")
                                 withStyle(primary) {
                                     append(trigger.pingType.formupSystem)
                                 }
                             }
                             if (trigger.pingType.papType != PapType.Any) {
-                                append(", with ")
+                                append("，PAP：")
                                 withStyle(primary) {
                                     val type = when (trigger.pingType.papType) {
-                                        PapType.Any -> "any"
-                                        PapType.Peacetime -> "Peacetime"
-                                        PapType.Strategic -> "Strategic"
+                                        PapType.Any -> "任意"
+                                        PapType.Peacetime -> "平时"
+                                        PapType.Strategic -> "战略"
                                     }
                                     append(type)
                                 }
-                                append(" PAP")
                             }
                             if (trigger.pingType.doctrineContaining != null) {
-                                append(", with doctrine containing ")
+                                append("，建制含 ")
                                 withStyle(primary) {
                                     append(trigger.pingType.doctrineContaining)
                                 }
@@ -905,96 +946,81 @@ private fun getAlertText(
                     }
                 }
                 is AlertTrigger.JabberMessage -> {
-                    append("a Jabber message")
+                    append("Jabber 消息")
                     if (trigger.messageContaining != null) {
-                        append(" containing ")
+                        append("包含 ")
                         if (trigger.isRegex) {
-                            append("regex ")
+                            append("正则 ")
                         }
                         withStyle(primary) {
                             append(trigger.messageContaining)
                         }
                     }
-                    append(" is sent")
+                    append(" 发出时")
                     if (trigger.sender != null) {
-                        append(" by ")
+                        append("，发送者 ")
                         withStyle(primary) {
                             append(trigger.sender)
                         }
                     }
-                    append(" in ")
+                    append("，频道 ")
                     val channel = when (val channel = trigger.channel) {
-                        JabberMessageChannel.Any -> "any chat"
+                        JabberMessageChannel.Any -> "任意"
                         is JabberMessageChannel.Channel -> channel.name
-                        JabberMessageChannel.DirectMessage -> "a direct message"
+                        JabberMessageChannel.DirectMessage -> "私聊"
                     }
                     withStyle(primary) {
                         append(channel)
                     }
                 }
                 is AlertTrigger.NoChannelActivity -> {
-                    append("no message is received in ")
+                    append("在 ")
                     val channel = when (val channel = trigger.channel) {
-                        IntelChannel.All -> "all intel channels"
-                        IntelChannel.Any -> "any intel channel"
+                        IntelChannel.All -> "全部预警频道"
+                        IntelChannel.Any -> "任意预警频道"
                         is IntelChannel.Channel -> channel.name
                     }
                     withStyle(primary) {
                         append(channel)
                     }
-                    append(" for ")
+                    append(" 中 ")
                     val minutes = trigger.durationSeconds / 60
                     withStyle(primary) {
-                        if (minutes == 1) {
-                            append("$minutes minute")
-                        } else if (minutes > 1) {
-                            append("$minutes minutes")
-                        } else {
-                            append("${trigger.durationSeconds} seconds")
+                        when {
+                            minutes == 1 -> append("1 分钟")
+                            minutes > 1 -> append("$minutes 分钟")
+                            else -> append("${trigger.durationSeconds} 秒")
                         }
                     }
+                    append("无新消息")
                 }
             }
-            append(" then ")
+            append(" 时，")
             val actions = alert.actions.joinToString { action ->
                 when (action) {
-                    AlertAction.RiftNotification -> "send a RIFT notification"
-                    AlertAction.SystemNotification -> "send a system notification"
-                    AlertAction.PushNotification -> "send a push notification"
-                    is AlertAction.Sound -> "play sound \"${sounds.firstOrNull { it.id == action.id }?.name ?: "?"}\""
-                    is AlertAction.CustomSound -> "play sound ${Path.of(action.path).nameWithoutExtension}"
-                    AlertAction.ShowPing -> "show the ping"
-                    AlertAction.ShowColonies -> "show colonies"
+                    AlertAction.RiftNotification -> "显示 RIFT 通知"
+                    AlertAction.SystemNotification -> "发送系统通知"
+                    AlertAction.PushNotification -> "发送推送通知"
+                    is AlertAction.Sound -> "播放音效「${sounds.firstOrNull { it.id == action.id }?.name ?: "?"}」"
+                    is AlertAction.CustomSound -> "播放音效 ${Path.of(action.path).nameWithoutExtension}"
+                    AlertAction.ShowPing -> "显示集结内容"
+                    AlertAction.ShowColonies -> "显示殖民地"
                 }
             }
             withStyle(primary) {
                 append(actions)
             }
             if (alert.cooldownSeconds != 0) {
-                append(", don't repeat for ")
+                append("；冷却 ")
                 val text = when (val minutes = alert.cooldownSeconds / 60) {
-                    0 -> "${alert.cooldownSeconds} seconds"
-                    1 -> "1 minute"
-                    else -> "$minutes minutes"
+                    0 -> "${alert.cooldownSeconds} 秒"
+                    1 -> "1 分钟"
+                    else -> "$minutes 分钟"
                 }
                 withStyle(primary) {
                     append(text)
                 }
             }
         }
-    }
-}
-
-private fun getRangePrefixText(range: JumpRange): String {
-    val (min, max) = range.min to range.max
-    val plural = if (max > 1) "s" else ""
-    return if (min == 0 && max == 0) {
-        "in"
-    } else if (min == 0) {
-        "up to $max jump$plural from"
-    } else if (min == max) {
-        "exactly $max jump$plural from"
-    } else {
-        "between $min–$max jump$plural from"
     }
 }

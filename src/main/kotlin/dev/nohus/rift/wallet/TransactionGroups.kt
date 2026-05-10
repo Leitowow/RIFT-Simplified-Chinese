@@ -6,14 +6,14 @@ sealed class TransactionGroup(
     val name: String,
     val color: Color,
 ) {
-    data object CorporationAlliance : TransactionGroup(name = "Corp and Alliance", color = Color(0xFF5c59d8))
-    data object AgentsAndMissions : TransactionGroup(name = "Agents and Missions", color = Color(0xFFe68348))
-    data object Trade : TransactionGroup(name = "Trade", color = Color(0xFF31c4a1))
-    data object Bounty : TransactionGroup(name = "Bounties", color = Color(0xFFe53a3a))
-    data object Industry : TransactionGroup(name = "Industry", color = Color(0xFF3de53a))
-    data object Transfer : TransactionGroup(name = "Transfers", color = Color(0xFFe6e048))
-    data object Misc : TransactionGroup(name = "Miscellaneous", color = Color(0xFF808080))
-    data object HypernetRelay : TransactionGroup(name = "Hypernet", color = Color(0xFF3aa8e5))
+    data object CorporationAlliance : TransactionGroup(name = "军团与联盟", color = Color(0xFF5c59d8))
+    data object AgentsAndMissions : TransactionGroup(name = "代理人与任务", color = Color(0xFFe68348))
+    data object Trade : TransactionGroup(name = "贸易", color = Color(0xFF31c4a1))
+    data object Bounty : TransactionGroup(name = "赏金", color = Color(0xFFe53a3a))
+    data object Industry : TransactionGroup(name = "工业", color = Color(0xFF3de53a))
+    data object Transfer : TransactionGroup(name = "转账", color = Color(0xFFe6e048))
+    data object Misc : TransactionGroup(name = "其他", color = Color(0xFF808080))
+    data object HypernetRelay : TransactionGroup(name = "超网", color = Color(0xFF3aa8e5))
 
     companion object {
         fun byReferenceType(referenceType: String) = when (referenceType) {

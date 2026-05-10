@@ -49,7 +49,6 @@ import dev.nohus.rift.utils.formatDate
 import dev.nohus.rift.utils.formatIsk
 import dev.nohus.rift.utils.formatIskReadable
 import dev.nohus.rift.utils.formatNumber
-import dev.nohus.rift.utils.plural
 import dev.nohus.rift.wallet.GetNpcShipGroupUseCase
 import dev.nohus.rift.wallet.TypeDetail
 import dev.nohus.rift.wallet.WalletFilters
@@ -103,12 +102,12 @@ fun InsightsContent(
             val tabs = remember {
                 InsightsTab.entries.mapIndexed { index, tab ->
                     val title = when (tab) {
-                        InsightsTab.IncomeByParty -> "Income by party"
-                        InsightsTab.ExpenseByParty -> "Expense by party"
-                        InsightsTab.BalanceByParty -> "Balance by party"
-                        InsightsTab.DestroyedRatsByParty -> "Wanted ships destroyed"
-                        InsightsTab.DailyGoals -> "Daily goals"
-                        InsightsTab.Activity -> "Activity"
+                        InsightsTab.IncomeByParty -> "按对象：收入"
+                        InsightsTab.ExpenseByParty -> "按对象：支出"
+                        InsightsTab.BalanceByParty -> "按对象：结余"
+                        InsightsTab.DestroyedRatsByParty -> "按对象：通缉赏金"
+                        InsightsTab.DailyGoals -> "每日目标"
+                        InsightsTab.Activity -> "活跃"
                     }
                     Tab(id = index, title = title, isCloseable = false)
                 }
@@ -176,7 +175,7 @@ fun InsightsContent(
                             }
 
                             RiftButton(
-                                text = "View all",
+                                text = "查看全部",
                                 type = ButtonType.Secondary,
                                 onClick = { onViewPartyTransactions(item) },
                             )
@@ -214,13 +213,13 @@ fun InsightsContent(
                                 }
 
                                 Text(
-                                    text = "${formatNumber(item.totalRats)} ship${item.totalRats.plural} destroyed",
+                                    text = "击毁 ${formatNumber(item.totalRats)} 艘舰船",
                                     style = RiftTheme.typography.headerSecondary,
                                 )
                             }
 
                             Text(
-                                text = "Destroyed ships by system",
+                                text = "按星系：击毁舰船",
                                 style = RiftTheme.typography.headerSecondary,
                                 modifier = Modifier.padding(top = Spacing.small),
                             )
@@ -243,7 +242,7 @@ fun InsightsContent(
                                                     style = RiftTheme.typography.bodySecondary,
                                                 )
                                                 Text(
-                                                    text = "ship${count.plural}",
+                                                    text = "艘",
                                                     style = RiftTheme.typography.detailSecondary,
                                                 )
                                             }
@@ -260,7 +259,7 @@ fun InsightsContent(
                                 .forEach { (group, ships) ->
                                     val total = ships.sumOf { it.count ?: 0 }
                                     Text(
-                                        text = "Destroyed ${formatNumber(total)}x ${group?.displayName ?: "Other"}",
+                                        text = "击毁 ${formatNumber(total)}× ${group?.displayName ?: "其他"}",
                                         style = RiftTheme.typography.headerSecondary,
                                         modifier = Modifier.padding(top = Spacing.small),
                                     )
@@ -285,7 +284,7 @@ fun InsightsContent(
                     val dailyGoals = statistics.dailyGoals.filter { it.party.isMatching(search) }
                     // Adding 1 day because the oldest day in the data is likely incomplete and so misleading
                     val oldestDay = statistics.journal.lastOrNull()?.date?.toEveLocalDate()?.plusDays(1)
-                    val monthYear = DateTimeFormatter.ofPattern("MMMM yyyy").withLocale(Locale.ENGLISH)
+                    val monthYear = DateTimeFormatter.ofPattern("yyyy年MM月").withLocale(Locale.CHINESE)
 
                     items(dailyGoals, { state.insightsTab to it.party }) { item ->
                         Column(
@@ -310,13 +309,13 @@ fun InsightsContent(
                                 }
 
                                 Text(
-                                    text = "${formatNumber(item.totalGoals)} daily goals completed on ${formatNumber(item.dailyGoals.size)} days",
+                                    text = "${formatNumber(item.dailyGoals.size)} 天内完成 ${formatNumber(item.totalGoals)} 个每日目标",
                                     style = RiftTheme.typography.headerSecondary,
                                     modifier = Modifier.weight(1f),
                                 )
 
                                 RiftButton(
-                                    text = "View all",
+                                    text = "查看全部",
                                     type = ButtonType.Secondary,
                                     onClick = { onViewPartyDailyGoals(item) },
                                 )
@@ -367,7 +366,7 @@ fun InsightsContent(
                     val activity = statistics.activity.filter { it.party.isMatching(search) }
                     // Adding 1 day because the oldest day in the data is likely incomplete and so misleading
                     val oldestDay = statistics.journal.lastOrNull()?.date?.toEveLocalDate()?.plusDays(1)
-                    val monthYear = DateTimeFormatter.ofPattern("MMMM yyyy").withLocale(Locale.ENGLISH)
+                    val monthYear = DateTimeFormatter.ofPattern("yyyy年MM月").withLocale(Locale.CHINESE)
 
                     items(activity, { state.insightsTab to it.party }) { item ->
                         Column(
@@ -393,7 +392,7 @@ fun InsightsContent(
                                 Spacer(Modifier.weight(1f))
 
                                 RiftButton(
-                                    text = "View all",
+                                    text = "查看全部",
                                     type = ButtonType.Secondary,
                                     onClick = { onViewPartyActivity(item) },
                                 )
@@ -464,15 +463,15 @@ private fun DailyGoalDay(date: LocalDate, goals: List<TypeDetail.DailyGoal>) {
             }
             if (goals.isEmpty()) {
                 withStyle(RiftTheme.typography.bodySecondary.toSpanStyle()) {
-                    appendLine("No daily goals completed")
+                    appendLine("当日未完成每日目标")
                 }
             } else {
                 withStyle(RiftTheme.typography.bodySecondary.toSpanStyle()) {
-                    appendLine("Completed ${goals.size} daily goal${goals.size.plural}:\n")
+                    appendLine("完成 ${goals.size} 个每日目标：\n")
                 }
                 goals.groupingBy { it.name }.eachCount().forEach { (goal, count) ->
                     if (count > 1) {
-                        appendLine("${count}x $goal")
+                        appendLine("${count}次 $goal")
                     } else {
                         appendLine(goal)
                     }
@@ -530,14 +529,14 @@ private fun ActivityDay(date: LocalDate, items: List<WalletJournalItem>) {
             }
             if (items.isEmpty()) {
                 withStyle(RiftTheme.typography.bodySecondary.toSpanStyle()) {
-                    appendLine("No wallet transactions")
+                    appendLine("无钱包流水")
                 }
             } else {
                 withStyle(RiftTheme.typography.bodySecondary.copy(color = getAmountColor(balance), fontWeight = FontWeight.Bold).toSpanStyle()) {
                     appendLine(formatIsk(balance, withCents = false))
                 }
                 items.groupingBy { it.refType }.eachCount().forEach { (refType, count) ->
-                    appendLine("${count}x ${getReferenceTypeName(refType)}")
+                    appendLine("${count}次 ${getReferenceTypeName(refType)}")
                 }
             }
         }.trim() as AnnotatedString,
@@ -568,7 +567,7 @@ private fun ActivityDay(date: LocalDate, items: List<WalletJournalItem>) {
 @Composable
 private fun EmptyState() {
     Text(
-        text = "No transactions",
+        text = "无流水",
         style = RiftTheme.typography.displaySecondary,
         textAlign = TextAlign.Center,
         modifier = Modifier

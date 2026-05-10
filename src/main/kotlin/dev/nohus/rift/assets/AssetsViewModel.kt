@@ -339,7 +339,7 @@ class AssetsViewModel(
             Asset(
                 owner = owner,
                 type = typesRepository.getTypeOrPlaceholder(IdRanges.corporationOffice),
-                name = "Capsuleer Deliveries",
+                name = "飞行员快递",
                 quantity = 1,
                 itemId = 10_000_000_000_000 + index,
                 locationFlag = "CapsuleerDeliveries",
@@ -356,18 +356,18 @@ class AssetsViewModel(
                         val corporationId = (rootAsset.owner as? AssetOwner.Corporation)?.corporationId
                         val divisionNames = divisionNames[corporationId] ?: emptyMap()
                         var name = when (locationFlag) {
-                            "CorpSAG1" -> divisionNames[1] ?: "Corporation Hangar 1"
-                            "CorpSAG2" -> divisionNames[2] ?: "Corporation Hangar 2"
-                            "CorpSAG3" -> divisionNames[3] ?: "Corporation Hangar 3"
-                            "CorpSAG4" -> divisionNames[4] ?: "Corporation Hangar 4"
-                            "CorpSAG5" -> divisionNames[5] ?: "Corporation Hangar 5"
-                            "CorpSAG6" -> divisionNames[6] ?: "Corporation Hangar 6"
-                            "CorpSAG7" -> divisionNames[7] ?: "Corporation Hangar 7"
-                            "CorporationGoalDeliveries" -> "Projects"
+                            "CorpSAG1" -> divisionNames[1] ?: "军团机库 1"
+                            "CorpSAG2" -> divisionNames[2] ?: "军团机库 2"
+                            "CorpSAG3" -> divisionNames[3] ?: "军团机库 3"
+                            "CorpSAG4" -> divisionNames[4] ?: "军团机库 4"
+                            "CorpSAG5" -> divisionNames[5] ?: "军团机库 5"
+                            "CorpSAG6" -> divisionNames[6] ?: "军团机库 6"
+                            "CorpSAG7" -> divisionNames[7] ?: "军团机库 7"
+                            "CorporationGoalDeliveries" -> "项目"
                             else -> locationFlag
                         }
                         if (rootAsset.locationFlag == "Impounded") {
-                            name += " (Impounded)"
+                            name += "（扣押）"
                         }
                         rootAsset.copy(
                             name = name,
@@ -463,7 +463,7 @@ class AssetsViewModel(
                     locationId = location.locationId,
                     locationTypeId = null,
                     security = null,
-                    name = "Asset Safety",
+                    name = "资产安全",
                     isNameAuthoritative = true,
                     customName = customName,
                     systemId = null,
@@ -476,7 +476,7 @@ class AssetsViewModel(
                     locationId = location.locationId,
                     locationTypeId = null,
                     security = null,
-                    name = "Unknown",
+                    name = "未知",
                     isNameAuthoritative = false,
                     customName = customName,
                     systemId = null,
@@ -489,7 +489,7 @@ class AssetsViewModel(
                     locationId = location.locationId,
                     locationTypeId = null,
                     security = null,
-                    name = "Customs Office / Skyhook",
+                    name = "海关办公室 / 天钩",
                     isNameAuthoritative = false,
                     customName = customName,
                     systemId = null,

@@ -63,136 +63,136 @@ object OpportunitiesUtils {
     fun getOpportunityTypeMetadata(opportunity: Opportunity): OpportunityCategoryMetadata {
         return when (val configuration = opportunity.details.configuration) {
             is OpportunityConfiguration.CaptureFwComplex -> OpportunityCategoryMetadata(
-                name = "Capture Factional Warfare Complexes",
+                name = "占领势力战争据点",
                 icon = Res.drawable.contribution_method_attack_fw_complex_16px,
-                tooltip = "Capture complexes for your militia in Factional Warfare.",
-                progressUnit = "Complexes captured",
-                rewardPer = "complex captured",
+                tooltip = "在势力战争中为你的民兵占领据点。",
+                progressUnit = "已占领据点",
+                rewardPer = "每占领 1 个据点",
             )
 
             is OpportunityConfiguration.DamageShip -> OpportunityCategoryMetadata(
-                name = "Damage Capsuleers",
+                name = "对克隆飞行员造成伤害",
                 icon = Res.drawable.contribution_method_damage_ship_16px,
-                tooltip = "Damage ships piloted by capsuleers.",
-                progressUnit = "Damage dealt",
-                rewardPer = "point of damage",
+                tooltip = "对克隆飞行员驾驶的舰船造成伤害。",
+                progressUnit = "已造成伤害",
+                rewardPer = "每点伤害",
             )
 
             is OpportunityConfiguration.DefendFwComplex -> OpportunityCategoryMetadata(
-                name = "Defend Factional Warfare Complexes",
+                name = "防守势力战争据点",
                 icon = Res.drawable.contribution_method_defend_fw_complex_16px,
-                tooltip = "Defend complexes for your militia in Factional Warfare.",
-                progressUnit = "Complexes defended",
-                rewardPer = "complex defended",
+                tooltip = "在势力战争中为你的民兵防守据点。",
+                progressUnit = "已防守据点",
+                rewardPer = "每防守 1 个据点",
             )
 
             is OpportunityConfiguration.DeliverItem -> OpportunityCategoryMetadata(
-                name = "Deliver",
+                name = "交付",
                 icon = Res.drawable.contribution_method_deliver_item_16px,
-                tooltip = "Deliver items of a specific type\nto the Projects hangar in a\ncorporation office.",
-                progressUnit = "Items delivered",
-                rewardPer = "item delivered",
+                tooltip = "将指定类型的物品交付到\n军团办公室中的项目机库。",
+                progressUnit = "已交付物品",
+                rewardPer = "每交付 1 件物品",
             )
 
             is OpportunityConfiguration.DestroyNpc -> OpportunityCategoryMetadata(
-                name = "Destroy Non-Capsuleers",
+                name = "击毁非克隆飞行员",
                 icon = Res.drawable.contribution_method_destroy_npc_16px,
-                tooltip = "Destroy ships piloted by non-capsuleers.",
-                progressUnit = "Non-capsuleers destroyed",
-                rewardPer = "kill",
+                tooltip = "击毁非克隆飞行员驾驶的舰船。",
+                progressUnit = "已击毁非克隆飞行员",
+                rewardPer = "每次击毁",
             )
 
             is OpportunityConfiguration.DestroyShip -> OpportunityCategoryMetadata(
-                name = "Destroy Capsuleer's Ship",
+                name = "击毁克隆飞行员舰船",
                 icon = Res.drawable.contribution_method_destroy_ship_16px,
-                tooltip = "Destroy ships piloted by capsuleers.",
-                progressUnit = "Capsuleers destroyed",
-                rewardPer = "kill",
+                tooltip = "击毁克隆飞行员驾驶的舰船。",
+                progressUnit = "已击毁克隆飞行员",
+                rewardPer = "每次击毁",
             )
 
             is OpportunityConfiguration.EarnLoyaltyPoint -> OpportunityCategoryMetadata(
-                name = "Earn Loyalty Points",
+                name = "获取忠诚点",
                 icon = Res.drawable.contribution_method_earn_loyalty_point_16px,
-                tooltip = "Earn Loyalty Points from either any source or a specific corporation.",
-                progressUnit = "Loyalty points earned",
-                rewardPer = "loyalty point earned",
+                tooltip = "从任意来源或指定军团获取忠诚点。",
+                progressUnit = "已获得忠诚点",
+                rewardPer = "每点忠诚点",
             )
 
             is OpportunityConfiguration.LostShip -> OpportunityCategoryMetadata(
-                name = "Ship Loss to Capsuleers",
+                name = "被克隆飞行员击毁舰船",
                 icon = Res.drawable.contribution_method_lost_ship_16px,
-                tooltip = "Receive a corporation ISK payout for losing a ship.",
-                progressUnit = "ships lost",
-                rewardPer = "ship lost",
+                tooltip = "舰船损失后可获得军团 ISK 补偿。",
+                progressUnit = "已损失舰船",
+                rewardPer = "每损失 1 艘舰船",
             )
 
             OpportunityConfiguration.Manual -> OpportunityCategoryMetadata(
-                name = "Manual",
+                name = "手动",
                 icon = Res.drawable.contribution_method_manual_16px,
-                tooltip = "Manually update progress for any participation or measurement that can't be automatically tracked.",
+                tooltip = "对无法自动追踪的参与或计量项目手动更新进度。",
                 progressUnit = null,
-                rewardPer = "unit of progress",
+                rewardPer = "每单位进度",
             )
 
             is OpportunityConfiguration.ManufactureItem -> OpportunityCategoryMetadata(
-                name = "Manufacture",
+                name = "制造",
                 icon = Res.drawable.contribution_method_manufacture_item_16px,
-                tooltip = "Install manufacturing jobs for items of a specific type.",
-                progressUnit = "Items manufactured",
-                rewardPer = "item manufactured",
+                tooltip = "为指定类型物品安装制造作业。",
+                progressUnit = "已制造物品",
+                rewardPer = "每制造 1 件物品",
             )
 
             is OpportunityConfiguration.MineMaterial -> OpportunityCategoryMetadata(
-                name = "Mine Materials",
+                name = "开采材料",
                 icon = Res.drawable.contribution_method_mine_material_16px,
-                tooltip = "Mine raw materials.",
-                progressUnit = "Materials mined",
-                rewardPer = "unit",
+                tooltip = "开采原材料。",
+                progressUnit = "已开采材料",
+                rewardPer = "每单位",
             )
 
             is OpportunityConfiguration.RemoteBoostShield -> OpportunityCategoryMetadata(
-                name = "Remote Boost Shield",
+                name = "远程护盾增效",
                 icon = Res.drawable.contribution_method_remote_boost_shields_16px,
-                tooltip = "Remote boost a capsuleer's shields.",
-                progressUnit = "HP boosted",
-                rewardPer = "hit point boosted",
+                tooltip = "远程增强克隆飞行员目标的护盾。",
+                progressUnit = "已增效护盾值",
+                rewardPer = "每点增效值",
             )
 
             is OpportunityConfiguration.RemoteRepairArmor -> OpportunityCategoryMetadata(
-                name = "Remote Repair Armor",
+                name = "远程装甲维修",
                 icon = Res.drawable.contribution_method_remote_repair_armor_16px,
-                tooltip = "Remote repair a capsuleer's armor.",
-                progressUnit = "HP repaired",
-                rewardPer = "hit point repaired",
+                tooltip = "远程维修克隆飞行员目标的装甲。",
+                progressUnit = "已维修装甲值",
+                rewardPer = "每点维修值",
             )
 
             is OpportunityConfiguration.SalvageWreck -> OpportunityCategoryMetadata(
-                name = "Salvage Wrecks",
+                name = "打捞残骸",
                 icon = Res.drawable.contribution_method_salvage_wreck_16px,
-                tooltip = "Successfully salvage wrecks of any kind.",
-                progressUnit = "Wrecks salvaged",
-                rewardPer = "wreck salvaged",
+                tooltip = "成功打捞任意类型的残骸。",
+                progressUnit = "已打捞残骸",
+                rewardPer = "每个残骸",
             )
 
             is OpportunityConfiguration.ScanSignature -> OpportunityCategoryMetadata(
-                name = "Scan Signatures",
+                name = "扫描信号",
                 icon = Res.drawable.contribution_method_scan_signatures_16px,
-                tooltip = "Scan cosmic signatures to 100% resolution with a probe scanner.",
-                progressUnit = "Signatures scanned",
-                rewardPer = "signature scanned",
+                tooltip = "使用探针扫描器将宇宙信号解析到 100%。",
+                progressUnit = "已扫描信号",
+                rewardPer = "每个信号",
             )
 
             is OpportunityConfiguration.ShipInsurance -> OpportunityCategoryMetadata(
-                name = "Ship Insurance",
+                name = "舰船保险",
                 icon = Res.drawable.contribution_method_ship_insurance_16px,
-                tooltip = "Receive ISK compensation for losing a ship, based on the Kill Report market value of the ship and its fitting.\n\nThis project provides an additional insurance paid by the corporation for the ships lost by its members. It works in addition to the ship insurance that capsuleers can purchase themselves in stations.",
-                progressUnit = "Compensated",
+                tooltip = "舰船损失后可获得 ISK 补偿，依据击毁报告中的舰船与装备市场价值计算。\n\n该项目为军团成员损失舰船提供军团额外保险，且与克隆飞行员在空间站自行购买的舰船保险叠加生效。",
+                progressUnit = "已补偿",
                 rewardPer = null,
             )
 
             is OpportunityConfiguration.Unknown -> OpportunityCategoryMetadata(
                 name = configuration.type,
-                tooltip = "Project of an unknown type.",
+                tooltip = "未知类型的项目。",
                 progressUnit = null,
                 rewardPer = null,
             )

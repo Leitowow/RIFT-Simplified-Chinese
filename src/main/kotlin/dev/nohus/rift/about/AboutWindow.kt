@@ -1,6 +1,5 @@
 package dev.nohus.rift.about
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,11 +25,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.rememberWindowState
 import dev.nohus.rift.about.AboutViewModel.UiState
-import dev.nohus.rift.about.UpdateController.UpdateAvailability.NOT_PACKAGED
-import dev.nohus.rift.about.UpdateController.UpdateAvailability.NO_UPDATE
-import dev.nohus.rift.about.UpdateController.UpdateAvailability.UNKNOWN
-import dev.nohus.rift.about.UpdateController.UpdateAvailability.UPDATE_AUTOMATIC
-import dev.nohus.rift.about.UpdateController.UpdateAvailability.UPDATE_MANUAL
 import dev.nohus.rift.compose.AffiliateCode
 import dev.nohus.rift.compose.ButtonCornerCut
 import dev.nohus.rift.compose.ButtonType
@@ -51,16 +45,9 @@ import dev.nohus.rift.generated.resources.Res
 import dev.nohus.rift.generated.resources.partner_400
 import dev.nohus.rift.generated.resources.window_achievements
 import dev.nohus.rift.generated.resources.window_concord
-import dev.nohus.rift.generated.resources.window_info
 import dev.nohus.rift.generated.resources.window_rift_64
-import dev.nohus.rift.network.AsyncResource
-import dev.nohus.rift.utils.OperatingSystem
-import dev.nohus.rift.utils.OperatingSystem.Linux
-import dev.nohus.rift.utils.OperatingSystem.MacOs
-import dev.nohus.rift.utils.OperatingSystem.Windows
 import dev.nohus.rift.utils.openBrowser
 import dev.nohus.rift.utils.toURIOrNull
-import dev.nohus.rift.utils.withColor
 import dev.nohus.rift.viewModel
 import dev.nohus.rift.windowing.WindowManager
 import org.jetbrains.compose.resources.painterResource
@@ -73,7 +60,7 @@ fun AboutWindow(
     val viewModel: AboutViewModel = viewModel()
     val state by viewModel.state.collectAsState()
     RiftWindow(
-        title = "About RIFT",
+        title = "关于 RIFT",
         icon = Res.drawable.window_rift_64,
         state = windowState,
         onCloseClick = onCloseRequest,
@@ -81,7 +68,6 @@ fun AboutWindow(
     ) {
         AboutWindowContent(
             state = state,
-            onUpdateClick = viewModel::onUpdateClick,
             onLogLiteClick = viewModel::onLogLiteClick,
             onDebugClick = viewModel::onDebugClick,
             onLegalClick = viewModel::onLegalClick,
@@ -89,41 +75,9 @@ fun AboutWindow(
             onWhatsNewClick = viewModel::onWhatsNewClick,
         )
 
-        if (state.isUpdateDialogShown) {
-            RiftDialog(
-                title = "Update available",
-                icon = Res.drawable.window_info,
-                parentState = windowState,
-                state = rememberWindowState(width = 400.dp, height = Dp.Unspecified),
-                onCloseClick = viewModel::onDialogDismissed,
-            ) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(Spacing.medium),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    if (state.updateAvailability.success == UPDATE_AUTOMATIC) {
-                        Text(
-                            text = "A newer version of RIFT is ready to install.",
-                            style = RiftTheme.typography.headerPrimary,
-                        )
-                        RiftButton(
-                            text = "Update now",
-                            onClick = viewModel::onTriggerUpdateClick,
-                            modifier = Modifier.align(Alignment.End),
-                        )
-                    } else {
-                        Text(
-                            text = getUpdateDialogText(state.operatingSystem, state.executablePath),
-                            style = RiftTheme.typography.headerPrimary,
-                        )
-                    }
-                }
-            }
-        }
-
         if (state.isLegalDialogShown) {
             RiftDialog(
-                title = "Legal & info",
+                title = "法律与信息",
                 icon = Res.drawable.window_concord,
                 parentState = windowState,
                 state = rememberWindowState(width = 400.dp, height = 250.dp),
@@ -140,7 +94,7 @@ fun AboutWindow(
 
         if (state.isCreditsDialogShown) {
             RiftDialog(
-                title = "Credits",
+                title = "致谢",
                 icon = Res.drawable.window_achievements,
                 parentState = windowState,
                 state = rememberWindowState(width = 400.dp, height = Dp.Unspecified),
@@ -158,7 +112,6 @@ fun AboutWindow(
 @Composable
 private fun AboutWindowContent(
     state: UiState,
-    onUpdateClick: () -> Unit,
     onLogLiteClick: () -> Unit,
     onDebugClick: () -> Unit,
     onLegalClick: () -> Unit,
@@ -201,63 +154,13 @@ private fun AboutWindowContent(
                             style = RiftTheme.typography.headerPrimary,
                         )
                     }
-                    AnimatedContent(state.updateAvailability) { isUpdateAvailable ->
-                        when (isUpdateAvailable) {
-                            is AsyncResource.Error -> {
-                                Text(
-                                    text = "Could not check for updates",
-                                    style = RiftTheme.typography.bodySecondary,
-                                )
-                            }
-
-                            AsyncResource.Loading -> {
-                                Text(
-                                    text = "Checking for updates…",
-                                    style = RiftTheme.typography.bodySecondary,
-                                )
-                            }
-
-                            is AsyncResource.Ready -> {
-                                when (isUpdateAvailable.value) {
-                                    NOT_PACKAGED -> {
-                                        val text = if (state.version.endsWith("dev")) {
-                                            "Development version"
-                                        } else {
-                                            "Portable version"
-                                        }
-                                        Text(
-                                            text = text,
-                                            style = RiftTheme.typography.bodySecondary,
-                                        )
-                                    }
-
-                                    UNKNOWN -> {
-                                        Text(
-                                            text = "Couldn't check for updates",
-                                            style = RiftTheme.typography.bodySecondary,
-                                        )
-                                    }
-
-                                    NO_UPDATE -> {
-                                        Text(
-                                            text = "Up to date",
-                                            style = RiftTheme.typography.bodySecondary,
-                                        )
-                                    }
-
-                                    UPDATE_MANUAL, UPDATE_AUTOMATIC -> {
-                                        LinkText(
-                                            text = "Update available",
-                                            onClick = onUpdateClick,
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    Text(
+                        text = "版本更新：已禁用在线检测与自动更新",
+                        style = RiftTheme.typography.bodySecondary,
+                    )
 
                     Text(
-                        text = "Developed by Nohus",
+                        text = "原作者Nohus\n此汉化版由Leito维护",
                         style = RiftTheme.typography.headerPrimary,
                         modifier = Modifier.padding(top = Spacing.medium),
                     )
@@ -282,7 +185,7 @@ private fun AboutWindowContent(
                         modifier = Modifier.padding(top = Spacing.medium),
                     )
                     LinkText(
-                        text = "Legal & info",
+                        text = "法律与信息",
                         onClick = onLegalClick,
                     )
                 }
@@ -312,7 +215,7 @@ private fun AboutWindowContent(
                 },
             )
             RiftButton(
-                text = "Credits",
+                text = "致谢",
                 type = ButtonType.Secondary,
                 cornerCut = ButtonCornerCut.None,
                 onClick = onCreditsClick,
@@ -322,68 +225,6 @@ private fun AboutWindowContent(
                 type = ButtonType.Primary,
                 onClick = onWhatsNewClick,
             )
-        }
-    }
-}
-
-@Composable
-private fun getUpdateDialogText(
-    operatingSystem: OperatingSystem,
-    executablePath: String,
-): AnnotatedString {
-    return when (operatingSystem) {
-        Linux -> {
-            buildAnnotatedString {
-                append("If you installed the ")
-                withColor(RiftTheme.colors.textHighlighted) {
-                    append("DEB")
-                }
-                append(" package, you can update the app with your package manager as normal. For example you can run ")
-                withColor(RiftTheme.colors.textHighlighted) {
-                    append("sudo apt update && sudo apt upgrade")
-                }
-                append(".")
-                appendLine()
-                appendLine()
-                append("If you downloaded the ")
-                withColor(RiftTheme.colors.textHighlighted) {
-                    append("AppImage")
-                }
-                append(", you can either use the AppImageUpdate tool, or just download the new version manually.")
-                appendLine()
-                appendLine()
-                append("If you downloaded the ")
-                withColor(RiftTheme.colors.textHighlighted) {
-                    append(".tar.gz")
-                }
-                append(" package, then you have to redownload it manually.")
-            }
-        }
-
-        Windows -> {
-            buildAnnotatedString {
-                append(
-                    "Updates to the app are managed by Windows, which will update it from time to time. " +
-                        "If you want to force update to the new version, " +
-                        "you can rerun the downloaded installer manually, or check the Microsoft Store " +
-                        "if you installed from there.",
-                )
-            }
-        }
-
-        MacOs -> {
-            buildAnnotatedString {
-                if ("/AppTranslocation/" in executablePath) {
-                    append(
-                        "Cannot update when ran from the download location. " +
-                            "Please move the app to Applications.",
-                    )
-                } else {
-                    append(
-                        "Restart the app to apply the latest update.",
-                    )
-                }
-            }
         }
     }
 }

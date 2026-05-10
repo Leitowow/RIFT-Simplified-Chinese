@@ -53,7 +53,7 @@ fun ClipboardTestWindow(
     val viewModel: ClipboardTestViewModel = viewModel()
     val state by viewModel.state.collectAsState()
     RiftWindow(
-        title = "Clipboard Import Tester",
+        title = "剪贴板导入测试器",
         icon = Res.drawable.window_clipboard,
         state = windowState,
         onCloseClick = onCloseRequest,
