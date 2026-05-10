@@ -42,7 +42,6 @@ repositories {
 
 dependencies {
     // Compose
-    implementation(libs.compose.desktop.linux)
     implementation(libs.compose.desktop.macos.x64)
     implementation(libs.compose.desktop.macos.arm64)
     implementation(libs.compose.desktop.windows)
@@ -92,8 +91,18 @@ dependencies {
 
     implementation(libs.jlayer)
 
-    // JavaCV / OpenCV
-    implementation(libs.opencv.platform)
+    // JavaCV / OpenCV (Windows + macOS only)
+    val opencvVersion = libs.versions.opencv.get()
+    implementation("org.bytedeco:opencv:$opencvVersion") {
+        exclude(group = "org.bytedeco", module = "opencv-platform")
+        exclude(group = "org.bytedeco", module = "openblas-platform")
+    }
+    runtimeOnly("org.bytedeco:opencv:$opencvVersion:windows-x86_64")
+    runtimeOnly("org.bytedeco:opencv:$opencvVersion:macosx-x86_64")
+    runtimeOnly("org.bytedeco:opencv:$opencvVersion:macosx-arm64")
+    runtimeOnly("org.bytedeco:openblas:0.3.28-1.5.11:windows-x86_64")
+    runtimeOnly("org.bytedeco:openblas:0.3.28-1.5.11:macosx-x86_64")
+    runtimeOnly("org.bytedeco:openblas:0.3.28-1.5.11:macosx-arm64")
 
     // Smack (XMPP)
     implementation(libs.smack.java8)
