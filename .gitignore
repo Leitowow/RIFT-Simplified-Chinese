@@ -55,3 +55,4 @@ website/download.html
 website/patrons.txt
 output
 .kotlin/sessions/
+.kotlin/errors/
