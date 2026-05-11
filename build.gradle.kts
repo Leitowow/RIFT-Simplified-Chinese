@@ -156,6 +156,10 @@ dependencies {
     testImplementation(libs.mockk)
 }
 
+ksp {
+    arg("KOIN_DEFAULT_MODULE", "false")
+}
+
 compose.desktop {
     application {
         mainClass = "dev.nohus.rift.MainKt"

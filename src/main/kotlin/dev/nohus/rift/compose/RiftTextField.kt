@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicTextField
@@ -21,6 +22,7 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
@@ -40,6 +42,10 @@ fun RiftTextField(
     isPassword: Boolean = false,
     onTextChanged: (String) -> Unit,
     height: Dp = 32.dp,
+    singleLine: Boolean = true,
+    minLines: Int = 1,
+    maxLines: Int = 1,
+    textAlign: TextAlign = TextAlign.Start,
     onDeleteClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -47,17 +53,19 @@ fun RiftTextField(
     BasicTextField(
         value = text,
         onValueChange = { onTextChanged(it) },
-        textStyle = RiftTheme.typography.bodyPrimary,
+        textStyle = RiftTheme.typography.bodyPrimary.copy(textAlign = textAlign),
         cursorBrush = SolidColor(RiftTheme.colors.borderPrimaryLight),
-        singleLine = true,
+        singleLine = singleLine,
+        minLines = minLines,
+        maxLines = maxLines,
         visualTransformation = if (isPassword) passwordVisualTransformation else VisualTransformation.None,
         decorationBox = { innerTextField ->
             Row(
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = if (singleLine) Alignment.CenterVertically else Alignment.Top,
                 modifier = Modifier
                     .background(RiftTheme.colors.windowBackground.copy(alpha = 0.5f))
                     .border(1.dp, RiftTheme.colors.borderGrey)
-                    .height(height)
+                    .then(if (singleLine) Modifier.height(height) else Modifier.heightIn(min = height))
                     .padding(horizontal = 7.dp),
             ) {
                 if (icon != null) {

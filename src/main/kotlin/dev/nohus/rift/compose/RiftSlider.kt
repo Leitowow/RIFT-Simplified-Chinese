@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -49,6 +51,13 @@ fun RiftSlider(
     getValueName: (Int) -> String? = { "$it" },
     isPreciseScroll: Boolean = false,
     isImmediate: Boolean = false,
+    height: Dp = 16.dp,
+    trackHeight: Dp = 6.dp,
+    thumbWidth: Dp = 12.dp,
+    thumbHeight: Dp = 16.dp,
+    thumbCoreWidth: Dp = 4.dp,
+    thumbCoreHeight: Dp = 8.dp,
+    thumbVerticalOffset: Dp = 0.dp,
     modifier: Modifier = Modifier,
 ) {
     var isPressed by remember { mutableStateOf(false) }
@@ -118,32 +127,59 @@ fun RiftSlider(
                 }
                 .pointerInteraction(pointerInteractionStateHolder)
                 .pointerHoverIcon(PointerIcon(Cursors.pointerInteractive))
+                .height(height)
                 .width(width),
         ) {
-            Track()
+            val progress = if (widthPx > 0f) (offset.value / widthPx).coerceIn(0f, 1f) else 0f
+            Track(
+                trackHeight = trackHeight,
+                progress = progress,
+            )
             Thumb(
                 offset = offset,
                 pointerInteractionStateHolder = pointerInteractionStateHolder,
+                thumbWidth = thumbWidth,
+                thumbHeight = thumbHeight,
+                thumbCoreWidth = thumbCoreWidth,
+                thumbCoreHeight = thumbCoreHeight,
+                thumbVerticalOffset = thumbVerticalOffset,
             )
         }
     }
 }
 
 @Composable
-private fun Track() {
-    Spacer(
-        modifier = Modifier
-            .padding(top = 5.dp)
-            .border(1.dp, RiftTheme.colors.borderGreyLight, RoundedCornerShape(2.dp))
-            .height(6.dp)
-            .fillMaxWidth(),
-    )
+private fun Track(
+    trackHeight: Dp,
+    progress: Float,
+) {
+    val trackShape = RoundedCornerShape(CornerSize(2.dp))
+    Box(contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier
+                .border(1.dp, RiftTheme.colors.borderGreyLight, trackShape)
+                .height(trackHeight)
+                .fillMaxWidth(),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(progress)
+                    .background(RiftTheme.colors.borderPrimaryLight.copy(alpha = 0.65f)),
+            )
+        }
+    }
 }
 
 @Composable
 private fun Thumb(
     offset: MutableState<Float>,
     pointerInteractionStateHolder: PointerInteractionStateHolder,
+    thumbWidth: Dp,
+    thumbHeight: Dp,
+    thumbCoreWidth: Dp,
+    thumbCoreHeight: Dp,
+    thumbVerticalOffset: Dp,
 ) {
     val transition = updateTransition(pointerInteractionStateHolder.current)
     val color by transition.animateColor {
@@ -163,21 +199,22 @@ private fun Thumb(
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .offset((-6).dp)
+            .offset(x = -(thumbWidth / 2))
+            .offset(y = thumbVerticalOffset)
             .offset { IntOffset(offset.value.roundToInt(), 0) }
-            .size(12.dp, 16.dp),
+            .size(thumbWidth, thumbHeight),
     ) {
         repeat(4) {
             Box(
                 modifier = Modifier
                     .graphicsLayer(renderEffect = BlurEffect(8f * blur, 8f * blur, edgeTreatment = TileMode.Decal))
                     .background(RiftTheme.colors.sliderThumbSelected)
-                    .size(4.dp, 8.dp),
+                    .size(thumbCoreWidth, thumbCoreHeight),
             )
         }
         Box(
             modifier = Modifier
-                .size(4.dp, 8.dp)
+                .size(thumbCoreWidth, thumbCoreHeight)
                 .background(color),
         )
     }
