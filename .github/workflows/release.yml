@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag (example: v5.18.1)"
+        description: "Release tag (example: v5.19.0)"
         required: true
-        default: "v5.18.1"
+        default: "v5.19.0"
       title:
         description: "Release title (optional)"
         required: false
