@@ -81,7 +81,20 @@ jobs:
             exit 1
           fi
           out_path="${RUNNER_TEMP}/rift-macos-${{ github.event.inputs.tag }}.dmg"
-          hdiutil create -volname "RIFT" -srcfolder "${app_path}" -ov -format UDZO "${out_path}"
+          rm -f "${out_path}"
+          # macOS runners occasionally keep files busy right after app bundle creation.
+          # Retry a few times before failing the release.
+          for attempt in 1 2 3; do
+            if hdiutil create -volname "RIFT" -srcfolder "${app_path}" -ov -format UDZO "${out_path}"; then
+              break
+            fi
+            if [[ "$attempt" -eq 3 ]]; then
+              echo "DMG creation failed after ${attempt} attempts."
+              exit 1
+            fi
+            echo "DMG creation attempt ${attempt} failed, retrying in 10s..."
+            sleep 10
+          done
           echo "DMG_PATH=${out_path}" >> "$GITHUB_ENV"
 
       - name: Upload macOS artifact
