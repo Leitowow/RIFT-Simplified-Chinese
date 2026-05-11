@@ -286,6 +286,9 @@ class JabberViewModel(
             LoginResult.ConnectionFailure -> {
                 _state.update { UiState.Login(errorMessage = "未连接到服务器") }
             }
+            LoginResult.TlsHandshakeTimeout -> {
+                _state.update { UiState.Login(errorMessage = "未连接，TLS 握手超时（20秒）。请检查代理分流或证书拦截设置。") }
+            }
             is LoginResult.Error -> {
                 val cause = result.cause
                 if (cause is SmackException) {

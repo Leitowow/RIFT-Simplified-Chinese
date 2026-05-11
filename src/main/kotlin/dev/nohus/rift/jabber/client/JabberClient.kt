@@ -14,6 +14,8 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.jivesoftware.smack.ConnectionListener
 import org.jivesoftware.smack.ReconnectionManager
+import org.jivesoftware.smack.SmackConfiguration
+import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.chat2.Chat
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.Message
@@ -92,6 +94,7 @@ class JabberClient(
         data object IncorrectPassword : LoginResult
         data object AuthenticationFailure : LoginResult
         data object ConnectionFailure : LoginResult
+        data object TlsHandshakeTimeout : LoginResult
         data class Error(val cause: Exception) : LoginResult
     }
 
@@ -105,6 +108,7 @@ class JabberClient(
         loginMutex.withLock {
             try {
                 logout()
+                SmackConfiguration.setDefaultReplyTimeout(20_000)
                 val configuration = XMPPTCPConnectionConfiguration.builder()
                     .setXmppAddressAndPassword(jid, password)
                     .setResource("RIFT")
@@ -155,6 +159,9 @@ class JabberClient(
                 } else if (e is IOException) {
                     logger.error(e) { "Jabber login I/O error" }
                     LoginResult.ConnectionFailure
+                } else if (e is SmackException.NoResponseException && e.message?.contains("establishing TLS", ignoreCase = true) == true) {
+                    logger.error(e) { "Jabber TLS handshake timeout" }
+                    LoginResult.TlsHandshakeTimeout
                 } else {
                     logger.error(e) { "Jabber login error" }
                     LoginResult.Error(e)

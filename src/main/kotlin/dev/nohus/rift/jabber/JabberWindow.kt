@@ -49,11 +49,13 @@ import dev.nohus.rift.compose.RiftButton
 import dev.nohus.rift.compose.RiftContextMenuArea
 import dev.nohus.rift.compose.RiftTabBar
 import dev.nohus.rift.compose.RiftTextField
+import dev.nohus.rift.compose.RiftToggleButton
 import dev.nohus.rift.compose.RiftWarningBanner
 import dev.nohus.rift.compose.RiftWindow
 import dev.nohus.rift.compose.ScrollbarColumn
 import dev.nohus.rift.compose.ScrollbarLazyColumn
 import dev.nohus.rift.compose.Tab
+import dev.nohus.rift.compose.ToggleButtonType
 import dev.nohus.rift.compose.annotateLinks
 import dev.nohus.rift.compose.hoverBackground
 import dev.nohus.rift.compose.theme.RiftTheme
@@ -83,6 +85,61 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+
+private enum class RescueTrapType(val label: String) {
+    SmallGang("杂鱼收割队"),
+    Bombers("纯隐轰队"),
+    BombersKiki("隐轰加奇奇莫拉队"),
+    BlackOps("黑隐队"),
+}
+
+private enum class RescueEnemyCountType(val label: String) {
+    LessThanTen("小于10人"),
+    BetweenTwentyAndForty("20-40人"),
+    AboveFifty("50人以上"),
+}
+
+private enum class RescueLocationType(val label: String) {
+    Belt("矿带"),
+    Ice("冰矿"),
+    Moon("月矿"),
+}
+
+private fun buildRescuePingMessage(
+    rorqualPilot: String,
+    system: String,
+    locationType: RescueLocationType,
+    enemyCountType: RescueEnemyCountType,
+    trapType: RescueTrapType,
+    cynoPilot: String,
+): String {
+    val locationText = when (locationType) {
+        RescueLocationType.Belt -> "Ore Depot"
+        RescueLocationType.Ice -> "ICE Anomaly"
+        RescueLocationType.Moon -> "Moon"
+    }
+    val enemyCountText = when (enemyCountType) {
+        RescueEnemyCountType.LessThanTen -> "<10"
+        RescueEnemyCountType.BetweenTwentyAndForty -> "30"
+        RescueEnemyCountType.AboveFifty -> "50+"
+    }
+    val trapTypeText = when (trapType) {
+        RescueTrapType.SmallGang -> "Roaming Gang"
+        RescueTrapType.Bombers -> "bomber fleet"
+        RescueTrapType.BombersKiki -> "bomber+Kiki fleet"
+        RescueTrapType.BlackOps -> "Blop fleet"
+    }
+
+    return buildString {
+        appendLine("!bping all")
+        appendLine("RORQUAL TACKLED")
+        appendLine("Rorq pilot: $rorqualPilot")
+        appendLine("System: $system")
+        appendLine("Loc: $locationText")
+        appendLine("Dscan: about $enemyCountText+ $trapTypeText")
+        append("Cyno 300k Off - YES , $cynoPilot")
+    }
+}
 
 @Composable
 fun JabberWindow(
@@ -684,6 +741,15 @@ private fun UserChat(
     isUsingBiggerFontSize: Boolean,
     onMessageSend: (String) -> Unit,
 ) {
+    var isRescueSettingsOpen by remember { mutableStateOf(false) }
+    var messageInput by remember { mutableStateOf("") }
+    var rescueTrapType by remember { mutableStateOf<RescueTrapType?>(null) }
+    var rescueEnemyCountType by remember { mutableStateOf<RescueEnemyCountType?>(null) }
+    var rescueSystem by remember { mutableStateOf("") }
+    var bigFishPilotName by remember { mutableStateOf("") }
+    var cynoPilotName by remember { mutableStateOf("") }
+    var rescueLocationType by remember { mutableStateOf<RescueLocationType?>(null) }
+
     Column {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -707,55 +773,331 @@ private fun UserChat(
                 .height(1.dp)
                 .background(RiftTheme.colors.borderGreyLight),
         ) {}
-        val listState = rememberLazyListState()
-        var lastMessage by remember { mutableStateOf(messages.lastOrNull()) }
-        LaunchedEffect(messages) {
-            val newLastMessage = messages.lastOrNull()
-            if (newLastMessage != lastMessage) {
+        if (isRescueSettingsOpen) {
+            RescueQuickCallContent(
+                rescueTrapType = rescueTrapType,
+                onRescueTrapTypeChange = { rescueTrapType = it },
+                rescueEnemyCountType = rescueEnemyCountType,
+                onRescueEnemyCountTypeChange = { rescueEnemyCountType = it },
+                rescueSystem = rescueSystem,
+                onRescueSystemChange = { rescueSystem = it },
+                bigFishPilotName = bigFishPilotName,
+                onBigFishPilotNameChange = { bigFishPilotName = it },
+                cynoPilotName = cynoPilotName,
+                onCynoPilotNameChange = { cynoPilotName = it },
+                rescueLocationType = rescueLocationType,
+                onRescueLocationTypeChange = { rescueLocationType = it },
+                onCallClick = {
+                    val trapType = rescueTrapType ?: return@RescueQuickCallContent
+                    val enemyCount = rescueEnemyCountType ?: return@RescueQuickCallContent
+                    val locationType = rescueLocationType ?: return@RescueQuickCallContent
+                    messageInput = buildRescuePingMessage(
+                        rorqualPilot = bigFishPilotName,
+                        system = rescueSystem,
+                        locationType = locationType,
+                        enemyCountType = enemyCount,
+                        trapType = trapType,
+                        cynoPilot = cynoPilotName,
+                    )
+                    isRescueSettingsOpen = false
+                },
+                onBackClick = { isRescueSettingsOpen = false },
+                modifier = Modifier.weight(1f),
+            )
+        } else {
+            val listState = rememberLazyListState()
+            var lastMessage by remember { mutableStateOf(messages.lastOrNull()) }
+            LaunchedEffect(messages) {
+                val newLastMessage = messages.lastOrNull()
+                if (newLastMessage != lastMessage) {
+                    if (messages.lastIndex >= 0) listState.animateScrollToItem(messages.lastIndex)
+                    lastMessage = newLastMessage
+                }
+            }
+            LaunchedEffect(Unit) {
                 if (messages.lastIndex >= 0) listState.animateScrollToItem(messages.lastIndex)
-                lastMessage = newLastMessage
             }
-        }
-        LaunchedEffect(Unit) {
-            if (messages.lastIndex >= 0) listState.animateScrollToItem(messages.lastIndex)
-        }
-        ScrollbarLazyColumn(
-            listState = listState,
-            scrollbarModifier = Modifier.padding(Spacing.small),
-            modifier = Modifier.weight(1f),
-        ) {
-            items(messages) {
-                ChatMessage(isUsingBiggerFontSize, userChat, it)
+            ScrollbarLazyColumn(
+                listState = listState,
+                scrollbarModifier = Modifier.padding(Spacing.small),
+                modifier = Modifier.weight(1f),
+            ) {
+                items(messages) {
+                    ChatMessage(isUsingBiggerFontSize, userChat, it)
+                }
             }
-        }
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(Spacing.small),
-            modifier = Modifier
-                .padding(horizontal = Spacing.medium)
-                .padding(bottom = Spacing.medium),
-        ) {
-            var messageInput by remember { mutableStateOf("") }
-            RiftTextField(
-                text = messageInput,
-                onTextChanged = { messageInput = it },
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(Spacing.small),
                 modifier = Modifier
-                    .weight(1f)
-                    .onKeyEvent {
-                        if (it.key == Key.Enter) {
-                            onMessageSend(messageInput)
-                            messageInput = ""
-                            true
-                        } else {
-                            false
-                        }
+                    .padding(horizontal = Spacing.medium)
+                    .padding(bottom = Spacing.medium),
+            ) {
+                RiftTextField(
+                    text = messageInput,
+                    onTextChanged = { messageInput = it },
+                    singleLine = false,
+                    minLines = 1,
+                    maxLines = 6,
+                    modifier = Modifier
+                        .weight(1f)
+                        .onKeyEvent {
+                            if (it.key == Key.Enter) {
+                                onMessageSend(messageInput)
+                                messageInput = ""
+                                true
+                            } else {
+                                false
+                            }
+                        },
+                )
+                RiftButton(
+                    text = "发送",
+                    onClick = {
+                        onMessageSend(messageInput)
+                        messageInput = ""
                     },
+                )
+                RiftButton(
+                    text = "一键呼叫救援",
+                    type = ButtonType.Secondary,
+                    onClick = {
+                        rescueTrapType = null
+                        rescueEnemyCountType = null
+                        rescueLocationType = null
+                        isRescueSettingsOpen = true
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RescueQuickCallContent(
+    rescueTrapType: RescueTrapType?,
+    onRescueTrapTypeChange: (RescueTrapType?) -> Unit,
+    rescueEnemyCountType: RescueEnemyCountType?,
+    onRescueEnemyCountTypeChange: (RescueEnemyCountType?) -> Unit,
+    rescueSystem: String,
+    onRescueSystemChange: (String) -> Unit,
+    bigFishPilotName: String,
+    onBigFishPilotNameChange: (String) -> Unit,
+    cynoPilotName: String,
+    onCynoPilotNameChange: (String) -> Unit,
+    rescueLocationType: RescueLocationType?,
+    onRescueLocationTypeChange: (RescueLocationType?) -> Unit,
+    onCallClick: () -> Unit,
+    onBackClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var showMissingInfoWarning by remember { mutableStateOf(false) }
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(Spacing.small),
+        modifier = modifier.padding(Spacing.medium),
+    ) {
+        if (showMissingInfoWarning) {
+            RiftWarningBanner(
+                text = "有关键信息未填写，请检查",
+            )
+        }
+        Text(
+            text = "你被什么抓住了",
+            style = RiftTheme.typography.headerPrimary,
+        )
+        Column(
+            verticalArrangement = Arrangement.spacedBy(Spacing.small),
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
+                RiftToggleButton(
+                    text = RescueTrapType.SmallGang.label,
+                    isSelected = rescueTrapType == RescueTrapType.SmallGang,
+                    type = ToggleButtonType.Left,
+                    onClick = {
+                        showMissingInfoWarning = false
+                        onRescueTrapTypeChange(RescueTrapType.SmallGang)
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+                RiftToggleButton(
+                    text = RescueTrapType.Bombers.label,
+                    isSelected = rescueTrapType == RescueTrapType.Bombers,
+                    type = ToggleButtonType.Middle,
+                    onClick = {
+                        showMissingInfoWarning = false
+                        onRescueTrapTypeChange(RescueTrapType.Bombers)
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
+                RiftToggleButton(
+                    text = RescueTrapType.BombersKiki.label,
+                    isSelected = rescueTrapType == RescueTrapType.BombersKiki,
+                    type = ToggleButtonType.Left,
+                    onClick = {
+                        showMissingInfoWarning = false
+                        onRescueTrapTypeChange(RescueTrapType.BombersKiki)
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+                RiftToggleButton(
+                    text = RescueTrapType.BlackOps.label,
+                    isSelected = rescueTrapType == RescueTrapType.BlackOps,
+                    type = ToggleButtonType.Right,
+                    onClick = {
+                        showMissingInfoWarning = false
+                        onRescueTrapTypeChange(RescueTrapType.BlackOps)
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+
+        Text(
+            text = "敌人的数量",
+            style = RiftTheme.typography.headerPrimary,
+            modifier = Modifier.padding(top = Spacing.medium),
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
+            RiftToggleButton(
+                text = RescueEnemyCountType.LessThanTen.label,
+                isSelected = rescueEnemyCountType == RescueEnemyCountType.LessThanTen,
+                type = ToggleButtonType.Left,
+                onClick = {
+                    showMissingInfoWarning = false
+                    onRescueEnemyCountTypeChange(RescueEnemyCountType.LessThanTen)
+                },
+                modifier = Modifier.weight(1f),
+            )
+            RiftToggleButton(
+                text = RescueEnemyCountType.BetweenTwentyAndForty.label,
+                isSelected = rescueEnemyCountType == RescueEnemyCountType.BetweenTwentyAndForty,
+                type = ToggleButtonType.Middle,
+                onClick = {
+                    showMissingInfoWarning = false
+                    onRescueEnemyCountTypeChange(RescueEnemyCountType.BetweenTwentyAndForty)
+                },
+                modifier = Modifier.weight(1f),
+            )
+            RiftToggleButton(
+                text = RescueEnemyCountType.AboveFifty.label,
+                isSelected = rescueEnemyCountType == RescueEnemyCountType.AboveFifty,
+                type = ToggleButtonType.Right,
+                onClick = {
+                    showMissingInfoWarning = false
+                    onRescueEnemyCountTypeChange(RescueEnemyCountType.AboveFifty)
+                },
+                modifier = Modifier.weight(1f),
+            )
+        }
+
+        Text(
+            text = "所在星系",
+            style = RiftTheme.typography.headerPrimary,
+            modifier = Modifier.padding(top = Spacing.medium),
+        )
+        RiftTextField(
+            text = rescueSystem,
+            placeholder = "请输入所在星系",
+            onTextChanged = {
+                showMissingInfoWarning = false
+                onRescueSystemChange(it)
+            },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text(
+            text = "大鱼驾驶员角色名",
+            style = RiftTheme.typography.headerPrimary,
+            modifier = Modifier.padding(top = Spacing.small),
+        )
+        RiftTextField(
+            text = bigFishPilotName,
+            placeholder = "请输入大鱼驾驶员角色名",
+            onTextChanged = {
+                showMissingInfoWarning = false
+                onBigFishPilotNameChange(it)
+            },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text(
+            text = "诱导驾驶员角色名",
+            style = RiftTheme.typography.headerPrimary,
+            modifier = Modifier.padding(top = Spacing.small),
+        )
+        RiftTextField(
+            text = cynoPilotName,
+            placeholder = "请输入诱导驾驶员角色名",
+            onTextChanged = {
+                showMissingInfoWarning = false
+                onCynoPilotNameChange(it)
+            },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text(
+            text = "地点类型",
+            style = RiftTheme.typography.headerPrimary,
+            modifier = Modifier.padding(top = Spacing.medium),
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
+            RiftToggleButton(
+                text = RescueLocationType.Belt.label,
+                isSelected = rescueLocationType == RescueLocationType.Belt,
+                type = ToggleButtonType.Left,
+                onClick = {
+                    showMissingInfoWarning = false
+                    onRescueLocationTypeChange(RescueLocationType.Belt)
+                },
+                modifier = Modifier.weight(1f),
+            )
+            RiftToggleButton(
+                text = RescueLocationType.Ice.label,
+                isSelected = rescueLocationType == RescueLocationType.Ice,
+                type = ToggleButtonType.Middle,
+                onClick = {
+                    showMissingInfoWarning = false
+                    onRescueLocationTypeChange(RescueLocationType.Ice)
+                },
+                modifier = Modifier.weight(1f),
+            )
+            RiftToggleButton(
+                text = RescueLocationType.Moon.label,
+                isSelected = rescueLocationType == RescueLocationType.Moon,
+                type = ToggleButtonType.Right,
+                onClick = {
+                    showMissingInfoWarning = false
+                    onRescueLocationTypeChange(RescueLocationType.Moon)
+                },
+                modifier = Modifier.weight(1f),
+            )
+        }
+
+        Box(modifier = Modifier.weight(1f))
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
+            RiftButton(
+                text = "返回聊天",
+                type = ButtonType.Secondary,
+                cornerCut = ButtonCornerCut.BottomLeft,
+                onClick = onBackClick,
+                modifier = Modifier.weight(1f),
             )
             RiftButton(
-                text = "发送",
+                text = "一键呼救",
+                cornerCut = ButtonCornerCut.BottomRight,
                 onClick = {
-                    onMessageSend(messageInput)
-                    messageInput = ""
+                    val hasMissingRequiredInfo = rescueTrapType == null ||
+                        rescueEnemyCountType == null ||
+                        rescueLocationType == null ||
+                        rescueSystem.isBlank() ||
+                        bigFishPilotName.isBlank() ||
+                        cynoPilotName.isBlank()
+                    if (hasMissingRequiredInfo) {
+                        showMissingInfoWarning = true
+                    } else {
+                        onCallClick()
+                    }
                 },
+                modifier = Modifier.weight(1f),
             )
         }
     }
@@ -769,6 +1111,15 @@ private fun MultiUserChat(
     isUsingBiggerFontSize: Boolean,
     onMessageSend: (String) -> Unit,
 ) {
+    var isRescueSettingsOpen by remember { mutableStateOf(false) }
+    var messageInput by remember { mutableStateOf("") }
+    var rescueTrapType by remember { mutableStateOf<RescueTrapType?>(null) }
+    var rescueEnemyCountType by remember { mutableStateOf<RescueEnemyCountType?>(null) }
+    var rescueSystem by remember { mutableStateOf("") }
+    var bigFishPilotName by remember { mutableStateOf("") }
+    var cynoPilotName by remember { mutableStateOf("") }
+    var rescueLocationType by remember { mutableStateOf<RescueLocationType?>(null) }
+
     Column {
         ScrollbarColumn(
             modifier = Modifier
@@ -795,57 +1146,102 @@ private fun MultiUserChat(
                 .height(1.dp)
                 .background(RiftTheme.colors.borderGreyLight),
         ) {}
-        val listState = rememberLazyListState()
-        var lastMessage by remember { mutableStateOf(messages.lastOrNull()) }
-        LaunchedEffect(messages) {
-            val newLastMessage = messages.lastOrNull()
-            if (newLastMessage != lastMessage) {
-                if (messages.lastIndex >= 0) listState.animateScrollToItem(messages.lastIndex)
-                lastMessage = newLastMessage
-            }
-        }
-        LaunchedEffect(Unit) {
-            if (messages.lastIndex >= 0) listState.animateScrollToItem(messages.lastIndex)
-        }
-        ScrollbarLazyColumn(
-            listState = listState,
-            contentPadding = PaddingValues(vertical = Spacing.medium),
-            scrollbarModifier = Modifier.padding(Spacing.small),
-            modifier = Modifier.weight(1f),
-        ) {
-            items(messages) {
-                ChatMessage(isUsingBiggerFontSize, multiUserChat, it)
-            }
-        }
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(Spacing.small),
-            modifier = Modifier
-                .padding(horizontal = Spacing.medium)
-                .padding(bottom = Spacing.medium),
-        ) {
-            var messageInput by remember { mutableStateOf("") }
-            RiftTextField(
-                text = messageInput,
-                onTextChanged = { messageInput = it },
-                modifier = Modifier
-                    .weight(1f)
-                    .onKeyEvent {
-                        if (it.key == Key.Enter) {
-                            onMessageSend(messageInput)
-                            messageInput = ""
-                            true
-                        } else {
-                            false
-                        }
-                    },
-            )
-            RiftButton(
-                text = "发送",
-                onClick = {
-                    onMessageSend(messageInput)
-                    messageInput = ""
+        if (isRescueSettingsOpen) {
+            RescueQuickCallContent(
+                rescueTrapType = rescueTrapType,
+                onRescueTrapTypeChange = { rescueTrapType = it },
+                rescueEnemyCountType = rescueEnemyCountType,
+                onRescueEnemyCountTypeChange = { rescueEnemyCountType = it },
+                rescueSystem = rescueSystem,
+                onRescueSystemChange = { rescueSystem = it },
+                bigFishPilotName = bigFishPilotName,
+                onBigFishPilotNameChange = { bigFishPilotName = it },
+                cynoPilotName = cynoPilotName,
+                onCynoPilotNameChange = { cynoPilotName = it },
+                rescueLocationType = rescueLocationType,
+                onRescueLocationTypeChange = { rescueLocationType = it },
+                onCallClick = {
+                    val trapType = rescueTrapType ?: return@RescueQuickCallContent
+                    val enemyCount = rescueEnemyCountType ?: return@RescueQuickCallContent
+                    val locationType = rescueLocationType ?: return@RescueQuickCallContent
+                    messageInput = buildRescuePingMessage(
+                        rorqualPilot = bigFishPilotName,
+                        system = rescueSystem,
+                        locationType = locationType,
+                        enemyCountType = enemyCount,
+                        trapType = trapType,
+                        cynoPilot = cynoPilotName,
+                    )
+                    isRescueSettingsOpen = false
                 },
+                onBackClick = { isRescueSettingsOpen = false },
+                modifier = Modifier.weight(1f),
             )
+        } else {
+            val listState = rememberLazyListState()
+            var lastMessage by remember { mutableStateOf(messages.lastOrNull()) }
+            LaunchedEffect(messages) {
+                val newLastMessage = messages.lastOrNull()
+                if (newLastMessage != lastMessage) {
+                    if (messages.lastIndex >= 0) listState.animateScrollToItem(messages.lastIndex)
+                    lastMessage = newLastMessage
+                }
+            }
+            LaunchedEffect(Unit) {
+                if (messages.lastIndex >= 0) listState.animateScrollToItem(messages.lastIndex)
+            }
+            ScrollbarLazyColumn(
+                listState = listState,
+                contentPadding = PaddingValues(vertical = Spacing.medium),
+                scrollbarModifier = Modifier.padding(Spacing.small),
+                modifier = Modifier.weight(1f),
+            ) {
+                items(messages) {
+                    ChatMessage(isUsingBiggerFontSize, multiUserChat, it)
+                }
+            }
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(Spacing.small),
+                modifier = Modifier
+                    .padding(horizontal = Spacing.medium)
+                    .padding(bottom = Spacing.medium),
+            ) {
+                RiftTextField(
+                    text = messageInput,
+                    onTextChanged = { messageInput = it },
+                    singleLine = false,
+                    minLines = 1,
+                    maxLines = 6,
+                    modifier = Modifier
+                        .weight(1f)
+                        .onKeyEvent {
+                            if (it.key == Key.Enter) {
+                                onMessageSend(messageInput)
+                                messageInput = ""
+                                true
+                            } else {
+                                false
+                            }
+                        },
+                )
+                RiftButton(
+                    text = "发送",
+                    onClick = {
+                        onMessageSend(messageInput)
+                        messageInput = ""
+                    },
+                )
+                RiftButton(
+                    text = "一键呼叫救援",
+                    type = ButtonType.Secondary,
+                    onClick = {
+                        rescueTrapType = null
+                        rescueEnemyCountType = null
+                        rescueLocationType = null
+                        isRescueSettingsOpen = true
+                    },
+                )
+            }
         }
     }
 }
