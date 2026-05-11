@@ -131,15 +131,15 @@ private fun PlainTextPing(
 ) {
     val type = buildAnnotatedString {
         if (ping.target == null || ping.target == "all") {
-            append("Announcement")
+            append("公告")
         } else {
             withStyle(SpanStyle(color = RiftTheme.colors.textPrimary)) {
                 append(ping.target.replaceFirstChar { it.uppercase() })
             }
-            append(" message")
+            append(" 消息")
         }
         if (ping.sender != null) {
-            append(" from ")
+            append(" 来自 ")
             withStyle(SpanStyle(color = RiftTheme.colors.textPrimary)) {
                 append(ping.sender)
             }
@@ -148,7 +148,7 @@ private fun PlainTextPing(
     val buttons = mutableListOf<RiftOpportunityCardButton>()
     buttons += RiftOpportunityCardButton(
         resource = Res.drawable.copy_16px,
-        tooltip = "Copy ping",
+        tooltip = "复制集结消息",
         action = { Clipboard.copy(ping.sourceText) },
     )
     RiftOpportunityCard(
@@ -165,7 +165,8 @@ private fun PlainTextPing(
             RiftTheme.typography.bodyPrimary
         }
         val linkStyle = SpanStyle(color = RiftTheme.colors.textLink, fontWeight = FontWeight.Bold)
-        val linkifiedMessage = remember(ping.text) { annotateLinks(ping.text, linkStyle) }
+        val localizedMessage = remember(ping.text) { toBilingualPingText(ping.text) }
+        val linkifiedMessage = remember(localizedMessage) { annotateLinks(localizedMessage, linkStyle) }
         Text(
             text = linkifiedMessage,
             style = descriptionStyle,
@@ -181,12 +182,12 @@ private fun FleetPing(
 ) {
     val type = buildAnnotatedString {
         if (ping.target == null || ping.target == "all") {
-            append("Fleet")
+            append("舰队通知")
         } else {
             withStyle(SpanStyle(color = RiftTheme.colors.textPrimary)) {
                 append(ping.target.replaceFirstChar { it.uppercase() })
             }
-            append(" fleet")
+            append(" 舰队")
         }
         if (ping.fleet != null) {
             append(" ")
@@ -194,7 +195,7 @@ private fun FleetPing(
                 append(ping.fleet)
             }
         }
-        append(" under ")
+        append(" 指挥官 ")
         withStyle(SpanStyle(color = RiftTheme.colors.textPrimary)) {
             append(ping.fleetCommander.name)
         }
@@ -203,27 +204,27 @@ private fun FleetPing(
     if (ping.doctrine?.link != null) {
         buttons += RiftOpportunityCardButton(
             resource = Res.drawable.fitting_16px,
-            tooltip = "Doctrine forum thread",
+            tooltip = "打开编队论坛帖",
             action = { ping.doctrine.link.toURIOrNull()?.openBrowser() },
         )
     }
     buttons += RiftOpportunityCardButton(
         resource = Res.drawable.copy_16px,
-        tooltip = "Copy ping",
+        tooltip = "复制集结消息",
         action = { Clipboard.copy(ping.sourceText) },
     )
     if (ping.comms is Comms.Mumble) {
         buttons += RiftOpportunityCardButton(
             resource = Res.drawable.microphone,
-            tooltip = "Join ${ping.comms.channel} on Mumble",
+            tooltip = "在 Mumble 加入 ${ping.comms.channel}",
             action = { onMumbleClick(ping.comms.link) },
         )
     }
     val title = when (ping.papType) {
-        PapType.Peacetime -> "Peacetime PAP"
-        PapType.Strategic -> "Strategic PAP"
+        PapType.Peacetime -> "和平 PAP"
+        PapType.Strategic -> "战略 PAP"
         is PapType.Text -> "${ping.papType.text.replaceFirstChar { it.uppercase() }} PAP"
-        null -> "No PAP"
+        null -> "无 PAP"
     }
     RiftOpportunityCard(
         category = ping.opportunityCategory,
@@ -239,7 +240,8 @@ private fun FleetPing(
             RiftTheme.typography.bodyPrimary
         }
         val linkStyle = SpanStyle(color = RiftTheme.colors.textLink, fontWeight = FontWeight.Bold)
-        val linkifiedMessage = remember(ping.description) { annotateLinks(ping.description, linkStyle) }
+        val localizedDescription = remember(ping.description) { toBilingualPingText(ping.description) }
+        val linkifiedMessage = remember(localizedDescription) { annotateLinks(localizedDescription, linkStyle) }
         Text(
             text = linkifiedMessage,
             style = descriptionStyle,
@@ -247,11 +249,12 @@ private fun FleetPing(
         )
         if (ping.comms is Comms.Text) {
             Text(
-                text = "Comms:",
+                text = "语音：",
                 style = RiftTheme.typography.bodySecondary,
                 modifier = Modifier.padding(top = Spacing.mediumLarge),
             )
-            val linkifiedComms = remember(ping.comms.text) { annotateLinks(ping.comms.text, linkStyle) }
+            val localizedComms = remember(ping.comms.text) { toBilingualPingText(ping.comms.text) }
+            val linkifiedComms = remember(localizedComms) { annotateLinks(localizedComms, linkStyle) }
             Text(
                 text = linkifiedComms,
                 style = RiftTheme.typography.bodyPrimary,
@@ -259,12 +262,12 @@ private fun FleetPing(
         }
         if (ping.doctrine != null) {
             Text(
-                text = "Doctrine:",
+                text = "编队：",
                 style = RiftTheme.typography.bodySecondary,
                 modifier = Modifier.padding(top = Spacing.mediumLarge),
             )
             Text(
-                text = ping.doctrine.text,
+                text = toBilingualPingText(ping.doctrine.text),
                 style = RiftTheme.typography.bodyPrimary,
             )
         }
