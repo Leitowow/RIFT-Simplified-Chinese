@@ -15,6 +15,7 @@ import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.WindowState
 import dev.nohus.rift.Event
 import dev.nohus.rift.about.AboutWindow
+import dev.nohus.rift.appraisal.AppraisalWindow
 import dev.nohus.rift.alerts.list.AlertsWindow
 import dev.nohus.rift.assets.AssetsWindow
 import dev.nohus.rift.characters.CharactersWindow
@@ -101,6 +102,9 @@ class WindowManager(
 
         @SerialName("Pings")
         Pings,
+
+        @SerialName("Appraisal")
+        Appraisal,
 
         @SerialName("Alerts")
         Alerts,
@@ -273,6 +277,7 @@ class WindowManager(
                             RiftWindow.About -> AboutWindow(state, onCloseRequest = { onWindowClose(RiftWindow.About, state.uuid) })
                             RiftWindow.Jabber -> JabberWindow(state.inputModel as? JabberInputModel ?: JabberInputModel.None, state, onCloseRequest = { onWindowClose(RiftWindow.Jabber, state.uuid) })
                             RiftWindow.Pings -> PingsWindow(state, onCloseRequest = { onWindowClose(RiftWindow.Pings, state.uuid) })
+                            RiftWindow.Appraisal -> AppraisalWindow(state, onCloseRequest = { onWindowClose(RiftWindow.Appraisal, state.uuid) })
                             RiftWindow.ConfigurationPackReminder -> ConfigurationPackReminderWindow(state, onCloseRequest = { onWindowClose(RiftWindow.ConfigurationPackReminder, state.uuid) })
                             RiftWindow.Assets -> AssetsWindow(state, onCloseRequest = { onWindowClose(RiftWindow.Assets, state.uuid) })
                             RiftWindow.WhatsNew -> WhatsNewWindow(state, onCloseRequest = { onWindowClose(RiftWindow.WhatsNew, state.uuid) })
@@ -428,6 +433,7 @@ class WindowManager(
             RiftWindow.About -> WindowSizing(defaultSize = (500 to null), minimumSize = (500 to null))
             RiftWindow.Jabber -> WindowSizing(defaultSize = saved ?: (400 to 500), minimumSize = (200 to 200))
             RiftWindow.Pings -> WindowSizing(defaultSize = saved ?: (440 to 500), minimumSize = (440 to 300))
+            RiftWindow.Appraisal -> WindowSizing(defaultSize = saved ?: (640 to 700), minimumSize = (480 to 420))
             RiftWindow.ConfigurationPackReminder -> WindowSizing(defaultSize = (450 to null), minimumSize = (450 to null))
             RiftWindow.Assets -> WindowSizing(defaultSize = saved ?: (500 to 500), minimumSize = (500 to 300))
             RiftWindow.WhatsNew -> WindowSizing(defaultSize = (450 to 800), minimumSize = (450 to 800))

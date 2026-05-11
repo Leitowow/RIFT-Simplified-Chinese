@@ -50,6 +50,7 @@ import dev.nohus.rift.generated.resources.window_map
 import dev.nohus.rift.generated.resources.window_opportunities
 import dev.nohus.rift.generated.resources.window_planets
 import dev.nohus.rift.generated.resources.window_quitgame
+import dev.nohus.rift.generated.resources.window_redeem
 import dev.nohus.rift.generated.resources.window_rift_64
 import dev.nohus.rift.generated.resources.window_satellite
 import dev.nohus.rift.generated.resources.window_settings
@@ -91,6 +92,7 @@ fun NeocomWindow(
             add(ButtonModel(icon = Res.drawable.window_characters, name = "角色", "角色") { viewModel.onButtonClick(RiftWindow.Characters) })
             add(ButtonModel(icon = Res.drawable.window_assets, name = "资产") { viewModel.onButtonClick(RiftWindow.Assets) })
             add(ButtonModel(icon = Res.drawable.window_wallet, name = "钱包") { viewModel.onButtonClick(RiftWindow.Wallet) })
+            add(ButtonModel(icon = Res.drawable.window_redeem, name = "估价", iconSize = 26.dp) { viewModel.onButtonClick(RiftWindow.Appraisal) })
             add(ButtonModel(icon = Res.drawable.window_planets, name = "行星工业", "行星") { viewModel.onButtonClick(RiftWindow.PlanetaryIndustry) })
             add(ButtonModel(icon = Res.drawable.window_opportunities, name = "机遇") { viewModel.onButtonClick(RiftWindow.Opportunities) })
             add(ButtonModel(icon = Res.drawable.window_contacts, name = "联系人") { viewModel.onButtonClick(RiftWindow.Contacts) })
@@ -99,7 +101,7 @@ fun NeocomWindow(
             }
             if (state.isJabberEnabled) {
                 add(ButtonModel(icon = Res.drawable.window_sovereignty, name = "集结通知") { viewModel.onButtonClick(RiftWindow.Pings) })
-                add(ButtonModel(icon = Res.drawable.window_chatchannels, name = "Jabber") { viewModel.onButtonClick(RiftWindow.Jabber) })
+                add(ButtonModel(icon = Res.drawable.window_chatchannels, name = "Jabber", isHighlighted = state.isJabberConnected) { viewModel.onButtonClick(RiftWindow.Jabber) })
             }
             add(ButtonModel(icon = Res.drawable.window_settings, name = "设置") { viewModel.onButtonClick(RiftWindow.Settings) })
             add(ButtonModel(icon = Res.drawable.window_evemailtag, name = "关于") { viewModel.onButtonClick(RiftWindow.About) })
@@ -115,7 +117,15 @@ fun NeocomWindow(
             if (height >= 32.dp) {
                 Column {
                     for (button in buttons) {
-                        NeocomRowButton(height, icon = button.icon, name = button.name, shortName = button.shortName ?: button.name, onClick = button.action)
+                        NeocomRowButton(
+                            height = height,
+                            icon = button.icon,
+                            name = button.name,
+                            shortName = button.shortName ?: button.name,
+                            isHighlighted = button.isHighlighted,
+                            iconSize = button.iconSize,
+                            onClick = button.action,
+                        )
                     }
                 }
             } else {
@@ -135,7 +145,13 @@ fun NeocomWindow(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     for (button in buttons) {
-                        NeocomIconButton(size = buttonSize, icon = button.icon, onClick = button.action)
+                        NeocomIconButton(
+                            size = buttonSize,
+                            icon = button.icon,
+                            isHighlighted = button.isHighlighted,
+                            iconSize = button.iconSize,
+                            onClick = button.action,
+                        )
                     }
                 }
             }
@@ -147,6 +163,8 @@ data class ButtonModel(
     val icon: DrawableResource,
     val name: String,
     val shortName: String? = null,
+    val isHighlighted: Boolean = false,
+    val iconSize: Dp = 32.dp,
     val action: () -> Unit,
 )
 
@@ -157,6 +175,8 @@ private fun NeocomRowButton(
     icon: DrawableResource,
     name: String,
     shortName: String,
+    isHighlighted: Boolean,
+    iconSize: Dp,
     onClick: () -> Unit,
 ) {
     val pointerState = remember { PointerInteractionStateHolder() }
@@ -164,7 +184,7 @@ private fun NeocomRowButton(
     val transition = updateTransition(pointerState.current)
     val textColor by transition.animateColor(colorTransitionSpec) {
         when (it) {
-            PointerInteractionState.Normal -> RiftTheme.colors.textPrimary
+            PointerInteractionState.Normal -> if (isHighlighted) RiftTheme.colors.textHighlighted else RiftTheme.colors.textPrimary
             PointerInteractionState.Hover -> RiftTheme.colors.textHighlighted
             PointerInteractionState.Press -> RiftTheme.colors.textHighlighted
         }
@@ -173,9 +193,8 @@ private fun NeocomRowButton(
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .hoverBackground()
+            .hoverBackground(pointerInteractionStateHolder = pointerState, isSelected = isHighlighted)
             .fillMaxWidth()
-            .pointerInteraction(pointerState)
             .onClick { onClick() }
             .padding(end = Spacing.medium),
     ) {
@@ -186,7 +205,7 @@ private fun NeocomRowButton(
             Image(
                 painter = painterResource(icon),
                 contentDescription = null,
-                modifier = Modifier.size(32.dp),
+                modifier = Modifier.size(iconSize),
             )
         }
         BoxWithConstraints {
@@ -217,19 +236,21 @@ private fun NeocomRowButton(
 private fun NeocomIconButton(
     size: Dp,
     icon: DrawableResource,
+    isHighlighted: Boolean,
+    iconSize: Dp,
     onClick: () -> Unit,
 ) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .hoverBackground()
+            .hoverBackground(isSelected = isHighlighted)
             .onClick { onClick() }
             .size(size),
     ) {
         Image(
             painter = painterResource(icon),
             contentDescription = null,
-            modifier = Modifier.size(32.dp),
+            modifier = Modifier.size(iconSize),
         )
     }
 }
