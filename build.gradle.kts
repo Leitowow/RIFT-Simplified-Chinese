@@ -1,5 +1,6 @@
 import org.jetbrains.compose.reload.gradle.ComposeHotRun
 import org.jetbrains.compose.reload.gradle.isHotReloadBuild
+import org.gradle.internal.os.OperatingSystem
 import java.time.Instant
 
 plugins {
@@ -42,14 +43,21 @@ repositories {
 
 dependencies {
     // Compose
-    implementation(libs.compose.desktop.macos.x64)
-    implementation(libs.compose.desktop.macos.arm64)
-    implementation(libs.compose.desktop.windows)
-    implementation(libs.compose.components.resources)
-    implementation(libs.compose.desktop) {
-        exclude("org.jetbrains.compose.material")
-        exclude("org.jetbrains.compose.material3")
+    when {
+        OperatingSystem.current().isWindows -> {
+            implementation(libs.compose.desktop.windows)
+        }
+
+        OperatingSystem.current().isMacOsX -> {
+            implementation(libs.compose.desktop.macos.x64)
+            implementation(libs.compose.desktop.macos.arm64)
+        }
+
+        OperatingSystem.current().isLinux -> {
+            implementation(libs.compose.desktop.linux)
+        }
     }
+    implementation(libs.compose.components.resources)
 
     // Kamel
     implementation(libs.kamel.image)
@@ -86,8 +94,26 @@ dependencies {
     implementation(libs.cache4k)
 
     // OpenAL Audio
-    implementation(libs.joal.main)
-    implementation(libs.gluegen.rtmain)
+    val joalVersion = libs.versions.joal.get()
+    val gluegenVersion = libs.versions.gluegen.get()
+    implementation("org.jogamp.joal:joal:$joalVersion")
+    implementation("org.jogamp.gluegen:gluegen-rt:$gluegenVersion")
+    when {
+        OperatingSystem.current().isWindows -> {
+            runtimeOnly("org.jogamp.joal:joal:$joalVersion:natives-windows-amd64")
+            runtimeOnly("org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-windows-amd64")
+        }
+
+        OperatingSystem.current().isMacOsX -> {
+            runtimeOnly("org.jogamp.joal:joal:$joalVersion:natives-macosx-universal")
+            runtimeOnly("org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-macosx-universal")
+        }
+
+        OperatingSystem.current().isLinux -> {
+            runtimeOnly("org.jogamp.joal:joal:$joalVersion:natives-linux-amd64")
+            runtimeOnly("org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-linux-amd64")
+        }
+    }
 
     implementation(libs.jlayer)
 
@@ -97,12 +123,19 @@ dependencies {
         exclude(group = "org.bytedeco", module = "opencv-platform")
         exclude(group = "org.bytedeco", module = "openblas-platform")
     }
-    runtimeOnly("org.bytedeco:opencv:$opencvVersion:windows-x86_64")
-    runtimeOnly("org.bytedeco:opencv:$opencvVersion:macosx-x86_64")
-    runtimeOnly("org.bytedeco:opencv:$opencvVersion:macosx-arm64")
-    runtimeOnly("org.bytedeco:openblas:0.3.28-1.5.11:windows-x86_64")
-    runtimeOnly("org.bytedeco:openblas:0.3.28-1.5.11:macosx-x86_64")
-    runtimeOnly("org.bytedeco:openblas:0.3.28-1.5.11:macosx-arm64")
+    when {
+        OperatingSystem.current().isWindows -> {
+            runtimeOnly("org.bytedeco:opencv:$opencvVersion:windows-x86_64")
+            runtimeOnly("org.bytedeco:openblas:0.3.28-1.5.11:windows-x86_64")
+        }
+
+        OperatingSystem.current().isMacOsX -> {
+            runtimeOnly("org.bytedeco:opencv:$opencvVersion:macosx-x86_64")
+            runtimeOnly("org.bytedeco:opencv:$opencvVersion:macosx-arm64")
+            runtimeOnly("org.bytedeco:openblas:0.3.28-1.5.11:macosx-x86_64")
+            runtimeOnly("org.bytedeco:openblas:0.3.28-1.5.11:macosx-arm64")
+        }
+    }
 
     // Smack (XMPP)
     implementation(libs.smack.java8)
@@ -206,6 +239,9 @@ java {
 }
 
 configurations.all {
+    if (OperatingSystem.current().isWindows) {
+        exclude(group = "org.jetbrains.skiko", module = "skiko-awt-runtime-linux-x64")
+    }
     if (isCanBeResolved || isCanBeConsumed) {
         attributes {
             attribute(Attribute.of("ui", String::class.java), "awt")
