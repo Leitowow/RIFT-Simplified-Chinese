@@ -803,15 +803,15 @@ object WhatsNew {
             )
             add(
                 "5.20.0" description """
-                -! New feature: Manufacturing Assistant
-                - Added a new Manufacturing Assistant window for blueprint build cost calculations
-                - Supports blueprint lookup by English name, Chinese alias, and Type ID
-                - Includes parameter presets for structure, rigs, tax, and material efficiency, with settings persistence
-                - Shows structured build summaries and estimated market profit after querying product prices
-                - Added a quick copy action for structured result output
+                -! 新功能：制造助手
+                - 新增制造助手窗口，可用于查询蓝图建造成本
+                - 支持按蓝图英文名、中文别名和 Type ID 查询
+                - 支持结构、改装件、税率、材料效率等参数预设，并会保存设置
+                - 查询产出物价格后可显示结构化成本与预计市场利润
+                - 新增结构化结果一键复制
 
-                - Added startup online version checks against GitHub latest release
-                - Added immediate outdated-version startup warning once a newer release is detected
+                - 启动时会在线检查 GitHub 最新发布版本
+                - 检测到新版本后会立即提示当前版本过旧
                 """.trimIndent(),
             )
         }.reversed()
