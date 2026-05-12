@@ -48,6 +48,7 @@ import dev.nohus.rift.generated.resources.window_evemailtag
 import dev.nohus.rift.generated.resources.window_loudspeaker_icon
 import dev.nohus.rift.generated.resources.window_map
 import dev.nohus.rift.generated.resources.window_opportunities
+import dev.nohus.rift.generated.resources.pi_processor
 import dev.nohus.rift.generated.resources.window_planets
 import dev.nohus.rift.generated.resources.window_quitgame
 import dev.nohus.rift.generated.resources.window_redeem
@@ -93,6 +94,7 @@ fun NeocomWindow(
             add(ButtonModel(icon = Res.drawable.window_assets, name = "资产") { viewModel.onButtonClick(RiftWindow.Assets) })
             add(ButtonModel(icon = Res.drawable.window_wallet, name = "钱包") { viewModel.onButtonClick(RiftWindow.Wallet) })
             add(ButtonModel(icon = Res.drawable.window_redeem, name = "估价", iconSize = 26.dp) { viewModel.onButtonClick(RiftWindow.Appraisal) })
+            add(ButtonModel(icon = Res.drawable.pi_processor, name = "制造助手", shortName = "制造") { viewModel.onButtonClick(RiftWindow.ManufacturingAssistant) })
             add(ButtonModel(icon = Res.drawable.window_planets, name = "行星工业", "行星") { viewModel.onButtonClick(RiftWindow.PlanetaryIndustry) })
             add(ButtonModel(icon = Res.drawable.window_opportunities, name = "机遇") { viewModel.onButtonClick(RiftWindow.Opportunities) })
             add(ButtonModel(icon = Res.drawable.window_contacts, name = "联系人") { viewModel.onButtonClick(RiftWindow.Contacts) })

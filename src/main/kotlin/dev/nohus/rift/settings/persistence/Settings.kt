@@ -302,4 +302,8 @@ class Settings(
     var isZkillboardMonitoringEnabled: Boolean
         get() = model.isZkillboardMonitoringEnabled
         set(value) = update { copy(isZkillboardMonitoringEnabled = value) }
+
+    var manufacturingAssistant: ManufacturingAssistant
+        get() = model.manufacturingAssistant
+        set(value) = update { copy(manufacturingAssistant = value) }
 }

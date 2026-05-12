@@ -30,6 +30,7 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -53,7 +54,10 @@ fun RiftAutocompleteTextField(
     placeholder: String? = null,
     onTextChanged: (String) -> Unit,
     onSuggestionConfirmed: (String) -> Unit = {},
+    selectAllOnFocus: Boolean = false,
+    textAlign: TextAlign = TextAlign.Start,
     height: Dp = 32.dp,
+    suggestionRowHeight: Dp = 21.dp,
     onDeleteClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -68,6 +72,8 @@ fun RiftAutocompleteTextField(
             icon = icon,
             placeholder = placeholder,
             onTextChanged = onTextChanged,
+            selectAllOnFocus = selectAllOnFocus,
+            textAlign = textAlign,
             height = height,
             onDeleteClick = onDeleteClick,
             modifier = Modifier
@@ -117,7 +123,7 @@ fun RiftAutocompleteTextField(
                                             onTextChanged(suggestion)
                                             onSuggestionConfirmed(suggestion)
                                         }
-                                        .height(21.dp)
+                                        .height(suggestionRowHeight)
                                         .padding(Spacing.small)
                                         .fillMaxWidth(),
                                 ) {

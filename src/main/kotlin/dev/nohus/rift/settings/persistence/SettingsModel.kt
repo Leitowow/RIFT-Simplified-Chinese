@@ -92,6 +92,7 @@ data class SettingsModel(
     val newVersionSeenTimestamp: Long? = null,
     val characterPortraits: CharacterPortraits = CharacterPortraits(),
     val isZkillboardMonitoringEnabled: Boolean = true,
+    val manufacturingAssistant: ManufacturingAssistant = ManufacturingAssistant(),
 )
 
 @Serializable
@@ -440,3 +441,19 @@ enum class CharacterPortraitsParallaxStrength {
     Reduced,
     Normal,
 }
+
+@Serializable
+data class ManufacturingAssistant(
+    val quantity: String = "1",
+    val additionalCosts: String = "0",
+    val baseMe: String = "10",
+    val componentsMe: String = "10",
+    val system: String = "C-J6MT",
+    val facilityTax: String = "1",
+    val priceMode: String = "buy",
+    val includeReactionJobs: Boolean = true,
+    val industryStructureType: String = "Sotiyo",
+    val industryRigType: String = "T2",
+    val reactionStructureType: String = "Tatara",
+    val reactionRigType: String = "T2",
+)

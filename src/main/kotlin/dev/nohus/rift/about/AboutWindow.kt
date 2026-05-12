@@ -155,7 +155,7 @@ private fun AboutWindowContent(
                         )
                     }
                     Text(
-                        text = "版本更新：已禁用在线检测与自动更新",
+                        text = "版本更新：启动时会在线检测新版本",
                         style = RiftTheme.typography.bodySecondary,
                     )
 

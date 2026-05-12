@@ -801,6 +801,19 @@ object WhatsNew {
                 - Several performance improvements
                 """.trimIndent(),
             )
+            add(
+                "5.20.0" description """
+                -! New feature: Manufacturing Assistant
+                - Added a new Manufacturing Assistant window for blueprint build cost calculations
+                - Supports blueprint lookup by English name, Chinese alias, and Type ID
+                - Includes parameter presets for structure, rigs, tax, and material efficiency, with settings persistence
+                - Shows structured build summaries and estimated market profit after querying product prices
+                - Added a quick copy action for structured result output
+
+                - Added startup online version checks against GitHub latest release
+                - Added immediate outdated-version startup warning once a newer release is detected
+                """.trimIndent(),
+            )
         }.reversed()
     }
 }

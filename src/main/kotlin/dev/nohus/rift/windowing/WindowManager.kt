@@ -35,6 +35,7 @@ import dev.nohus.rift.jabber.JabberInputModel
 import dev.nohus.rift.jabber.JabberWindow
 import dev.nohus.rift.jukebox.JukeboxWindow
 import dev.nohus.rift.loglite.LogLiteWindow
+import dev.nohus.rift.manufacturingassistant.ManufacturingAssistantWindow
 import dev.nohus.rift.map.MapWindow
 import dev.nohus.rift.map.markers.MapMarkersInputModel
 import dev.nohus.rift.map.markers.MapMarkersWindow
@@ -106,6 +107,9 @@ class WindowManager(
         @SerialName("Appraisal")
         Appraisal,
 
+        @SerialName("ManufacturingAssistant")
+        ManufacturingAssistant,
+
         @SerialName("Alerts")
         Alerts,
 
@@ -135,6 +139,10 @@ class WindowManager(
 
         @SerialName("PlanetaryIndustry")
         PlanetaryIndustry,
+
+        @Deprecated("Removed")
+        @SerialName("PlanetaryRelations")
+        PlanetaryRelations,
 
         @SerialName("StartupWarning")
         StartupWarning,
@@ -278,6 +286,7 @@ class WindowManager(
                             RiftWindow.Jabber -> JabberWindow(state.inputModel as? JabberInputModel ?: JabberInputModel.None, state, onCloseRequest = { onWindowClose(RiftWindow.Jabber, state.uuid) })
                             RiftWindow.Pings -> PingsWindow(state, onCloseRequest = { onWindowClose(RiftWindow.Pings, state.uuid) })
                             RiftWindow.Appraisal -> AppraisalWindow(state, onCloseRequest = { onWindowClose(RiftWindow.Appraisal, state.uuid) })
+                            RiftWindow.ManufacturingAssistant -> ManufacturingAssistantWindow(state, onCloseRequest = { onWindowClose(RiftWindow.ManufacturingAssistant, state.uuid) })
                             RiftWindow.ConfigurationPackReminder -> ConfigurationPackReminderWindow(state, onCloseRequest = { onWindowClose(RiftWindow.ConfigurationPackReminder, state.uuid) })
                             RiftWindow.Assets -> AssetsWindow(state, onCloseRequest = { onWindowClose(RiftWindow.Assets, state.uuid) })
                             RiftWindow.WhatsNew -> WhatsNewWindow(state, onCloseRequest = { onWindowClose(RiftWindow.WhatsNew, state.uuid) })
@@ -285,6 +294,7 @@ class WindowManager(
                             RiftWindow.LogLite -> LogLiteWindow(state, onCloseRequest = { onWindowClose(RiftWindow.LogLite, state.uuid) })
                             RiftWindow.Fleets -> FleetsWindow(state, onCloseRequest = { onWindowClose(RiftWindow.Fleets, state.uuid) })
                             RiftWindow.PlanetaryIndustry -> PlanetaryIndustryWindow(state, onCloseRequest = { onWindowClose(RiftWindow.PlanetaryIndustry, state.uuid) })
+                            RiftWindow.PlanetaryRelations -> {}
                             RiftWindow.StartupWarning -> StartupWarningWindow(state.inputModel as? StartupWarningInputModel, state, onCloseRequest = { onWindowClose(RiftWindow.StartupWarning, state.uuid) })
                             RiftWindow.Push -> PushWindow(state, onCloseRequest = { onWindowClose(RiftWindow.Push, state.uuid) })
                             RiftWindow.Contacts -> ContactsWindow(state, onCloseRequest = { onWindowClose(RiftWindow.Contacts, state.uuid) })
@@ -434,6 +444,7 @@ class WindowManager(
             RiftWindow.Jabber -> WindowSizing(defaultSize = saved ?: (400 to 500), minimumSize = (200 to 200))
             RiftWindow.Pings -> WindowSizing(defaultSize = saved ?: (440 to 500), minimumSize = (440 to 300))
             RiftWindow.Appraisal -> WindowSizing(defaultSize = saved ?: (640 to 700), minimumSize = (480 to 420))
+            RiftWindow.ManufacturingAssistant -> WindowSizing(defaultSize = saved ?: (760 to 700), minimumSize = (620 to 520))
             RiftWindow.ConfigurationPackReminder -> WindowSizing(defaultSize = (450 to null), minimumSize = (450 to null))
             RiftWindow.Assets -> WindowSizing(defaultSize = saved ?: (500 to 500), minimumSize = (500 to 300))
             RiftWindow.WhatsNew -> WindowSizing(defaultSize = (450 to 800), minimumSize = (450 to 800))
@@ -441,6 +452,7 @@ class WindowManager(
             RiftWindow.LogLite -> WindowSizing(defaultSize = saved ?: (1200 to 600), minimumSize = (1000 to 500))
             RiftWindow.Fleets -> WindowSizing(defaultSize = saved ?: (300 to 300), minimumSize = 300 to 300)
             RiftWindow.PlanetaryIndustry -> WindowSizing(defaultSize = saved ?: (540 to 800), minimumSize = 540 to 360)
+            RiftWindow.PlanetaryRelations -> WindowSizing(defaultSize = saved ?: (980 to 700), minimumSize = 840 to 500)
             RiftWindow.StartupWarning -> WindowSizing(defaultSize = (450 to null), minimumSize = (450 to null))
             RiftWindow.Push -> WindowSizing(defaultSize = (350 to 445), minimumSize = 350 to 445)
             RiftWindow.Contacts -> WindowSizing(defaultSize = saved ?: (650 to 600), minimumSize = 650 to 600)
