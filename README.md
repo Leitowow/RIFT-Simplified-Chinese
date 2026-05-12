@@ -17,6 +17,13 @@ RIFT是一个EVE Online的第三方工具。
 
 运行项目，执行：`./gradlew run`。这将下载所有依赖，构建并运行项目。
 
+### QQMonitor API 同步说明
+
+QQMonitor 对外校验接口 `/qqmonitor/api/v1/verify-qq/` 已同步新增返回字段：
+
+- `main_account_id`：该 QQ 号码关联的主账户ID（未命中为 `null`）
+- `nickname`：该 QQ 号码关联昵称（未命中为 `null`）
+
 ### 工具
 
 本项目使用[IntelliJ IDEA](https://www.jetbrains.com/idea/)开发。
