@@ -1,11 +1,6 @@
 {
-  "schemaVersion": 1,
-  "configVersion": 2,
-  "issuedAt": "2026-05-17T00:00:00Z",
-  "expiresAt": "2027-05-24T00:00:00Z",
-  "publisher": "intel-collab-control-plane",
-  "channelRules": [
-    { "channelId": "ch_6ee8b788c48b5e0597dd", "displayName": "DELVE911" },
-    { "channelId": "ch_4683a209d8ae39c32693", "displayName": "PINGBOT" }
-  ]
+  "alg": "Ed25519",
+  "keyId": "cp-ed25519-2026q2",
+  "payload": "eyJjaGFubmVsUnVsZXMiOlt7ImNoYW5uZWxJZCI6ImNoXzZlZThiNzg4YzQ4YjVlMDU5N2RkIiwiZGlzcGxheU5hbWUiOiJERUxWRTkxMSJ9LHsiY2hhbm5lbElkIjoiY2hfNDY4M2EyMDlkOGFlMzljMzI2OTMiLCJkaXNwbGF5TmFtZSI6IlBJTkdCT1QifV0sImNvbmZpZ1ZlcnNpb24iOjIsImV4cGlyZXNBdCI6IjIwMjctMDUtMjRUMDA6MDA6MDBaIiwiaXNzdWVkQXQiOiIyMDI2LTA1LTE3VDAwOjAwOjAwWiIsInB1Ymxpc2hlciI6ImludGVsLWNvbGxhYi1jb250cm9sLXBsYW5lIiwic2NoZW1hVmVyc2lvbiI6MX0",
+  "signature": "yy_KL-UYLOrdRcdjq939rEPax3UN95y8WxXksDZOXU0o8CRe4CjGuaSSuN0OeKWc9TNVlOmhYjuQKk4zlzSFBQ"
 }
